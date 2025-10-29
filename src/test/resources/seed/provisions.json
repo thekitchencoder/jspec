@@ -1,0 +1,150 @@
+[
+  {
+    "provision_id": "smart_dress_leeds",
+    "name": "Smart Dress Leeds",
+    "provider": "Leeds Community Support Network (Charity)",
+    "description": "Free professional clothing loan service for people experiencing homelessness",
+    "eligibility_criteria": {
+      "required": true,
+      "housing_status": [
+        "homeless",
+        "temporary_accommodation",
+        "hostel",
+        "rough_sleeping"
+      ],
+      "location": {
+        "area": "Leeds",
+        "travel_distance": "within_20_miles"
+      },
+      "official_appointment": {
+        "types": [
+          "job_interview",
+          "court_appearance",
+          "tribunal_hearing",
+          "benefits_assessment",
+          "housing_interview"
+        ]
+      },
+      "advance_notice": {
+        "min_days": 2,
+        "description": "Minimum 48 hours notice required"
+      }
+    },
+    "support_offered": [
+      "Professional clothing loan (suits, shirts, shoes)",
+      "Basic grooming supplies",
+      "Clothing advice and fitting",
+      "Return within 7 days",
+      "Dry cleaning included"
+    ],
+    "contact_method": "Phone booking or drop-in at Leeds Community Hub",
+    "address": "15 Kirkgate, Leeds, LS2 7DJ"
+  },
+  {
+    "provision_id": "employment_plus_health",
+    "name": "Employment Plus Health Programme",
+    "provider": "Department for Work and Pensions",
+    "description": "Specialized support for people with health conditions or disabilities seeking employment",
+    "eligibility_criteria": {
+      "age_range": {
+        "min": 18,
+        "max": null
+      },
+      "location": [
+        "England",
+        "Wales"
+      ],
+      "health_condition": {
+        "required": true,
+        "types": [
+          "physical",
+          "mental_health",
+          "learning_disability"
+        ]
+      },
+      "employment_status": [
+        "unemployed",
+        "long_term_unemployed"
+      ],
+      "benefits_required": false,
+      "exclusions": [
+        "currently_employed",
+        "other_dwp_programme"
+      ]
+    },
+    "support_offered": [
+      "Personal employment advisor",
+      "Health and wellbeing support",
+      "Skills assessment and training",
+      "Employer engagement",
+      "In-work support for 6 months"
+    ],
+    "typical_duration": "15 months",
+    "referral_method": "Job Centre Plus Work Coach or self-referral"
+  },
+  {
+    "provision_id": "fresh_start_programme",
+    "name": "Fresh Start Programme",
+    "provider": "Department for Work and Pensions",
+    "description": "Intensive employment support for long-term unemployed individuals",
+    "eligibility_criteria": {
+      "universal_credit_months": {
+        "min": 6,
+        "description": "6+ consecutive months on Universal Credit"
+      },
+      "work_search_regime": {
+        "required": "intensive",
+        "description": "Must be in Intensive Work Search Regime"
+      },
+      "age_range": {
+        "min": 18,
+        "max": null
+      },
+      "exclusions": [
+        "currently_employed",
+        "in_education",
+        "other_employment_programme"
+      ]
+    },
+    "support_offered": [
+      "Dedicated employment advisor for up to 21 months",
+      "CV writing and interview skills",
+      "Job search support",
+      "Basic skills training",
+      "Work experience placements"
+    ],
+    "typical_duration": "21 months maximum",
+    "referral_method": "Job Centre Plus Work Coach"
+  },
+
+  {
+    "provision_id": "write_right",
+    "name": "Write Right",
+    "provider": "Scribbled (Charity)",
+    "description": "Scribe services for people who are unable to write",
+    "eligibility_criteria": {
+      "required": [
+        "Must be unable to write",
+        "Must be receiving benefit",
+        "Must be aged 50 or over"
+      ],
+      "housing_status": [
+      ],
+      "location": {
+        "area": "England"
+      },
+      "advance_notice": {
+        "min_days": 2,
+        "description": "Minimum 48 hours notice required"
+      }
+    },
+    "support_offered": [
+      "Scribe to complete written forms",
+      "Scribe service for examinations",
+      "CV writing service",
+      "Photocopying service"
+    ],
+    "contact_method": "On-ling booking at example.com",
+    "address": "15 Some street, Somewhere, AB1 2CD"
+  }
+]

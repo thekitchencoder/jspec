@@ -1,0 +1,13 @@
+user:
+  name: Alice
+  age: 30
+  email: alice@example.com
+  tags:
+    - admin
+    - user
+  status: active
+benefits:
+  universal_credit:
+    status: ACTIVE
+    duration_months: 4
+    workgroup: INTENSIVE

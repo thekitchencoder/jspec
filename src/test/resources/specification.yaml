@@ -1,0 +1,21 @@
+id: YAML contracted_provision_demo
+rules:
+  - id: uc-active
+    query: {benefits: {universal_credit:{status: "ACTIVE"}}}
+
+  - id: intensive-workgroup
+    query: {benefits: {universal_credit: {workgroup: "INTENSIVE"}}}
+
+  - id: time-on-uc
+    query: {benefits: {universal_credit: {duration_months: { $gte: 6}}}}
+
+ruleSets:
+  - id: restart-ruleset
+    operator: AND
+    rules:
+      - id: uc-active
+      - id: intensive-workgroup
+      - id: time-on-uc
+      - id: bad-bernard-rule
+      - id: bernard-element
+        query: {bernard: {$exists: false}}
