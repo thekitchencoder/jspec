@@ -183,15 +183,15 @@ Rule rule = Rule.builder()
 **Implementation Details:**
 - [x] **Implemented LRU pattern cache** (`RuleEvaluator.java:18-25`)
   ```java
-  private final Map<String, Pattern> patternCache = Collections.synchronizedMap(
-      new LinkedHashMap<String, Pattern>(16, 0.75f, true) {
-          @Override
-          protected boolean removeEldestEntry(Map.Entry<String, Pattern> eldest) {
-              return size() > 100;  // Max 100 cached patterns
-          }
-      }
-  );
-  ```
+private final Map<String, Pattern> patternCache = Collections.synchronizedMap(
+        new LinkedHashMap <>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Pattern> eldest) {
+                return size() > 100;  // Max 100 cached patterns
+            }
+        }
+);
+```
 
 - [x] **Cache helper method** (`RuleEvaluator.java:196-217`)
   - `getOrCompilePattern(String)` - Gets from cache or compiles and caches
