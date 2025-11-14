@@ -1,7 +1,6 @@
 package uk.codery.rules;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,15 +8,15 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 public record SpecificationEvaluator(RuleEvaluator evaluator) {
-    private static final Logger logger = LoggerFactory.getLogger(SpecificationEvaluator.class);
 
     public SpecificationEvaluator(){
         this(new RuleEvaluator());
     }
 
     public EvaluationOutcome evaluate(Object doc, Specification specification) {
-        logger.info("Starting evaluation of specification '{}'", specification.id());
+        log.info("Starting evaluation of specification '{}'", specification.id());
 
         // FIX: Use this.evaluator instead of creating new instance
         Map<String, EvaluationResult> ruleResults =
@@ -25,7 +24,7 @@ public record SpecificationEvaluator(RuleEvaluator evaluator) {
                         .map(rule -> this.evaluator.evaluateRule(doc, rule))
                         .collect(Collectors.toMap(result -> result.rule().id(), Function.identity()));
 
-        logger.debug("Evaluated {} rules for specification '{}'", ruleResults.size(), specification.id());
+        log.debug("Evaluated {} rules for specification '{}'", ruleResults.size(), specification.id());
 
         List<RuleSetResult> results = specification.ruleSets().parallelStream().map(ruleSet -> {
             List<EvaluationResult> ruleSetResults = ruleSet.rules().parallelStream()
@@ -41,7 +40,7 @@ public record SpecificationEvaluator(RuleEvaluator evaluator) {
         // Create summary
         EvaluationSummary summary = EvaluationSummary.from(ruleResults.values());
 
-        logger.info("Completed evaluation of specification '{}' - Total: {}, Matched: {}, Not Matched: {}, Undetermined: {}, Fully Determined: {}",
+        log.info("Completed evaluation of specification '{}' - Total: {}, Matched: {}, Not Matched: {}, Undetermined: {}, Fully Determined: {}",
                    specification.id(), summary.totalRules(), summary.matchedRules(),
                    summary.notMatchedRules(), summary.undeterminedRules(), summary.fullyDetermined());
 
