@@ -8,6 +8,16 @@
 
 ---
 
+## ✅ Project Decisions
+
+- **Java Version:** 21 (keep current version)
+- **Breaking Changes:** Allowed for v1.0
+- **License:** MIT
+- **Publishing Target:** TBD
+- **Version:** 0.0.1-SNAPSHOT → 1.0.0
+
+---
+
 ## 📋 Priority 1: Foundation (CRITICAL)
 
 ### Testing (Week 1)

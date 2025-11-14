@@ -319,7 +319,7 @@ public class RulesConfig {
 - [ ] **Update pom.xml for publishing**
   - Add `<scm>` section with GitHub URL
   - Add `<developers>` section
-  - Add `<licenses>` (recommend Apache 2.0 or MIT)
+  - Add `<licenses>` section with MIT license
   - Configure maven-gpg-plugin for signing
   - Configure nexus-staging-maven-plugin
 
@@ -546,24 +546,26 @@ examples/
 
 ---
 
-## Questions for You
+## Project Decisions ✅
 
-Before starting implementation, please clarify:
+**Confirmed:**
+1. **Target Java version:** 21 (keep current)
+2. **Breaking changes:** Allowed for v1.0
+3. **License:** MIT
+4. **Version plan:** 0.0.1-SNAPSHOT → 1.0.0
 
-1. **Target Java version?** (Currently Java 21 - keep it or support Java 17/11?)
-2. **Breaking changes OK?** (For package restructuring and bug fixes?)
-3. **License?** (Apache 2.0, MIT, or other?)
-4. **Publishing goal?** (Maven Central or private repository?)
-5. **Priority features?** (Which improvements are most important to you?)
+**To be decided:**
+- **Publishing target:** Maven Central, private repository, or GitHub Packages?
+- **Priority features:** Which improvements from this roadmap are most important?
 
 ---
 
 ## Next Steps
 
-1. Review this roadmap
-2. Prioritize which improvements to implement first
-3. Create GitHub issues for tracking
-4. Start with Phase 1 (testing + error handling)
+1. ✅ Review this roadmap
+2. **Decide:** Publishing target (Maven Central recommended for open source)
+3. **Prioritize:** Choose which improvements to implement first
+4. **Implement:** Start with Phase 1 (testing + error handling)
 
 **Estimated effort:** 4 weeks for full implementation (working part-time)
 **Minimum viable:** Phase 1 + Phase 2 = 2 weeks for production-ready, extensible library
