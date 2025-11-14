@@ -103,7 +103,7 @@ class SpecificationEvaluatorTest {
             new Rule("age-check", Map.of("age", Map.of("$gte", 18))),
             new Rule("status-check", Map.of("status", Map.of("$eq", "ACTIVE")))
         );
-        RuleSet ruleSet = new RuleSet("and-set", Operator.AND, List.of("age-check", "status-check"));
+        RuleSet ruleSet = new RuleSet("and-set", Operator.AND, List.of(new Rule("age-check", Map.of()), new Rule("status-check", Map.of())));
         Specification spec = new Specification("and-spec", rules, List.of(ruleSet));
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
@@ -123,7 +123,7 @@ class SpecificationEvaluatorTest {
             new Rule("age-check", Map.of("age", Map.of("$gte", 18))),
             new Rule("status-check", Map.of("status", Map.of("$eq", "INACTIVE")))
         );
-        RuleSet ruleSet = new RuleSet("and-set", Operator.AND, List.of("age-check", "status-check"));
+        RuleSet ruleSet = new RuleSet("and-set", Operator.AND, List.of(new Rule("age-check", Map.of()), new Rule("status-check", Map.of())));
         Specification spec = new Specification("and-spec", rules, List.of(ruleSet));
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
@@ -138,7 +138,7 @@ class SpecificationEvaluatorTest {
             new Rule("age-check", Map.of("age", Map.of("$lt", 18))),
             new Rule("status-check", Map.of("status", Map.of("$eq", "INACTIVE")))
         );
-        RuleSet ruleSet = new RuleSet("and-set", Operator.AND, List.of("age-check", "status-check"));
+        RuleSet ruleSet = new RuleSet("and-set", Operator.AND, List.of(new Rule("age-check", Map.of()), new Rule("status-check", Map.of())));
         Specification spec = new Specification("and-spec", rules, List.of(ruleSet));
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
@@ -155,7 +155,7 @@ class SpecificationEvaluatorTest {
             new Rule("age-check", Map.of("age", Map.of("$gte", 18))),
             new Rule("status-check", Map.of("status", Map.of("$eq", "INACTIVE")))
         );
-        RuleSet ruleSet = new RuleSet("or-set", Operator.OR, List.of("age-check", "status-check"));
+        RuleSet ruleSet = new RuleSet("or-set", Operator.OR, List.of(new Rule("age-check", Map.of()), new Rule("status-check", Map.of())));
         Specification spec = new Specification("or-spec", rules, List.of(ruleSet));
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
@@ -172,7 +172,7 @@ class SpecificationEvaluatorTest {
             new Rule("age-check", Map.of("age", Map.of("$gte", 18))),
             new Rule("status-check", Map.of("status", Map.of("$eq", "ACTIVE")))
         );
-        RuleSet ruleSet = new RuleSet("or-set", Operator.OR, List.of("age-check", "status-check"));
+        RuleSet ruleSet = new RuleSet("or-set", Operator.OR, List.of(new Rule("age-check", Map.of()), new Rule("status-check", Map.of())));
         Specification spec = new Specification("or-spec", rules, List.of(ruleSet));
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
@@ -187,7 +187,7 @@ class SpecificationEvaluatorTest {
             new Rule("age-check", Map.of("age", Map.of("$lt", 18))),
             new Rule("status-check", Map.of("status", Map.of("$eq", "INACTIVE")))
         );
-        RuleSet ruleSet = new RuleSet("or-set", Operator.OR, List.of("age-check", "status-check"));
+        RuleSet ruleSet = new RuleSet("or-set", Operator.OR, List.of(new Rule("age-check", Map.of()), new Rule("status-check", Map.of())));
         Specification spec = new Specification("or-spec", rules, List.of(ruleSet));
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
@@ -206,8 +206,8 @@ class SpecificationEvaluatorTest {
             new Rule("r3", Map.of("name", Map.of("$eq", "John Doe")))
         );
         List<RuleSet> ruleSets = List.of(
-            new RuleSet("and-set", Operator.AND, List.of("r1", "r2")),
-            new RuleSet("or-set", Operator.OR, List.of("r2", "r3"))
+            new RuleSet("and-set", Operator.AND, List.of(new Rule("r1", Map.of()), new Rule("r2", Map.of()))),
+            new RuleSet("or-set", Operator.OR, List.of(new Rule("r2", Map.of()), new Rule("r3", Map.of())))
         );
         Specification spec = new Specification("multi-ruleset-spec", rules, ruleSets);
 
@@ -224,8 +224,8 @@ class SpecificationEvaluatorTest {
             new Rule("other-rule", Map.of("status", Map.of("$eq", "ACTIVE")))
         );
         List<RuleSet> ruleSets = List.of(
-            new RuleSet("set1", Operator.AND, List.of("shared-rule", "other-rule")),
-            new RuleSet("set2", Operator.OR, List.of("shared-rule", "other-rule"))
+            new RuleSet("set1", Operator.AND, List.of(new Rule("shared-rule", Map.of()), new Rule("other-rule", Map.of()))),
+            new RuleSet("set2", Operator.OR, List.of(new Rule("shared-rule", Map.of()), new Rule("other-rule", Map.of())))
         );
         Specification spec = new Specification("reuse-spec", rules, ruleSets);
 
@@ -244,7 +244,7 @@ class SpecificationEvaluatorTest {
             new Rule("determined", Map.of("age", Map.of("$gte", 18))),
             new Rule("undetermined", Map.of("salary", Map.of("$gt", 50000)))
         );
-        RuleSet ruleSet = new RuleSet("mixed-set", Operator.AND, List.of("determined", "undetermined"));
+        RuleSet ruleSet = new RuleSet("mixed-set", Operator.AND, List.of(new Rule("determined", Map.of()), new Rule("undetermined", Map.of())));
         Specification spec = new Specification("mixed-spec", rules, List.of(ruleSet));
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
@@ -262,7 +262,7 @@ class SpecificationEvaluatorTest {
             new Rule("good", Map.of("age", Map.of("$gte", 18))),
             new Rule("bad", Map.of("age", Map.of("$unknown", 25)))
         );
-        RuleSet ruleSet = new RuleSet("graceful-set", Operator.OR, List.of("good", "bad"));
+        RuleSet ruleSet = new RuleSet("graceful-set", Operator.OR, List.of(new Rule("good", Map.of()), new Rule("bad", Map.of())));
         Specification spec = new Specification("graceful-spec", rules, List.of(ruleSet));
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
@@ -355,7 +355,7 @@ class SpecificationEvaluatorTest {
         List<Rule> rules = List.of(
             new Rule("only-rule", Map.of("age", Map.of("$gte", 18)))
         );
-        RuleSet ruleSet = new RuleSet("single-rule-set", Operator.AND, List.of("only-rule"));
+        RuleSet ruleSet = new RuleSet("single-rule-set", Operator.AND, List.of(new Rule("only-rule", Map.of())));
         Specification spec = new Specification("single-spec", rules, List.of(ruleSet));
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
@@ -375,7 +375,7 @@ class SpecificationEvaluatorTest {
             new Rule("r5", Map.of("tags", Map.of("$size", 2)))
         );
         RuleSet ruleSet = new RuleSet("many-rules-set", Operator.AND,
-            List.of("r1", "r2", "r3", "r4", "r5"));
+            List.of(new Rule("r1", Map.of()), new Rule("r2", Map.of()), new Rule("r3", Map.of()), new Rule("r4", Map.of()), new Rule("r5", Map.of())));
         Specification spec = new Specification("many-rules-spec", rules, List.of(ruleSet));
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);

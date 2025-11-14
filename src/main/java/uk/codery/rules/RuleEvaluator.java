@@ -56,14 +56,14 @@ public class RuleEvaluator {
     }
 
     public EvaluationResult evaluateRule(Object doc, Rule rule) {
-        logger.debug("Evaluating rule '{}' against document", rule.id());
+        log.debug("Evaluating rule '{}' against document", rule.id());
 
         return Optional.of(rule)
                 .map(Rule::query)
                 .map(query -> matchValue(doc, query, ""))
                 .map(result -> new EvaluationResult(rule, result.state, result.missingPaths, result.failureReason))
                 .orElseGet(() -> {
-                    logger.warn("Rule '{}' has no query defined", rule.id());
+                    log.warn("Rule '{}' has no query defined", rule.id());
                     return EvaluationResult.missing(rule);
                 });
     }
@@ -92,14 +92,14 @@ public class RuleEvaluator {
     private boolean evaluateInOperator(Object val, Object operand) {
         try {
             if (!(operand instanceof List)) {
-                logger.warn("Operator $in expects List, got {} - treating as not matched",
+                log.warn("Operator $in expects List, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
             List<?> list = (List<?>) operand;
             return list.contains(val);
         } catch (Exception e) {
-            logger.warn("Error evaluating $in operator: {}", e.getMessage(), e);
+            log.warn("Error evaluating $in operator: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -107,14 +107,14 @@ public class RuleEvaluator {
     private boolean evaluateNotInOperator(Object val, Object operand) {
         try {
             if (!(operand instanceof List)) {
-                logger.warn("Operator $nin expects List, got {} - treating as not matched",
+                log.warn("Operator $nin expects List, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
             List<?> list = (List<?>) operand;
             return !list.contains(val);
         } catch (Exception e) {
-            logger.warn("Error evaluating $nin operator: {}", e.getMessage(), e);
+            log.warn("Error evaluating $nin operator: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -122,14 +122,14 @@ public class RuleEvaluator {
     private boolean evaluateExistsOperator(Object val, Object operand) {
         try {
             if (!(operand instanceof Boolean)) {
-                logger.warn("Operator $exists expects Boolean, got {} - treating as not matched",
+                log.warn("Operator $exists expects Boolean, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
             boolean query = (Boolean) operand;
             return query ? val != null : val == null;
         } catch (Exception e) {
-            logger.warn("Error evaluating $exists operator: {}", e.getMessage(), e);
+            log.warn("Error evaluating $exists operator: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -137,17 +137,17 @@ public class RuleEvaluator {
     private boolean evaluateRegexOperator(Object val, Object operand) {
         try {
             if (!(operand instanceof String)) {
-                logger.warn("Operator $regex expects String pattern, got {} - treating as not matched",
+                log.warn("Operator $regex expects String pattern, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
             Pattern pattern = Pattern.compile((String) operand);
             return pattern.matcher(String.valueOf(val)).find();
         } catch (PatternSyntaxException e) {
-            logger.warn("Invalid regex pattern '{}': {} - treating as not matched", operand, e.getMessage());
+            log.warn("Invalid regex pattern '{}': {} - treating as not matched", operand, e.getMessage());
             return false;
         } catch (Exception e) {
-            logger.warn("Error evaluating $regex operator: {}", e.getMessage(), e);
+            log.warn("Error evaluating $regex operator: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -155,18 +155,18 @@ public class RuleEvaluator {
     private boolean evaluateSizeOperator(Object val, Object operand) {
         try {
             if (!(val instanceof List)) {
-                logger.debug("Operator $size expects List value, got {} - treating as not matched",
+                log.debug("Operator $size expects List value, got {} - treating as not matched",
                             val == null ? "null" : val.getClass().getSimpleName());
                 return false;
             }
             if (!(operand instanceof Number)) {
-                logger.warn("Operator $size expects Number operand, got {} - treating as not matched",
+                log.warn("Operator $size expects Number operand, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
             return ((List<?>) val).size() == ((Number) operand).intValue();
         } catch (Exception e) {
-            logger.warn("Error evaluating $size operator: {}", e.getMessage(), e);
+            log.warn("Error evaluating $size operator: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -174,12 +174,12 @@ public class RuleEvaluator {
     private boolean evaluateElemMatchOperator(Object val, Object operand) {
         try {
             if (!(val instanceof List)) {
-                logger.debug("Operator $elemMatch expects List value, got {} - treating as not matched",
+                log.debug("Operator $elemMatch expects List value, got {} - treating as not matched",
                             val == null ? "null" : val.getClass().getSimpleName());
                 return false;
             }
             if (!(operand instanceof Map)) {
-                logger.warn("Operator $elemMatch expects Map operand, got {} - treating as not matched",
+                log.warn("Operator $elemMatch expects Map operand, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
@@ -192,7 +192,7 @@ public class RuleEvaluator {
             }
             return false;
         } catch (Exception e) {
-            logger.warn("Error evaluating $elemMatch operator: {}", e.getMessage(), e);
+            log.warn("Error evaluating $elemMatch operator: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -200,19 +200,19 @@ public class RuleEvaluator {
     private boolean evaluateAllOperator(Object val, Object operand) {
         try {
             if (!(val instanceof List<?> valList)) {
-                logger.debug("Operator $all expects List value, got {} - treating as not matched",
+                log.debug("Operator $all expects List value, got {} - treating as not matched",
                             val == null ? "null" : val.getClass().getSimpleName());
                 return false;
             }
             if (!(operand instanceof List)) {
-                logger.warn("Operator $all expects List operand, got {} - treating as not matched",
+                log.warn("Operator $all expects List operand, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
             List<?> queryList = (List<?>) operand;
             return valList.containsAll(queryList);
         } catch (Exception e) {
-            logger.warn("Error evaluating $all operator: {}", e.getMessage(), e);
+            log.warn("Error evaluating $all operator: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -258,7 +258,7 @@ public class RuleEvaluator {
             return matchMapValue(val, queryMap, path);
         }
 
-        logger.warn("Unknown query type: {} - treating as UNDETERMINED",
+        log.warn("Unknown query type: {} - treating as UNDETERMINED",
                    query == null ? "null" : query.getClass().getSimpleName());
         return InnerResult.undetermined("Unknown query type: " + query.getClass().getSimpleName());
     }
@@ -347,7 +347,7 @@ public class RuleEvaluator {
 
             OperatorHandler handler = operators.get(op);
             if (handler == null) {
-                logger.warn("Unknown operator '{}' - marking rule as UNDETERMINED", op);
+                log.warn("Unknown operator '{}' - marking rule as UNDETERMINED", op);
                 return InnerResult.undetermined("Unknown operator: " + op);
             }
 
@@ -357,7 +357,7 @@ public class RuleEvaluator {
                     break;
                 }
             } catch (Exception e) {
-                logger.warn("Error evaluating operator '{}': {} - marking as UNDETERMINED", op, e.getMessage(), e);
+                log.warn("Error evaluating operator '{}': {} - marking as UNDETERMINED", op, e.getMessage(), e);
                 return InnerResult.undetermined("Error evaluating operator " + op + ": " + e.getMessage());
             }
         }
