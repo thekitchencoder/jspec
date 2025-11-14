@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-class RuleEvaluator {
+public class RuleEvaluator {
     private static final Logger logger = LoggerFactory.getLogger(RuleEvaluator.class);
 
     private final Map<String, OperatorHandler> operators = new HashMap<>();
