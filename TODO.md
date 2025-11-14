@@ -13,7 +13,7 @@
 - **Java Version:** 21 (keep current version)
 - **Breaking Changes:** Allowed for v1.0
 - **License:** MIT
-- **Publishing Target:** TBD
+- **Publishing Target:** No publishing for now (local/internal use)
 - **Version:** 0.0.1-SNAPSHOT → 1.0.0
 
 ---
@@ -92,14 +92,14 @@
 
 ---
 
-## 📋 Priority 5: Publishing (OPTIONAL)
+## 📋 Priority 5: Publishing (SKIPPED - Not needed for now)
 
-### Maven Central Preparation
+### Maven Central Preparation (Future - if open sourcing)
 - [ ] Add `<scm>`, `<developers>`, `<licenses>` to pom.xml
 - [ ] Configure maven-gpg-plugin for signing
 - [ ] Configure nexus-staging-maven-plugin
 - [ ] Create RELEASING.md with deployment instructions
-- [ ] Choose license (Apache 2.0 or MIT recommended)
+- [x] ~~Choose license~~ (MIT selected)
 
 ---
 
@@ -252,11 +252,11 @@ These 5 quick wins give you tests, error handling foundation, and documentation!
 
 Before starting implementation:
 
-1. **Java version target?** (Keep Java 21 or support 17/11?)
-2. **Breaking changes acceptable?** (For package structure and bug fixes?)
-3. **License?** (Apache 2.0, MIT, or other?)
-4. **Publishing target?** (Maven Central, private repo, or GitHub packages?)
-5. **Most important features?** (What to prioritize?)
+1. ✅ ~~**Java version target?**~~ Java 21
+2. ✅ ~~**Breaking changes acceptable?**~~ Yes, for v1.0
+3. ✅ ~~**License?**~~ MIT
+4. ✅ ~~**Publishing target?**~~ No publishing for now
+5. **Most important features?** (What to prioritize?) ← **Still to decide**
 
 ---
 

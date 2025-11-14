@@ -552,10 +552,10 @@ examples/
 1. **Target Java version:** 21 (keep current)
 2. **Breaking changes:** Allowed for v1.0
 3. **License:** MIT
-4. **Version plan:** 0.0.1-SNAPSHOT → 1.0.0
+4. **Publishing target:** No publishing for now (local/internal use)
+5. **Version plan:** 0.0.1-SNAPSHOT → 1.0.0
 
 **To be decided:**
-- **Publishing target:** Maven Central, private repository, or GitHub Packages?
 - **Priority features:** Which improvements from this roadmap are most important?
 
 ---
@@ -563,9 +563,9 @@ examples/
 ## Next Steps
 
 1. ✅ Review this roadmap
-2. **Decide:** Publishing target (Maven Central recommended for open source)
+2. ✅ Make project decisions (Java version, license, publishing)
 3. **Prioritize:** Choose which improvements to implement first
-4. **Implement:** Start with Phase 1 (testing + error handling)
+4. **Implement:** Start with chosen phase
 
 **Estimated effort:** 4 weeks for full implementation (working part-time)
 **Minimum viable:** Phase 1 + Phase 2 = 2 weeks for production-ready, extensible library
