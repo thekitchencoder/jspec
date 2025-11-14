@@ -1,7 +1,6 @@
 package uk.codery.rules;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,8 +8,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 public record SpecificationEvaluator(RuleEvaluator evaluator) {
-    private static final Logger logger = LoggerFactory.getLogger(SpecificationEvaluator.class);
 
     public SpecificationEvaluator(){
         this(new RuleEvaluator());
