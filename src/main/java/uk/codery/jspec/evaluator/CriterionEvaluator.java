@@ -513,7 +513,8 @@ public class CriterionEvaluator {
             String key = entry.getKey();
             Object subQuery = entry.getValue();
             String newPath = buildFieldPath(path, key);
-            Object subVal = valMap.get(key);
+            // Use navigate() to support dot notation (e.g., "address.city")
+            Object subVal = navigate(valMap, key);
 
             InnerResult subResult = matchValue(subVal, subQuery, newPath);
 
@@ -542,5 +543,42 @@ public class CriterionEvaluator {
 
     private String buildFieldPath(String path, String key) {
         return path.isEmpty() ? key : path + "." + key;
+    }
+
+    /**
+     * Navigates through a nested map structure using dot notation.
+     * For example, "address.city" navigates to map.get("address").get("city").
+     *
+     * @param map the map to navigate
+     * @param path the dot-notation path (e.g., "address.city")
+     * @return the value at the path, or null if not found
+     */
+    private Object navigate(Map<String, Object> map, String path) {
+        if (path == null || path.isEmpty()) {
+            return map;
+        }
+
+        // If path doesn't contain dots, simple lookup
+        if (!path.contains(".")) {
+            return map.get(path);
+        }
+
+        // Split path and navigate through nested maps
+        String[] parts = path.split("\\.");
+        Object current = map;
+
+        for (String part : parts) {
+            if (!(current instanceof Map)) {
+                return null;
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> currentMap = (Map<String, Object>) current;
+            current = currentMap.get(part);
+            if (current == null) {
+                return null;
+            }
+        }
+
+        return current;
     }
 }
