@@ -9,7 +9,7 @@ Your JSON Specification Evaluator is a **production-ready, Spring-independent li
 - ✅ Clean 3-layer architecture
 - ✅ Thread-safe with parallel evaluation
 - ✅ 13 MongoDB-style operators (all optimized)
-- ✅ **Comprehensive test coverage** (9 test files including unit, integration, operator-specific, and caching tests)
+- ✅ **Comprehensive test coverage** (14 test files including unit, integration, operator-specific, builder, and caching tests)
 - ✅ **Tri-state evaluation model** (MATCHED/NOT_MATCHED/UNDETERMINED)
 - ✅ **SLF4J logging integration** (graceful degradation with proper logging)
 - ✅ **Comprehensive documentation** (README.md, CLAUDE.md, ERROR_HANDLING_DESIGN.md, CONTRIBUTING.md, CHANGELOG.md)
@@ -17,8 +17,8 @@ Your JSON Specification Evaluator is a **production-ready, Spring-independent li
 - ✅ **Regex pattern caching** (Thread-safe LRU cache with ~10-100x performance improvement)
 - ✅ **Modern Java 21 features** (Pattern matching, switch expressions, sealed classes)
 - ✅ **Performance optimizations** (HashSet-based $all operator, optimized type checking)
-- ⚠️ Limited extensibility (CriterionEvaluator is public but no custom operator API)
-- ❌ No builder APIs
+- ✅ **Full extensibility** (OperatorRegistry and OperatorHandler API for custom operators)
+- ✅ **Fluent builder APIs** (CriterionBuilder, CriteriaGroupBuilder, SpecificationBuilder)
 - ❌ No example projects
 
 ## What Changed Since Original Roadmap
@@ -26,7 +26,7 @@ Your JSON Specification Evaluator is a **production-ready, Spring-independent li
 This roadmap has been updated to reflect the significant progress made on the JSON Specification Evaluator. Here's a quick summary:
 
 **Major Achievements:**
-- ✅ **Testing** - 9 comprehensive test files created (was: "No test coverage")
+- ✅ **Testing** - 14 comprehensive test files created (was: "No test coverage")
 - ✅ **Error Handling** - Tri-state evaluation model implemented with graceful degradation (better than exception approach!)
 - ✅ **Logging** - SLF4J fully integrated (was: "uses System.err.println")
 - ✅ **Documentation** - Comprehensive README, CLAUDE.md, ERROR_HANDLING_DESIGN.md created
@@ -35,12 +35,13 @@ This roadmap has been updated to reflect the significant progress made on the JS
 - ✅ **Performance** - Regex pattern caching with LRU eviction (~10-100x faster for repeated patterns)
 - ✅ **Optimizations** - $all operator using HashSet for O(n) performance, modern Java 21 pattern matching
 - ✅ **Type Safety** - Enhanced type checking with improved $exists and $type operator logic
+- ✅ **Extensibility** - Full OperatorRegistry and OperatorHandler API for custom operators
+- ✅ **Builder APIs** - Fluent builders for Criterion, CriteriaGroup, and Specification
 
 **Key Remaining Work:**
-- Custom operator extensibility API (OperatorRegistry)
-- Example projects directory
+- Example projects directory (optional nice-to-have)
 
-**Overall:** The library has progressed from a POC with no tests to a **production-ready, performance-optimized library** with comprehensive testing, graceful error handling, complete JavaDoc coverage, and modern Java 21 features. Phase 1 (Foundation), Phase 3 (Performance & Observability), and Phase 4 (Documentation) are complete.
+**Overall:** The library has progressed from a POC with no tests to a **production-ready, fully-featured, performance-optimized library** with comprehensive testing, graceful error handling, complete JavaDoc coverage, custom operator extensibility, fluent builder APIs, and modern Java 21 features. Phase 1 (Foundation), Phase 2 (Extensibility), Phase 3 (Performance & Observability), and Phase 4 (Documentation) are complete.
 
 ---
 
@@ -72,8 +73,13 @@ This roadmap has been updated to reflect the significant progress made on the JS
   - `TriStateEvaluationTest.java` - Tri-state model validation
   - `EvaluationSummaryTest.java` - Summary statistics validation
   - `RegexPatternCacheTest.java` - Pattern caching and thread safety validation
+  - `CriterionBuilderTest.java` - Builder API validation
+  - `OperatorRegistryTest.java` - Custom operator registry validation
+  - `DotNotationTest.java` - Document navigation validation
+  - `CriterionEvaluatorCustomOperatorTest.java` - Custom operator integration validation
+  - `EndToEndYamlTest.java` - YAML-based end-to-end testing
 
-**Result:** 9 test files with comprehensive coverage including performance optimization tests
+**Result:** 14 test files with comprehensive coverage including performance optimizations, builder APIs, and custom operators
 
 ### 1.2 Error Handling ✅ **COMPLETED (Alternative Approach)**
 **Status:** Implemented graceful degradation with tri-state model instead of exceptions
@@ -109,71 +115,73 @@ This roadmap has been updated to reflect the significant progress made on the JS
 
 ---
 
-## Priority 2: Extensibility & API Design ⚠️ **PARTIALLY COMPLETED**
+## Priority 2: Extensibility & API Design ✅ **COMPLETED**
 
-### 2.1 Public API for Custom Operators ⚠️ **PARTIAL**
-**Status:** CriterionEvaluator is public, but custom operator API not yet implemented
+### 2.1 Public API for Custom Operators ✅ **COMPLETED**
+**Status:** Full custom operator extensibility implemented with OperatorRegistry and OperatorHandler
 
 **Progress:**
-- [x] **Make `CriterionEvaluator` public** - `CriterionEvaluator.java:10` is now `public class`
-- [x] **`OperatorHandler` interface exists** - Defined at `CriterionEvaluator.java:13-15` (package-private)
-- [ ] **Extract `OperatorHandler` to public interface** - Still package-private, should move to separate file
-- [ ] **Create `OperatorRegistry` class** - Not implemented
-- [ ] **Constructor accepting custom `OperatorRegistry`** - Not implemented
+- [x] **Make `CriterionEvaluator` public** - `CriterionEvaluator.java:141` is now `public class`
+- [x] **`OperatorHandler` interface** - Implemented as public interface at `uk.codery.jspec.operator.OperatorHandler`
+- [x] **Extract `OperatorHandler` to public interface** - Completed, moved to separate file in operator package
+- [x] **Create `OperatorRegistry` class** - Completed at `uk.codery.jspec.operator.OperatorRegistry`
+- [x] **Constructor accepting custom `OperatorRegistry`** - Completed at `CriterionEvaluator.java:248`
 
-**Current limitation:** While CriterionEvaluator is public, operators are still hardcoded in constructor with no way to extend.
-
-**Next steps:**
+**Implementation:**
 ```java
-// TODO: Make OperatorHandler public
+// ✅ OperatorHandler is public (uk.codery.jspec.operator.OperatorHandler)
 public interface OperatorHandler {
     boolean evaluate(Object value, Object operand);
 }
 
-// TODO: Create OperatorRegistry
+// ✅ OperatorRegistry is implemented (uk.codery.jspec.operator.OperatorRegistry)
 public class OperatorRegistry {
-    private final Map<String, OperatorHandler> operators;
+    private final Map<String, OperatorHandler> operators = new ConcurrentHashMap<>();
 
     public void register(String name, OperatorHandler handler) { }
     public OperatorHandler get(String name) { }
     public Set<String> availableOperators() { }
+    public static OperatorRegistry withDefaults() { }
 }
 
-// TODO: Update CriterionEvaluator constructor
+// ✅ CriterionEvaluator has constructor accepting OperatorRegistry
 public CriterionEvaluator(OperatorRegistry registry) {
-    this.operators.putAll(registry.getAll());
+    // Implementation at CriterionEvaluator.java:248
 }
 ```
 
-### 2.2 Builder Pattern for Configuration ❌ **NOT IMPLEMENTED**
+**Result:** Users can now create custom operators and register them via OperatorRegistry. Full extensibility achieved.
+
+### 2.2 Builder Pattern for Configuration ✅ **COMPLETED**
 **Why:** Make API more fluent and easier to configure
 
-- [ ] **Create `CriterionEvaluatorBuilder`**
-- [ ] **Create `SpecificationEvaluatorBuilder`**
+- [x] **Create `CriterionBuilder`** - Completed at `uk.codery.jspec.builder.CriterionBuilder`
+- [x] **Create `CriteriaGroupBuilder`** - Completed at `uk.codery.jspec.builder.CriteriaGroupBuilder`
+- [x] **Create `SpecificationBuilder`** - Completed at `uk.codery.jspec.builder.SpecificationBuilder`
 
-**Note:** Current record-based API is clean and simple. Builders may add complexity without much benefit given the immutable design. Consider if this is truly needed.
+**Result:** Full builder API package created with comprehensive fluent builders for all domain models.
 
-### 2.3 Fluent API for Programmatic Criterion Building ❌ **NOT IMPLEMENTED**
-**Why:** Current API requires manual Map construction (verbose)
+### 2.3 Fluent API for Programmatic Criterion Building ✅ **COMPLETED**
+**Why:** Make criterion construction more readable than manual Map construction
 
-- [ ] **Create fluent builders for Criterion construction**
+- [x] **Create fluent builders for Criterion construction** - Completed
 
-**Current approach:**
+**Before (Map-based approach):**
 ```java
 // Verbose but works
 Criterion criterion = new Criterion("age-check", Map.of("age", Map.of("$gte", 18)));
 ```
 
-**Proposed approach:**
+**After (Fluent builder):**
 ```java
-// More readable
+// ✅ Now available!
 Criterion criterion = Criterion.builder()
     .id("age-check")
     .field("age").gte(18)
     .build();
 ```
 
-**Note:** This is a nice-to-have feature. The current Map-based API works fine and is flexible.
+**Result:** Comprehensive builder API implemented with support for all operators. Users can choose between Map-based (flexible) or builder-based (readable) approaches.
 
 ---
 
@@ -220,7 +228,7 @@ Criterion criterion = Criterion.builder()
 **Status:** ✅ Implemented (2025-11-15)
 
 **Implementation Details:**
-- [x] **Optimized $all operator** (`RuleEvaluator.java:259-277`)
+- [x] **Optimized $all operator** (`CriterionEvaluator.java:259-277`)
   - **Before**: `valList.containsAll(queryList)` - O(n²) complexity for large lists
   - **After**: `new HashSet<>(valList).containsAll(queryList)` - O(n) complexity
   - Performance improvement: Significant speedup for arrays with many elements
@@ -257,7 +265,7 @@ private boolean evaluateAllOperator(Object val, Object operand) {
 **Status:** ✅ Implemented (2025-11-15)
 
 **Implementation Details:**
-- [x] **Pattern matching in getType() method** (`RuleEvaluator.java:292-302`)
+- [x] **Pattern matching in getType() method** (`CriterionEvaluator.java:292-302`)
   - **Before**: Traditional if-else chain (7 separate if statements)
   - **After**: Modern switch expression with pattern matching
   - Improved readability and maintainability
@@ -486,23 +494,24 @@ docs/
 
 **Goal:** Production-ready foundation ✅ **ACHIEVED**
 
-### Phase 2: Extensibility ⚠️ **PARTIALLY COMPLETED**
-1. ⚠️ Extract public interfaces - OperatorHandler exists but package-private
-2. ❌ Add operator registry - Not implemented
+### Phase 2: Extensibility ✅ **COMPLETED**
+1. ✅ Extract public interfaces - OperatorHandler is public at uk.codery.jspec.operator.OperatorHandler
+2. ✅ Add operator registry - OperatorRegistry implemented at uk.codery.jspec.operator.OperatorRegistry
 3. ✅ Make CriterionEvaluator public - Completed
+4. ✅ Add constructor accepting OperatorRegistry - Completed at CriterionEvaluator.java:248
 
-**Goal:** Library can be extended by users ⚠️ **PARTIALLY ACHIEVED**
-**Status:** CriterionEvaluator is public but no API for custom operators yet
+**Goal:** Library can be extended by users ✅ **FULLY ACHIEVED**
+**Status:** Complete extensibility API with OperatorRegistry, OperatorHandler, and builder support
 
 ### Phase 3: Developer Experience ✅ **COMPLETED**
-1. ❌ Add builders and fluent API - Not implemented (optional enhancement)
+1. ✅ Add builders and fluent API - **COMPLETED** (CriterionBuilder, CriteriaGroupBuilder, SpecificationBuilder)
 2. ✅ Implement regex caching - **COMPLETED** with LRU cache and comprehensive tests
 3. ✅ Collection operator optimizations - **COMPLETED** with HashSet-based $all operator
 4. ✅ Java 21 modernization - **COMPLETED** with pattern matching and switch expressions
 5. ✅ Comprehensive JavaDoc - **COMPLETED** with 592 lines added across all core classes
 
-**Goal:** Pleasant API for developers ✅ **ACHIEVED**
-**Status:** Current API is clean, modern, highly optimized, and fully documented. Regex caching and collection operator improvements provide significant performance gains. Modern Java 21 features enhance code readability and maintainability. Complete JavaDoc coverage ensures excellent developer experience.
+**Goal:** Pleasant API for developers ✅ **FULLY ACHIEVED**
+**Status:** Complete fluent builder API, modern optimized code, and comprehensive documentation. All major developer experience features implemented.
 
 ### Phase 4: Ecosystem ✅ **COMPLETED**
 1. ✅ Complete documentation - README.md, CLAUDE.md, ERROR_HANDLING_DESIGN.md, comprehensive JavaDoc completed
@@ -576,12 +585,14 @@ If you're planning a v1.0 release, consider these breaking changes:
 
 **What We've Achieved:**
 
-- ✅ **Comprehensive test coverage** - 9 test files covering all operators, integration tests, tri-state evaluation, and caching
+- ✅ **Comprehensive test coverage** - 14 test files covering all operators, integration tests, tri-state evaluation, caching, builders, and custom operators
 - ✅ **Production-ready error handling** - Tri-state model with graceful degradation (better than exceptions!)
 - ✅ **SLF4J logging integration** - Proper observability without System.err
 - ✅ **Spring-compatible** - Works with or without Spring
-- ✅ **Well-documented** - Comprehensive README.md, ERROR_HANDLING_DESIGN.md, CLAUDE.md, CONTRIBUTING.md
+- ✅ **Well-documented** - Comprehensive README.md, ERROR_HANDLING_DESIGN.md, CLAUDE.md, CONTRIBUTING.md, complete JavaDoc
 - ✅ **Clean public API** - CriterionEvaluator is public, record-based immutable design
+- ✅ **Full extensibility** - OperatorRegistry and OperatorHandler API for custom operators
+- ✅ **Fluent builder APIs** - CriterionBuilder, CriteriaGroupBuilder, SpecificationBuilder
 - ✅ **Performance optimized** - Multiple optimizations implemented:
   - Regex pattern caching with LRU eviction (~10-100x faster for repeated patterns)
   - $all operator using HashSet for O(n) complexity instead of O(n²)
@@ -590,12 +601,10 @@ If you're planning a v1.0 release, consider these breaking changes:
 
 **Still To Do:**
 
-- ⚠️ **Extensibility** - CriterionEvaluator is public but no custom operator registration API yet
-- ❌ **Builder APIs** - Fluent API not implemented (Map-based API works fine)
-- ❌ **Example projects** - No examples/ directory (demo exists in test code)
+- ❌ **Example projects** - No examples/ directory (demo exists in test code, Spring config in CLAUDE.md)
 - ❌ **Maven Central** - Not configured (per project decision: local/internal use)
 
-**Overall Assessment:** The library is **production-ready, performance-optimized, fully documented, and feature-complete** for internal use. The tri-state evaluation model, comprehensive testing, complete JavaDoc coverage, regex caching, collection operator optimizations, and modern Java 21 features make it robust, performant, maintainable, and developer-friendly. Main remaining gap is extensibility (custom operators).
+**Overall Assessment:** The library is **production-ready, fully-featured, performance-optimized, and comprehensively documented** for internal use. ALL core features have been implemented: tri-state evaluation, comprehensive testing, complete JavaDoc coverage, custom operator extensibility, fluent builder APIs, regex caching, collection operator optimizations, and modern Java 21 features. The library is robust, performant, extensible, maintainable, and developer-friendly. Only optional nice-to-have: example projects directory.
 
 ---
 
@@ -655,45 +664,45 @@ examples/
 
 ### What's Been Completed ✅
 1. ✅ **Phase 1: Foundation** - Comprehensive testing, tri-state model, SLF4J logging
-2. ✅ **Phase 3: Performance** - Regex pattern caching with LRU eviction (2025-11-14)
-3. ✅ **Phase 4: Documentation** - README.md, CLAUDE.md, ERROR_HANDLING_DESIGN.md
-4. ✅ **Critical bug fix** - SpecificationEvaluator now uses injected evaluator
+2. ✅ **Phase 2: Extensibility** - OperatorRegistry, OperatorHandler, custom operator support
+3. ✅ **Phase 3: Developer Experience** - Builder APIs, regex caching, optimizations, JavaDoc
+4. ✅ **Phase 4: Documentation** - README.md, CLAUDE.md, ERROR_HANDLING_DESIGN.md, complete JavaDoc
+5. ✅ **Critical bug fix** - SpecificationEvaluator now uses injected evaluator
 
 ### Recommended Next Steps (Priority Order)
 
-**High Priority:**
-1. **Complete operator extensibility API**
-   - Make `OperatorHandler` public
-   - Create `OperatorRegistry` class
-   - Add constructor to `CriterionEvaluator` accepting custom registry
-   - Enables users to add custom operators
-   - **Estimated effort:** 1-2 days
-
-**Low Priority (Optional):**
-2. **Create examples/ directory**
+**Optional (Nice-to-have):**
+1. **Create examples/ directory**
    - Spring Boot integration example
    - Custom operators example
    - Standalone Java example
    - **Estimated effort:** 1-2 days
+   - **Priority:** Low (demo exists in test code, configuration examples in CLAUDE.md)
 
-4. **Add fluent builder APIs**
-   - Consider if Map-based API is sufficient
-   - Builders add complexity but improve readability
-   - **Estimated effort:** 2-3 days
+2. **Maven Central publishing**
+   - Configure pom.xml for publishing
+   - Add SCM, developers, license sections
+   - Set up GPG signing
+   - **Estimated effort:** 1 day
+   - **Priority:** Low (per project decision: internal use only)
 
 ### Current State Assessment
 
-**The library is production-ready and performance-optimized for internal use.**
+**The library is COMPLETE, production-ready, fully-featured, and performance-optimized.**
 
 **Recent achievements:**
 - ✅ Regex pattern caching implemented (2025-11-14) - Thread-safe LRU cache with comprehensive tests
 - ✅ Complete JavaDoc coverage (2025-11-15) - 592 lines added across all core classes
 - ✅ Package-level documentation (2025-11-15) - 6 comprehensive package-info.java files added (~450 lines)
+- ✅ OperatorRegistry and OperatorHandler (2025-11-15) - Full custom operator extensibility
+- ✅ Fluent builder APIs (2025-11-15) - CriterionBuilder, CriteriaGroupBuilder, SpecificationBuilder
 
-**Main remaining gap:**
-- Extensibility (custom operators) - Important for advanced users who need domain-specific operators
+**ALL CORE FEATURES COMPLETED:**
+- ✅ Testing infrastructure (14 test files)
+- ✅ Error handling (tri-state model)
+- ✅ Extensibility (custom operators)
+- ✅ Builder APIs (fluent interface)
+- ✅ Performance optimizations (caching, algorithms)
+- ✅ Documentation (README, JavaDoc, design docs)
 
-**Estimated effort for remaining high priority items:**
-- Operator extensibility: 1-2 days
-
-**Total: ~1-2 days for high priority items**
+**Remaining work:** Only optional nice-to-haves (examples, Maven Central publishing)
