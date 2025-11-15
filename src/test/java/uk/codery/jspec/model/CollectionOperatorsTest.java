@@ -12,10 +12,10 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Comprehensive tests for collection junctions: $in, $nin, $all, $size
- * These tests baseline the current behavior for all collection junctions.
+ * Comprehensive tests for collection operators: $in, $nin, $all, $size
+ * These tests baseline the current behavior for all collection operators.
  */
-class CollectionJunctionsTest {
+class CollectionOperatorsTest {
 
     private CriterionEvaluator evaluator;
 
@@ -24,7 +24,7 @@ class CollectionJunctionsTest {
         evaluator = new CriterionEvaluator();
     }
 
-    // ========== $in Junction Tests ==========
+    // ========== $in Operator Tests ==========
 
     @Test
     void in_withMatchingStringValue_shouldMatch() {
@@ -109,7 +109,7 @@ class CollectionJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
     }
 
-    // ========== $nin Junction Tests ==========
+    // ========== $nin Operator Tests ==========
 
     @Test
     void nin_withNonMatchingValue_shouldMatch() {
@@ -163,7 +163,7 @@ class CollectionJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 
-    // ========== $all Junction Tests ==========
+    // ========== $all Operator Tests ==========
 
     @Test
     void all_withAllElementsPresent_shouldMatch() {
@@ -269,7 +269,7 @@ class CollectionJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
 
-    // ========== $size Junction Tests ==========
+    // ========== $size Operator Tests ==========
 
     @Test
     void size_withMatchingSize_shouldMatch() {
@@ -356,7 +356,7 @@ class CollectionJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 
-    // ========== Combined Collection Junctions ==========
+    // ========== Combined Collection Operators ==========
 
     @Test
     void combined_inAndSize_shouldWork() {

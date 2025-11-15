@@ -46,7 +46,7 @@ class TriStateEvaluationTest {
     }
 
     @Test
-    void matchedState_complexJunction() {
+    void matchedState_complexOperator() {
         Criterion criterion = new Criterion("age-range", Map.of("age", Map.of("$gte", 18, "$lte", 30)));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
@@ -55,7 +55,7 @@ class TriStateEvaluationTest {
     }
 
     @Test
-    void matchedState_inJunction() {
+    void matchedState_inOperator() {
         Criterion criterion = new Criterion("tag-check", Map.of("tags", Map.of("$in", List.of("admin", "moderator"))));
         Map<String, Object> doc = Map.of("tags", "admin");
         EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
@@ -109,22 +109,22 @@ class TriStateEvaluationTest {
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
     }
 
-    // ========== UNDETERMINED State - Unknown Junctions ==========
+    // ========== UNDETERMINED State - Unknown Operators ==========
 
     @Test
-    void undeterminedState_unknownJunction() {
+    void undeterminedState_unknownOperator() {
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$unknown", 18)));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.matched()).isFalse();
         assertThat(result.isDetermined()).isFalse();
-        assertThat(result.failureReason()).contains("Unknown junction");
+        assertThat(result.failureReason()).contains("Unknown operator");
         assertThat(result.failureReason()).contains("$unknown");
     }
 
     @Test
-    void undeterminedState_multipleUnknownJunctions() {
+    void undeterminedState_multipleUnknownOperators() {
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$fake", 18, "$invalid", 20)));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
@@ -135,18 +135,18 @@ class TriStateEvaluationTest {
     // ========== UNDETERMINED State - Type Mismatches ==========
 
     @Test
-    void undeterminedState_typeMismatch_inJunctionExpectsList() {
+    void undeterminedState_typeMismatch_inOperatorExpectsList() {
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$in", "not-a-list")));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         // Type mismatch is logged but treated as NOT_MATCHED, not UNDETERMINED
-        // This is by design - the junction returns false gracefully
+        // This is by design - the operator returns false gracefully
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
         assertThat(result.matched()).isFalse();
     }
 
     @Test
-    void undeterminedState_typeMismatch_existsJunctionExpectsBoolean() {
+    void undeterminedState_typeMismatch_existsOperatorExpectsBoolean() {
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$exists", "yes")));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
@@ -261,10 +261,10 @@ class TriStateEvaluationTest {
         assertThat(result.missingPaths()).contains("user.address");
     }
 
-    // ========== Junction-Specific Tests ==========
+    // ========== Operator-Specific Tests ==========
 
     @Test
-    void junction_size_withValidList() {
+    void operator_size_withValidList() {
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 2)));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
@@ -272,7 +272,7 @@ class TriStateEvaluationTest {
     }
 
     @Test
-    void junction_size_withWrongSize() {
+    void operator_size_withWrongSize() {
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 5)));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
@@ -280,7 +280,7 @@ class TriStateEvaluationTest {
     }
 
     @Test
-    void junction_exists_true() {
+    void operator_exists_true() {
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$exists", true)));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
@@ -288,7 +288,7 @@ class TriStateEvaluationTest {
     }
 
     @Test
-    void junction_exists_false() {
+    void operator_exists_false() {
         Criterion criterion = new Criterion("test", Map.of("missingField", Map.of("$exists", false)));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
@@ -296,7 +296,7 @@ class TriStateEvaluationTest {
     }
 
     @Test
-    void junction_all_matches() {
+    void operator_all_matches() {
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin", "user"))));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
@@ -304,7 +304,7 @@ class TriStateEvaluationTest {
     }
 
     @Test
-    void junction_all_doesNotMatch() {
+    void operator_all_doesNotMatch() {
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin", "superuser"))));
         EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 

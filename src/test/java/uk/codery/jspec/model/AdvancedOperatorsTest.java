@@ -12,10 +12,10 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Comprehensive tests for advanced junctions: $exists, $type, $regex, $elemMatch
- * These tests baseline the current behavior for all advanced junctions.
+ * Comprehensive tests for advanced operators: $exists, $type, $regex, $elemMatch
+ * These tests baseline the current behavior for all advanced operators.
  */
-class AdvancedJunctionsTest {
+class AdvancedOperatorsTest {
 
     private CriterionEvaluator evaluator;
 
@@ -24,7 +24,7 @@ class AdvancedJunctionsTest {
         evaluator = new CriterionEvaluator();
     }
 
-    // ========== $exists Junction Tests ==========
+    // ========== $exists Operator Tests ==========
 
     @Test
     void exists_withPresentField_andTrueOperand_shouldMatch() {
@@ -101,7 +101,7 @@ class AdvancedJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 
-    // ========== $type Junction Tests ==========
+    // ========== $type Operator Tests ==========
 
     @Test
     void type_withString_shouldMatch() {
@@ -195,7 +195,7 @@ class AdvancedJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 
-    // ========== $regex Junction Tests ==========
+    // ========== $regex Operator Tests ==========
 
     @Test
     void regex_withMatchingPattern_shouldMatch() {
@@ -311,7 +311,7 @@ class AdvancedJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
 
-    // ========== $elemMatch Junction Tests ==========
+    // ========== $elemMatch Operator Tests ==========
 
     @Test
     void elemMatch_withMatchingElement_shouldMatch() {
@@ -411,7 +411,7 @@ class AdvancedJunctionsTest {
     }
 
     @Test
-    void elemMatch_withNestedJunctions_shouldMatch() {
+    void elemMatch_withNestedOperators_shouldMatch() {
         Map<String, Object> doc = Map.of("items", List.of(
             Map.of("tags", List.of("sale", "new")),
             Map.of("tags", List.of("featured"))
@@ -438,7 +438,7 @@ class AdvancedJunctionsTest {
         assertThat(result.missingPaths()).contains("users");
     }
 
-    // ========== Combined Advanced Junctions ==========
+    // ========== Combined Advanced Operators ==========
 
     @Test
     void combined_existsAndType_shouldWork() {
@@ -477,7 +477,7 @@ class AdvancedJunctionsTest {
 
         EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
-        // All junctions must match, regex fails
+        // All operators must match, regex fails
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 

@@ -11,7 +11,7 @@ import java.util.regex.PatternSyntaxException;
 
 @Slf4j
 public class CriterionEvaluator {
-    private final Map<String, JunctionHandler> junctions = new HashMap<>();
+    private final Map<String, OperatorHandler> operators = new HashMap<>();
 
     /**
      * Thread-safe LRU cache for compiled regex patterns.
@@ -27,7 +27,7 @@ public class CriterionEvaluator {
             }
     );
 
-    interface JunctionHandler {
+    interface OperatorHandler {
         boolean evaluate(Object val, Object operand);
     }
 
@@ -86,30 +86,30 @@ public class CriterionEvaluator {
     }
 
     public CriterionEvaluator() {
-        registerJunctions();
+        registerOperators();
     }
 
-    private void registerJunctions() {
-        junctions.put("$eq", Objects::equals);
-        junctions.put("$ne", (val, operand) -> !Objects.equals(val, operand));
-        junctions.put("$gt", (val, operand) -> compare(val, operand) > 0);
-        junctions.put("$gte", (val, operand) -> compare(val, operand) >= 0);
-        junctions.put("$lt", (val, operand) -> compare(val, operand) < 0);
-        junctions.put("$lte", (val, operand) -> compare(val, operand) <= 0);
-        junctions.put("$in", this::evaluateInJunction);
-        junctions.put("$nin", this::evaluateNotInJunction);
-        junctions.put("$exists", this::evaluateExistsJunction);
-        junctions.put("$type", (val, operand) -> getType(val).equals(operand));
-        junctions.put("$regex", this::evaluateRegexJunction);
-        junctions.put("$size", this::evaluateSizeJunction);
-        junctions.put("$elemMatch", this::evaluateElemMatchJunction);
-        junctions.put("$all", this::evaluateAllJunction);
+    private void registerOperators() {
+        operators.put("$eq", Objects::equals);
+        operators.put("$ne", (val, operand) -> !Objects.equals(val, operand));
+        operators.put("$gt", (val, operand) -> compare(val, operand) > 0);
+        operators.put("$gte", (val, operand) -> compare(val, operand) >= 0);
+        operators.put("$lt", (val, operand) -> compare(val, operand) < 0);
+        operators.put("$lte", (val, operand) -> compare(val, operand) <= 0);
+        operators.put("$in", this::evaluateInOperator);
+        operators.put("$nin", this::evaluateNotInOperator);
+        operators.put("$exists", this::evaluateExistsOperator);
+        operators.put("$type", (val, operand) -> getType(val).equals(operand));
+        operators.put("$regex", this::evaluateRegexOperator);
+        operators.put("$size", this::evaluateSizeOperator);
+        operators.put("$elemMatch", this::evaluateElemMatchOperator);
+        operators.put("$all", this::evaluateAllOperator);
     }
 
-    private boolean evaluateInJunction(Object val, Object operand) {
+    private boolean evaluateInOperator(Object val, Object operand) {
         try {
             if (!(operand instanceof List<?> list)) {
-                log.warn("Junction $in expects List, got {} - treating as not matched",
+                log.warn("Operator $in expects List, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
@@ -127,15 +127,15 @@ public class CriterionEvaluator {
             // Otherwise, check if val is in the operand list
             return list.contains(val);
         } catch (Exception e) {
-            log.warn("Error evaluating $in junction: {}", e.getMessage(), e);
+            log.warn("Error evaluating $in operator: {}", e.getMessage(), e);
             return false;
         }
     }
 
-    private boolean evaluateNotInJunction(Object val, Object operand) {
+    private boolean evaluateNotInOperator(Object val, Object operand) {
         try {
             if (!(operand instanceof List<?> list)) {
-                log.warn("Junction $nin expects List, got {} - treating as not matched",
+                log.warn("Operator $nin expects List, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
@@ -153,30 +153,30 @@ public class CriterionEvaluator {
             // Otherwise, check if val is not in the operand list
             return !list.contains(val);
         } catch (Exception e) {
-            log.warn("Error evaluating $nin junction: {}", e.getMessage(), e);
+            log.warn("Error evaluating $nin operator: {}", e.getMessage(), e);
             return false;
         }
     }
 
-    private boolean evaluateExistsJunction(Object val, Object operand) {
+    private boolean evaluateExistsOperator(Object val, Object operand) {
         try {
             if (!(operand instanceof Boolean)) {
-                log.warn("Junction $exists expects Boolean, got {} - treating as not matched",
+                log.warn("Operator $exists expects Boolean, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
             boolean query = (Boolean) operand;
             return query == (val != null);
         } catch (Exception e) {
-            log.warn("Error evaluating $exists junction: {}", e.getMessage(), e);
+            log.warn("Error evaluating $exists operator: {}", e.getMessage(), e);
             return false;
         }
     }
 
-    private boolean evaluateRegexJunction(Object val, Object operand) {
+    private boolean evaluateRegexOperator(Object val, Object operand) {
         try {
             if (!(operand instanceof String patternString)) {
-                log.warn("Junction $regex expects String pattern, got {} - treating as not matched",
+                log.warn("Operator $regex expects String pattern, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
@@ -186,7 +186,7 @@ public class CriterionEvaluator {
             log.warn("Invalid regex pattern '{}': {} - treating as not matched", operand, e.getMessage());
             return false;
         } catch (Exception e) {
-            log.warn("Error evaluating $regex junction: {}", e.getMessage(), e);
+            log.warn("Error evaluating $regex operator: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -214,34 +214,34 @@ public class CriterionEvaluator {
         return pattern;
     }
 
-    private boolean evaluateSizeJunction(Object val, Object operand) {
+    private boolean evaluateSizeOperator(Object val, Object operand) {
         try {
             if (!(val instanceof List)) {
-                log.debug("Junction $size expects List value, got {} - treating as not matched",
+                log.debug("Operator $size expects List value, got {} - treating as not matched",
                             val == null ? "null" : val.getClass().getSimpleName());
                 return false;
             }
             if (!(operand instanceof Number)) {
-                log.warn("Junction $size expects Number operand, got {} - treating as not matched",
+                log.warn("Operator $size expects Number operand, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
             return ((List<?>) val).size() == ((Number) operand).intValue();
         } catch (Exception e) {
-            log.warn("Error evaluating $size junction: {}", e.getMessage(), e);
+            log.warn("Error evaluating $size operator: {}", e.getMessage(), e);
             return false;
         }
     }
 
-    private boolean evaluateElemMatchJunction(Object val, Object operand) {
+    private boolean evaluateElemMatchOperator(Object val, Object operand) {
         try {
             if (!(val instanceof List)) {
-                log.debug("Junction $elemMatch expects List value, got {} - treating as not matched",
+                log.debug("Operator $elemMatch expects List value, got {} - treating as not matched",
                             val == null ? "null" : val.getClass().getSimpleName());
                 return false;
             }
             if (!(operand instanceof Map)) {
-                log.warn("Junction $elemMatch expects Map operand, got {} - treating as not matched",
+                log.warn("Operator $elemMatch expects Map operand, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
@@ -254,27 +254,27 @@ public class CriterionEvaluator {
             }
             return false;
         } catch (Exception e) {
-            log.warn("Error evaluating $elemMatch junction: {}", e.getMessage(), e);
+            log.warn("Error evaluating $elemMatch operator: {}", e.getMessage(), e);
             return false;
         }
     }
 
-    private boolean evaluateAllJunction(Object val, Object operand) {
+    private boolean evaluateAllOperator(Object val, Object operand) {
         try {
             if (!(val instanceof List<?> valList)) {
-                log.debug("Junction $all expects List value, got {} - treating as not matched",
+                log.debug("Operator $all expects List value, got {} - treating as not matched",
                             val == null ? "null" : val.getClass().getSimpleName());
                 return false;
             }
             if (!(operand instanceof List<?> queryList)) {
-                log.warn("Junction $all expects List operand, got {} - treating as not matched",
+                log.warn("Operator $all expects List operand, got {} - treating as not matched",
                            operand == null ? "null" : operand.getClass().getSimpleName());
                 return false;
             }
             //noinspection SuspiciousMethodCalls
             return new HashSet<>(valList).containsAll(queryList);
         } catch (Exception e) {
-            log.warn("Error evaluating $all junction: {}", e.getMessage(), e);
+            log.warn("Error evaluating $all operator: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -305,7 +305,7 @@ public class CriterionEvaluator {
     }
 
     private InnerResult matchValue(Object val, Object query, String path) {
-        // Special handling for $exists junction - it needs to evaluate even when val is null
+        // Special handling for $exists operator - it needs to evaluate even when val is null
         // $exists checks if a field exists (null means it doesn't exist)
         if (val == null) {
             if (query instanceof Map) {
@@ -400,30 +400,30 @@ public class CriterionEvaluator {
     }
 
     private InnerResult matchMapValue(Object val, Map<String, Object> queryMap, String path) {
-        boolean isJunctionQuery = isJunctionQuery(queryMap);
+        boolean isOperatorQuery = isOperatorQuery(queryMap);
 
-        if (isJunctionQuery) {
-            return evaluateJunctionQuery(val, queryMap);
+        if (isOperatorQuery) {
+            return evaluateOperatorQuery(val, queryMap);
         }
 
         return evaluateFieldQuery(val, queryMap, path);
     }
 
-    private boolean isJunctionQuery(Map<String, Object> queryMap) {
+    private boolean isOperatorQuery(Map<String, Object> queryMap) {
         return queryMap.keySet().stream().anyMatch(k -> k.startsWith("$"));
     }
 
-    private InnerResult evaluateJunctionQuery(Object val, Map<String, Object> queryMap) {
+    private InnerResult evaluateOperatorQuery(Object val, Map<String, Object> queryMap) {
         boolean allMatched = true;
 
         for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
             String op = entry.getKey();
             if (!op.startsWith("$")) continue;
 
-            JunctionHandler handler = junctions.get(op);
+            OperatorHandler handler = operators.get(op);
             if (handler == null) {
-                log.warn("Unknown junction '{}' - marking criterion as UNDETERMINED", op);
-                return InnerResult.undetermined("Unknown junction: " + op);
+                log.warn("Unknown operator '{}' - marking criterion as UNDETERMINED", op);
+                return InnerResult.undetermined("Unknown operator: " + op);
             }
 
             try {
@@ -432,8 +432,8 @@ public class CriterionEvaluator {
                     break;
                 }
             } catch (Exception e) {
-                log.warn("Error evaluating junction '{}': {} - marking as UNDETERMINED", op, e.getMessage(), e);
-                return InnerResult.undetermined("Error evaluating junction " + op + ": " + e.getMessage());
+                log.warn("Error evaluating operator '{}': {} - marking as UNDETERMINED", op, e.getMessage(), e);
+                return InnerResult.undetermined("Error evaluating operator " + op + ": " + e.getMessage());
             }
         }
 

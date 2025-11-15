@@ -11,10 +11,10 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Comprehensive tests for comparison junctions: $eq, $ne, $gt, $gte, $lt, $lte
- * These tests baseline the current behavior for all comparison junctions.
+ * Comprehensive tests for comparison operators: $eq, $ne, $gt, $gte, $lt, $lte
+ * These tests baseline the current behavior for all comparison operators.
  */
-class ComparisonJunctionsTest {
+class ComparisonOperatorsTest {
 
     private CriterionEvaluator evaluator;
 
@@ -23,7 +23,7 @@ class ComparisonJunctionsTest {
         evaluator = new CriterionEvaluator();
     }
 
-    // ========== $eq Junction Tests ==========
+    // ========== $eq Operator Tests ==========
 
     @Test
     void eq_withMatchingIntegers_shouldMatch() {
@@ -87,7 +87,7 @@ class ComparisonJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 
-    // ========== $ne Junction Tests ==========
+    // ========== $ne Operator Tests ==========
 
     @Test
     void ne_withDifferentValues_shouldMatch() {
@@ -129,7 +129,7 @@ class ComparisonJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
 
-    // ========== $gt Junction Tests ==========
+    // ========== $gt Operator Tests ==========
 
     @Test
     void gt_withLargerValue_shouldMatch() {
@@ -203,7 +203,7 @@ class ComparisonJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 
-    // ========== $gte Junction Tests ==========
+    // ========== $gte Operator Tests ==========
 
     @Test
     void gte_withLargerValue_shouldMatch() {
@@ -245,7 +245,7 @@ class ComparisonJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
 
-    // ========== $lt Junction Tests ==========
+    // ========== $lt Operator Tests ==========
 
     @Test
     void lt_withSmallerValue_shouldMatch() {
@@ -287,7 +287,7 @@ class ComparisonJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
 
-    // ========== $lte Junction Tests ==========
+    // ========== $lte Operator Tests ==========
 
     @Test
     void lte_withSmallerValue_shouldMatch() {
@@ -319,7 +319,7 @@ class ComparisonJunctionsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 
-    // ========== Combined Junctions Tests ==========
+    // ========== Combined Operators Tests ==========
 
     @Test
     void combined_gteAndLte_withinRange_shouldMatch() {

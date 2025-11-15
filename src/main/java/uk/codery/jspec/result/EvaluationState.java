@@ -31,8 +31,8 @@ public enum EvaluationState {
      * Reasons include:
      * <ul>
      *   <li>Missing data in the input document</li>
-     *   <li>Unknown junction in the criterion</li>
-     *   <li>Type mismatch (junction expects different type)</li>
+     *   <li>Unknown operator in the criterion</li>
+     *   <li>Type mismatch (operator expects different type)</li>
      *   <li>Invalid query (e.g., malformed regex pattern)</li>
      * </ul>
      */

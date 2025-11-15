@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for CriterionEvaluator core functionality including:
  * - Document navigation (nested fields, dot notation)
  * - Error handling and graceful degradation
- * - Unknown junctions
+ * - Unknown operators
  * - Complex query structures
  * - Edge cases
  */
@@ -233,22 +233,22 @@ class CriterionEvaluatorTest {
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
 
-    // ========== Unknown Junction Tests ==========
+    // ========== Unknown Operator Tests ==========
 
     @Test
-    void unknownJunction_shouldReturnUndetermined() {
+    void unknownOperator_shouldReturnUndetermined() {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$unknown", 18)));
 
         EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
-        assertThat(result.failureReason()).contains("Unknown junction");
+        assertThat(result.failureReason()).contains("Unknown operator");
         assertThat(result.failureReason()).contains("$unknown");
     }
 
     @Test
-    void unknownJunction_withMultipleJunctions_shouldReturnUndetermined() {
+    void unknownOperator_withMultipleOperators_shouldReturnUndetermined() {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$fake", 18, "$invalid", 20)));
 
@@ -259,14 +259,14 @@ class CriterionEvaluatorTest {
     }
 
     @Test
-    void unknownJunction_withValidAndInvalidJunctions_shouldReturnUndetermined() {
+    void unknownOperator_withValidAndInvalidOperators_shouldReturnUndetermined() {
         Map<String, Object> doc = Map.of("age", 25);
-        // Has both valid ($eq) and invalid ($fake) junctions
+        // Has both valid ($eq) and invalid ($fake) operators
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 25, "$fake", 18)));
 
         EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
-        // Unknown junction fails first
+        // Unknown operator fails first
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
     }
 
@@ -337,7 +337,7 @@ class CriterionEvaluatorTest {
     // ========== Complex Query Tests ==========
 
     @Test
-    void complexQuery_withMixedJunctions_shouldWork() {
+    void complexQuery_withMixedOperators_shouldWork() {
         Map<String, Object> doc = Map.of(
             "age", 25,
             "status", "ACTIVE",
@@ -355,7 +355,7 @@ class CriterionEvaluatorTest {
     }
 
     @Test
-    void complexQuery_withNestedJunctions_shouldWork() {
+    void complexQuery_withNestedOperators_shouldWork() {
         Map<String, Object> doc = Map.of(
             "user", Map.of(
                 "profile", Map.of(

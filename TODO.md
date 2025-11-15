@@ -21,7 +21,7 @@
 ## 📋 Priority 1: Foundation (CRITICAL)
 
 ### Testing (Week 1)
-- [ ] Unit tests for all 13 junctions in CriterionEvaluator
+- [ ] Unit tests for all 13 operators in CriterionEvaluator
 - [ ] Unit tests for SpecificationEvaluator (parallel evaluation, result caching)
 - [ ] Integration tests for end-to-end scenarios
 - [ ] Edge case testing (nulls, type mismatches, deep nesting)

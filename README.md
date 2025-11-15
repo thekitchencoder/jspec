@@ -1,10 +1,10 @@
 # JSON Specification Evaluator
 
-A lightweight, Spring-independent Java library for evaluating business criteria against JSON/YAML documents using MongoDB-style query junctions.
+A lightweight, Spring-independent Java library for evaluating business criteria against JSON/YAML documents using MongoDB-style query operators.
 
 ## Features
 
-- **13 MongoDB-style junctions** - Familiar query syntax for developers
+- **13 MongoDB-style operators** - Familiar query syntax for developers
 - **Tri-state evaluation model** - Distinguishes between MATCHED, NOT_MATCHED, and UNDETERMINED states
 - **Graceful error handling** - One failed criterion never stops evaluation of others
 - **Zero framework dependencies** - Works with or without Spring

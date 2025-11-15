@@ -95,6 +95,132 @@ Uses dot notation to traverse nested maps:
 - `benefits.universal_credit.status` → `document.get("benefits").get("universal_credit").get("status")`
 - Implemented in `CriterionEvaluator.navigate()` method
 
+## Terminology & Naming Decisions
+
+### Project Evolution: "Rules" → "Criteria" (November 2025)
+
+**Historical Context:**
+
+The project was originally conceived as "JSON Rules" with "rules" terminology throughout the codebase. In November 2025, a comprehensive refactoring was undertaken to pivot to "Specification" and "Criterion" semantics for the following reasons:
+
+**Why We Changed:**
+
+1. **Domain Alignment** - "Specification" better reflects the library's purpose of defining evaluation specifications against documents
+2. **Industry Standards** - "Criterion/Criteria" is more commonly used in business rule engines and validation frameworks
+3. **Semantic Clarity** - "Rules" implies imperative logic (do X when Y), whereas "Criteria" better represents declarative conditions (check if X matches Y)
+4. **Professional Terminology** - "Specification" and "Criterion" are more formal and align with enterprise software terminology
+
+**What Changed:**
+- `Rule` → `Criterion`
+- `RulesSet` → `CriteriaGroup`
+- `RulesEngine` → `SpecificationEvaluator`
+- Project name: "JSON Rules" → "JSON Specification Evaluator"
+- Artifact ID: `json-rules` → `jspec`
+
+**Migration Notes:**
+- Full refactoring completed in commit range: `98ccdaf..bd3accf`
+- All 26 occurrences across source, tests, and documentation updated
+- See `docs/rules-to-jspec.md` for complete migration audit
+
+### Critical Terminology Distinction: "Junction" vs "Operator"
+
+**⚠️ IMPORTANT:** The codebase uses two distinct concepts that must never be conflated:
+
+#### 1. **Operators** - MongoDB-Style Query Operators
+
+**What they are:**
+- The 13 MongoDB-style query operators used in criterion evaluation
+- Examples: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$all`, `$size`, `$exists`, `$type`, `$regex`, `$elemMatch`
+
+**Where they appear:**
+- `OperatorHandler` interface (CriterionEvaluator.java:30)
+- `operators` field (CriterionEvaluator.java:14) - Map of operator name → handler
+- `registerOperators()` method (CriterionEvaluator.java:92)
+- All `evaluate*Operator()` methods (e.g., `evaluateInOperator()`, `evaluateRegexOperator()`)
+
+**Used in context:**
+```java
+// Operator usage - checking if value matches condition
+Map<String, Object> query = Map.of("age", Map.of("$gte", 18));  // $gte is an OPERATOR
+```
+
+#### 2. **Junctions** - Boolean Logic Combinators (AND/OR)
+
+**What they are:**
+- Boolean logic operators for combining multiple criteria
+- Only two values: `AND`, `OR`
+- Represented by the `Junction` enum
+
+**Where they appear:**
+- `Junction` enum (model/Junction.java) - Defines AND/OR
+- `CriteriaGroup.junction` field - Specifies how to combine criteria in a group
+- `CriteriaGroupResult.junction` field - Records which junction was used
+
+**Used in context:**
+```java
+// Junction usage - combining criteria with boolean logic
+CriteriaGroup group = new CriteriaGroup(
+    "adult-and-active",
+    Junction.AND,  // <-- Junction: ALL criteria must match
+    List.of("age-check", "status-check")
+);
+```
+
+#### Common Mistakes to Avoid
+
+❌ **WRONG:** "MongoDB-style query junctions"
+✅ **CORRECT:** "MongoDB-style query operators"
+
+❌ **WRONG:** "13 junctions in CriterionEvaluator"
+✅ **CORRECT:** "13 operators in CriterionEvaluator"
+
+❌ **WRONG:** "JunctionHandler interface for $eq, $ne, etc."
+✅ **CORRECT:** "OperatorHandler interface for $eq, $ne, etc."
+
+❌ **WRONG:** "Unknown junction: $foo"
+✅ **CORRECT:** "Unknown operator: $foo"
+
+#### Why This Distinction Matters
+
+**Semantic Clarity:**
+- "Operator" = Evaluates a single condition ($eq, $gt, $regex, etc.)
+- "Junction" = Combines multiple criteria (AND, OR)
+
+**Code Organization:**
+- Operators live in `CriterionEvaluator` (query evaluation layer)
+- Junctions live in `CriteriaGroup` (domain model layer)
+
+**Future Extensibility:**
+- Custom operators will extend `OperatorHandler`
+- Junctions are fixed (AND/OR only, no plans for XOR/NAND/etc.)
+
+**Example Showing Both:**
+```java
+// Criterion with OPERATOR
+Criterion ageCheck = new Criterion("age-check",
+    Map.of("age", Map.of("$gte", 18)));  // $gte is an OPERATOR
+
+Criterion statusCheck = new Criterion("status-check",
+    Map.of("status", Map.of("$eq", "ACTIVE")));  // $eq is an OPERATOR
+
+// CriteriaGroup with JUNCTION
+CriteriaGroup group = new CriteriaGroup(
+    "eligibility",
+    Junction.AND,  // <-- JUNCTION: combines criteria with AND logic
+    List.of("age-check", "status-check")
+);
+```
+
+**Memory Aid:**
+- **Operator** = What you're checking ($eq, $gt, $in, etc.) - **13 different operators**
+- **Junction** = How you're combining (AND, OR) - **2 junctions only**
+
+### Verification
+
+For a complete audit of the terminology refactoring, see:
+- `docs/rules-to-jspec.md` - Full migration report with verification results
+- Git commits `98ccdaf..bd3accf` - Refactoring implementation
+
 ## Key Files Deep Dive
 
 ### CriterionEvaluator.java (418 lines)
@@ -496,6 +622,10 @@ When working with this codebase, consider:
 4. **Are there tests for this change?**
 5. **Is logging using SLF4J, not System.out/err?**
 6. **Does this follow the tri-state evaluation model?**
+7. **Are you using "operator" and "junction" terminology correctly?**
+   - ❌ Don't say "junction" when referring to query operators ($eq, $ne, etc.)
+   - ✅ Use "operator" for query operators ($eq, $ne, $gt, etc.)
+   - ✅ Use "junction" only for AND/OR boolean logic
 
 ## Additional Context
 
@@ -537,6 +667,6 @@ For questions about this codebase:
 
 ---
 
-**Last Updated**: 2025-11-14
+**Last Updated**: 2025-11-15 (Added terminology section documenting Rules→Criteria pivot and Junction vs Operator distinction)
 **Version**: 0.1.0-SNAPSHOT
 **Java Version**: 21

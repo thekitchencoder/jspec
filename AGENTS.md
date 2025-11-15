@@ -3,6 +3,11 @@
 ## Project Structure & Module Organization
 Core engine code lives under `src/main/java/uk/codery/jspec`, with `Specification`, `Criterion`, operator evaluators, and the tri-state `EvaluationOutcome` pipeline. Tests and demos sit in `src/test/java`, while reusable fixtures (JSON/YAML specs, sample documents) live in `src/test/resources`. Skim `README.md`, `ERROR_HANDLING_DESIGN.md`, and `IMPROVEMENT_ROADMAP.md` before altering behavior.
 
+## Terminology & Naming
+- The project is now **jspec**; update any lingering `json-rules` references unless you're touching historical docs like `docs/rules-to-jspec.md`.
+- Always say **criterion/criteria** (never rule/rules) when describing evaluation units, and keep class/file names aligned (`Specification`, `Criterion`, `CriteriaGroup`).
+- Artifact coordinates, package names, and logging identifiers should continue using `uk.codery.jspec`.
+
 ## Build, Test, and Development Commands
 - `mvn clean verify` — full build plus unit suite; run before pushing.
 - `mvn test` — quickest way to re-run JUnit/AssertJ tests while iterating.
