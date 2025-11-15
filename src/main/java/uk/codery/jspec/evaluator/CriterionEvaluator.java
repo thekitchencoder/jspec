@@ -22,6 +22,7 @@ public class CriterionEvaluator {
             new LinkedHashMap<>(16, 0.75f, true) {
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<String, Pattern> eldest) {
+                    //TODO - make the Regex pattern cache size configurable
                     return size() > 100;
                 }
             }

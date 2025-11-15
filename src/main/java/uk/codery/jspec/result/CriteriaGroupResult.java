@@ -16,6 +16,7 @@ public record CriteriaGroupResult(
         return evaluationResults.stream().map(EvaluationResult::reason).collect(Collectors.joining(", "));
     }
 
+    // TODO external formatters (YAML,JSON,Text,etc) rather than YAML embedded in the toString method
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
