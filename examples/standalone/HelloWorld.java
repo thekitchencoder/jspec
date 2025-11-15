@@ -4,17 +4,17 @@ import uk.codery.jspec.model.Specification;
 import uk.codery.jspec.result.EvaluationOutcome;
 import uk.codery.jspec.result.EvaluationResult;
 
-import java.util.List;
 import java.util.Map;
 
 /**
  * Hello World - Simple demonstration of JSON Specification Evaluator
  *
- * This example shows the most basic usage:
+ * This example shows the most basic usage with the fluent builder API:
  * 1. Create a document (Map)
- * 2. Define criteria to evaluate
- * 3. Evaluate the document against the criteria
- * 4. Check the results
+ * 2. Define criteria using Criterion.builder()
+ * 3. Create a specification using Specification.builder()
+ * 4. Evaluate the document against the criteria
+ * 5. Check the results
  */
 public class HelloWorld {
 
@@ -36,21 +36,21 @@ public class HelloWorld {
         System.out.println("  status: " + document.get("status"));
         System.out.println();
 
-        // Step 2: Define criteria to check
-        Criterion ageCheck = new Criterion(
-            "age-check",
-            Map.of("age", Map.of("$gte", 18))  // Age must be >= 18
-        );
+        // Step 2: Define criteria to check using the fluent builder API
+        Criterion ageCheck = Criterion.builder()
+            .id("age-check")
+            .field("age").gte(18)  // Age must be >= 18
+            .build();
 
-        Criterion statusCheck = new Criterion(
-            "status-check",
-            Map.of("status", Map.of("$eq", "ACTIVE"))  // Status must be ACTIVE
-        );
+        Criterion statusCheck = Criterion.builder()
+            .id("status-check")
+            .field("status").eq("ACTIVE")  // Status must be ACTIVE
+            .build();
 
-        Criterion cityCheck = new Criterion(
-            "city-check",
-            Map.of("city", Map.of("$in", List.of("London", "Paris", "Berlin")))  // City must be in list
-        );
+        Criterion cityCheck = Criterion.builder()
+            .id("city-check")
+            .field("city").in("London", "Paris", "Berlin")  // City must be in list
+            .build();
 
         System.out.println("Criteria:");
         System.out.println("  ✓ age-check: age >= 18");
@@ -58,12 +58,11 @@ public class HelloWorld {
         System.out.println("  ✓ city-check: city in ['London', 'Paris', 'Berlin']");
         System.out.println();
 
-        // Step 3: Create a specification with the criteria
-        Specification spec = new Specification(
-            "hello-world-spec",
-            List.of(ageCheck, statusCheck, cityCheck),
-            List.of()  // No criteria groups for this simple example
-        );
+        // Step 3: Create a specification with the criteria using the builder
+        Specification spec = Specification.builder()
+            .id("hello-world-spec")
+            .criteria(ageCheck, statusCheck, cityCheck)
+            .build();
 
         // Step 4: Evaluate the document
         SpecificationEvaluator evaluator = new SpecificationEvaluator();
