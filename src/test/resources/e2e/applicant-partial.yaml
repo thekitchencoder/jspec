@@ -1,0 +1,31 @@
+# Partial Applicant - Some data missing, will have UNDETERMINED criteria
+applicant:
+  age: 42
+  address:
+    street: "789 Main St"
+    city: "Austin"
+    state: TX
+    # Missing zipcode (optional)
+  contact:
+    email: "sarah.jones@startup.io"
+    # Missing phone - will cause phone-type-check to be UNDETERMINED
+  # Missing references - will cause references-count to be UNDETERMINED
+
+employment:
+  status: EMPLOYED
+  industry: technology
+  current:
+    employer:
+      name: "Small Startup Inc"
+      # Missing employer address
+    position: "CTO"
+    months_employed: 18
+
+financial:
+  credit_score: 720
+  annual_income: 165000
+  # Missing bankruptcy_flag - will cause not-bankrupt to be UNDETERMINED
+  income_sources:
+    - salary
+    - investments
+  # Missing loan_history - will cause has-previous-loans to be UNDETERMINED

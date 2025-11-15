@@ -1,0 +1,51 @@
+# Qualified Applicant - Should MATCH all criteria
+applicant:
+  age: 35
+  address:
+    street: "123 Market St"
+    city: "San Francisco"
+    state: CA
+    zipcode: "94102"
+  contact:
+    email: "john.smith@techcorp.com"
+    phone: "+1-415-555-0123"
+  references:
+    - name: "Jane Doe"
+      relationship: "Colleague"
+      phone: "+1-415-555-0124"
+    - name: "Bob Johnson"
+      relationship: "Manager"
+      phone: "+1-415-555-0125"
+    - name: "Alice Williams"
+      relationship: "Friend"
+      phone: "+1-415-555-0126"
+
+employment:
+  status: EMPLOYED
+  industry: technology
+  current:
+    employer:
+      name: "Google Inc"
+      address:
+        city: "Mountain View"
+        state: CA
+    position: "Senior Software Engineer"
+    months_employed: 48
+
+financial:
+  credit_score: 750
+  annual_income: 185000
+  bankruptcy_flag: false
+  income_sources:
+    - salary
+    - investments
+    - rental
+  loan_history:
+    - id: "LOAN-001"
+      status: paid
+      amount: 25000
+      type: auto
+    - id: "LOAN-002"
+      status: paid
+      amount: 15000
+      type: personal

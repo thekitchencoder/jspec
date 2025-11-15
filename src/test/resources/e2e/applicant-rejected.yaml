@@ -1,0 +1,41 @@
+# Rejected Applicant - Should NOT MATCH due to multiple failures
+applicant:
+  age: 17  # FAIL: Too young (age-minimum)
+  address:
+    street: "456 Crypto Lane"
+    city: "Las Vegas"
+    state: NV  # FAIL: Not in approved states (residence-in-approved-states)
+    zipcode: "89101"
+  contact:
+    email: "invalid-email"  # FAIL: Invalid email format (email-format-valid)
+    phone: "+1-702-555-9999"
+  references:
+    - name: "Someone"
+      relationship: "Friend"
+      phone: "+1-702-555-1111"
+    # FAIL: Only 1 reference, need 3 (references-count)
+
+employment:
+  status: UNEMPLOYED  # FAIL: Not employed (employment-status)
+  industry: gambling  # FAIL: Excluded industry (no-excluded-industries)
+  current:
+    employer:
+      name: "Casino Corp"
+      address:
+        city: "Las Vegas"
+        state: NV
+    position: "Dealer"
+    months_employed: 6  # FAIL: Less than 12 months (employment-duration)
+
+financial:
+  credit_score: 580  # FAIL: Below 650 (credit-score-good)
+  annual_income: 35000  # FAIL: Below minimum (income-range)
+  bankruptcy_flag: true  # FAIL: Has bankruptcy (not-bankrupt)
+  income_sources:
+    - salary
+    # FAIL: Missing 'investments' (income-sources-diverse)
+  loan_history:
+    - id: "LOAN-099"
+      status: defaulted
+      amount: 5000
+      type: payday
