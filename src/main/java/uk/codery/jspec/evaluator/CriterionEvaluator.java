@@ -3,6 +3,7 @@ package uk.codery.jspec.evaluator;
 import lombok.extern.slf4j.Slf4j;
 import uk.codery.jspec.model.Criterion;
 import uk.codery.jspec.operator.OperatorHandler;
+import uk.codery.jspec.operator.OperatorRegistry;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationState;
 
@@ -83,10 +84,56 @@ public class CriterionEvaluator {
                 });
     }
 
+    /**
+     * Creates a CriterionEvaluator with built-in operators.
+     *
+     * <p>This constructor initializes the evaluator with the default set of 13
+     * MongoDB-style operators. Use this constructor for standard evaluation needs.
+     *
+     * <p>For custom operators, use {@link #CriterionEvaluator(OperatorRegistry)} instead.
+     */
     public CriterionEvaluator() {
         registerOperators();
+        log.debug("Created CriterionEvaluator with built-in operators");
     }
 
+    /**
+     * Creates a CriterionEvaluator with a custom operator registry.
+     *
+     * <p>This constructor allows you to provide custom operators or override built-in
+     * operators. The registry should contain all operators needed for evaluation.
+     *
+     * <h3>Example:</h3>
+     * <pre>{@code
+     * // Create registry with defaults and add custom operators
+     * OperatorRegistry registry = OperatorRegistry.withDefaults();
+     * registry.register("$length", (val, operand) -> {
+     *     return val instanceof String &&
+     *            ((String) val).length() == ((Number) operand).intValue();
+     * });
+     *
+     * // Create evaluator with custom registry
+     * CriterionEvaluator evaluator = new CriterionEvaluator(registry);
+     * }</pre>
+     *
+     * @param registry the operator registry to use for evaluation
+     * @throws IllegalArgumentException if registry is null
+     */
+    public CriterionEvaluator(OperatorRegistry registry) {
+        if (registry == null) {
+            throw new IllegalArgumentException("OperatorRegistry cannot be null");
+        }
+        this.operators.putAll(registry.getAll());
+        // Override collection and advanced operators with internal implementations
+        // that have access to internal methods like matchValue()
+        registerInternalOperators();
+        log.debug("Created CriterionEvaluator with custom registry ({} operators)", operators.size());
+    }
+
+    /**
+     * Registers all built-in operators.
+     * Called by the no-arg constructor for backward compatibility.
+     */
     private void registerOperators() {
         operators.put("$eq", Objects::equals);
         operators.put("$ne", (val, operand) -> !Objects.equals(val, operand));
@@ -94,6 +141,15 @@ public class CriterionEvaluator {
         operators.put("$gte", (val, operand) -> compare(val, operand) >= 0);
         operators.put("$lt", (val, operand) -> compare(val, operand) < 0);
         operators.put("$lte", (val, operand) -> compare(val, operand) <= 0);
+        registerInternalOperators();
+    }
+
+    /**
+     * Registers operators that require access to internal methods.
+     * These operators need access to matchValue() and other internal state.
+     * Called by both constructors to ensure proper operator implementations.
+     */
+    private void registerInternalOperators() {
         operators.put("$in", this::evaluateInOperator);
         operators.put("$nin", this::evaluateNotInOperator);
         operators.put("$exists", this::evaluateExistsOperator);
