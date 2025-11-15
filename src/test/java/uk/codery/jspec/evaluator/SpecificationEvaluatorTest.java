@@ -40,21 +40,21 @@ class SpecificationEvaluatorTest {
     // ========== Basic Specification Evaluation ==========
 
     @Test
-    void evaluate_withSingleRule_shouldReturnCorrectOutcome() {
+    void evaluate_withSingleCriterion_shouldReturnCorrectOutcome() {
         Criterion criterion = new Criterion("age-check", Map.of("age", Map.of("$gte", 18)));
         Specification spec = new Specification("simple-spec", List.of(criterion), List.of());
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
         assertThat(outcome.specificationId()).isEqualTo("simple-spec");
-        assertThat(outcome.ruleResults()).hasSize(1);
-        assertThat(outcome.ruleResults().get(0).state()).isEqualTo(EvaluationState.MATCHED);
-        assertThat(outcome.summary().totalRules()).isEqualTo(1);
-        assertThat(outcome.summary().matchedRules()).isEqualTo(1);
+        assertThat(outcome.evaluationResults()).hasSize(1);
+        assertThat(outcome.evaluationResults().getFirst().state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(outcome.summary().total()).isEqualTo(1);
+        assertThat(outcome.summary().matched()).isEqualTo(1);
     }
 
     @Test
-    void evaluate_withMultipleRules_shouldEvaluateAll() {
+    void evaluate_withMultipleCriteria_shouldEvaluateAll() {
         List<Criterion> criteria = List.of(
             new Criterion("age-check", Map.of("age", Map.of("$gte", 18))),
             new Criterion("name-check", Map.of("name", Map.of("$eq", "John Doe"))),
@@ -64,9 +64,9 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        assertThat(outcome.ruleResults()).hasSize(3);
-        assertThat(outcome.ruleResults()).allMatch(r -> r.state() == EvaluationState.MATCHED);
-        assertThat(outcome.summary().matchedRules()).isEqualTo(3);
+        assertThat(outcome.evaluationResults()).hasSize(3);
+        assertThat(outcome.evaluationResults()).allMatch(r -> r.state() == EvaluationState.MATCHED);
+        assertThat(outcome.summary().matched()).isEqualTo(3);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
     }
 
@@ -81,10 +81,10 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        assertThat(outcome.ruleResults()).hasSize(3);
-        assertThat(outcome.summary().matchedRules()).isEqualTo(1);
-        assertThat(outcome.summary().notMatchedRules()).isEqualTo(1);
-        assertThat(outcome.summary().undeterminedRules()).isEqualTo(1);
+        assertThat(outcome.evaluationResults()).hasSize(3);
+        assertThat(outcome.summary().matched()).isEqualTo(1);
+        assertThat(outcome.summary().notMatched()).isEqualTo(1);
+        assertThat(outcome.summary().undetermined()).isEqualTo(1);
         assertThat(outcome.summary().fullyDetermined()).isFalse();
     }
 
@@ -94,16 +94,16 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        assertThat(outcome.ruleResults()).isEmpty();
+        assertThat(outcome.evaluationResults()).isEmpty();
         assertThat(outcome.criteriaGroupResults()).isEmpty();
-        assertThat(outcome.summary().totalRules()).isEqualTo(0);
+        assertThat(outcome.summary().total()).isEqualTo(0);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
     }
 
     // ========== CriteriaGroup Tests with AND Junction ==========
 
     @Test
-    void ruleSet_withAND_allMatching_shouldMatch() {
+    void criteriaGroup_withAND_allMatching_shouldMatch() {
         List<Criterion> criteria = List.of(
             new Criterion("age-check", Map.of("age", Map.of("$gte", 18))),
             new Criterion("status-check", Map.of("status", Map.of("$eq", "ACTIVE")))
@@ -114,16 +114,16 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
         assertThat(outcome.criteriaGroupResults()).hasSize(1);
-        CriteriaGroupResult result = outcome.criteriaGroupResults().get(0);
+        CriteriaGroupResult result = outcome.criteriaGroupResults().getFirst();
         assertThat(result.id()).isEqualTo("and-set");
         assertThat(result.matched()).isTrue();
         assertThat(result.junction()).isEqualTo(Junction.AND);
-        assertThat(result.ruleResults()).hasSize(2);
-        assertThat(result.ruleResults()).allMatch(EvaluationResult::matched);
+        assertThat(result.evaluationResults()).hasSize(2);
+        assertThat(result.evaluationResults()).allMatch(EvaluationResult::matched);
     }
 
     @Test
-    void ruleSet_withAND_oneNotMatching_shouldNotMatch() {
+    void criteriaGroup_withAND_oneNotMatching_shouldNotMatch() {
         List<Criterion> criteria = List.of(
             new Criterion("age-check", Map.of("age", Map.of("$gte", 18))),
             new Criterion("status-check", Map.of("status", Map.of("$eq", "INACTIVE")))
@@ -133,12 +133,12 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        CriteriaGroupResult result = outcome.criteriaGroupResults().get(0);
+        CriteriaGroupResult result = outcome.criteriaGroupResults().getFirst();
         assertThat(result.matched()).isFalse();
     }
 
     @Test
-    void ruleSet_withAND_allNotMatching_shouldNotMatch() {
+    void criteriaGroup_withAND_allNotMatching_shouldNotMatch() {
         List<Criterion> criteria = List.of(
             new Criterion("age-check", Map.of("age", Map.of("$lt", 18))),
             new Criterion("status-check", Map.of("status", Map.of("$eq", "INACTIVE")))
@@ -148,14 +148,14 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        CriteriaGroupResult result = outcome.criteriaGroupResults().get(0);
+        CriteriaGroupResult result = outcome.criteriaGroupResults().getFirst();
         assertThat(result.matched()).isFalse();
     }
 
     // ========== CriteriaGroup Tests with OR Junction ==========
 
     @Test
-    void ruleSet_withOR_oneMatching_shouldMatch() {
+    void criteriaGroup_withOR_oneMatching_shouldMatch() {
         List<Criterion> criteria = List.of(
             new Criterion("age-check", Map.of("age", Map.of("$gte", 18))),
             new Criterion("status-check", Map.of("status", Map.of("$eq", "INACTIVE")))
@@ -165,14 +165,14 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        CriteriaGroupResult result = outcome.criteriaGroupResults().get(0);
+        CriteriaGroupResult result = outcome.criteriaGroupResults().getFirst();
         assertThat(result.id()).isEqualTo("or-set");
         assertThat(result.matched()).isTrue();
         assertThat(result.junction()).isEqualTo(Junction.OR);
     }
 
     @Test
-    void ruleSet_withOR_allMatching_shouldMatch() {
+    void criteriaGroup_withOR_allMatching_shouldMatch() {
         List<Criterion> criteria = List.of(
             new Criterion("age-check", Map.of("age", Map.of("$gte", 18))),
             new Criterion("status-check", Map.of("status", Map.of("$eq", "ACTIVE")))
@@ -182,12 +182,12 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        CriteriaGroupResult result = outcome.criteriaGroupResults().get(0);
+        CriteriaGroupResult result = outcome.criteriaGroupResults().getFirst();
         assertThat(result.matched()).isTrue();
     }
 
     @Test
-    void ruleSet_withOR_noneMatching_shouldNotMatch() {
+    void criteriaGroup_withOR_noneMatching_shouldNotMatch() {
         List<Criterion> criteria = List.of(
             new Criterion("age-check", Map.of("age", Map.of("$lt", 18))),
             new Criterion("status-check", Map.of("status", Map.of("$eq", "INACTIVE")))
@@ -197,14 +197,14 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        CriteriaGroupResult result = outcome.criteriaGroupResults().get(0);
+        CriteriaGroupResult result = outcome.criteriaGroupResults().getFirst();
         assertThat(result.matched()).isFalse();
     }
 
-    // ========== Multiple RuleSets ==========
+    // ========== Multiple CriteriaGroups ==========
 
     @Test
-    void evaluate_withMultipleRuleSets_shouldEvaluateAll() {
+    void evaluate_withMultipleCriteriaGroups_shouldEvaluateAll() {
         List<Criterion> criteria = List.of(
             new Criterion("r1", Map.of("age", Map.of("$gte", 18))),
             new Criterion("r2", Map.of("status", Map.of("$eq", "ACTIVE"))),
@@ -214,7 +214,7 @@ class SpecificationEvaluatorTest {
             new CriteriaGroup("and-set", Junction.AND, List.of(new Criterion("r1", Map.of()), new Criterion("r2", Map.of()))),
             new CriteriaGroup("or-set", Junction.OR, List.of(new Criterion("r2", Map.of()), new Criterion("r3", Map.of())))
         );
-        Specification spec = new Specification("multi-ruleset-spec", criteria, criteriaGroups);
+        Specification spec = new Specification("multi-criteria-spec", criteria, criteriaGroups);
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
@@ -223,7 +223,7 @@ class SpecificationEvaluatorTest {
     }
 
     @Test
-    void evaluate_withRuleSetsReferencingSameRules_shouldReuseResults() {
+    void evaluate_withCriteriaGroupsReferencingSameCriteria_shouldReuseResults() {
         List<Criterion> criteria = List.of(
             new Criterion("shared-criterion", Map.of("age", Map.of("$gte", 18))),
             new Criterion("other-criterion", Map.of("status", Map.of("$eq", "ACTIVE")))
@@ -236,15 +236,15 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        // Both rulesets should evaluate the same criteria
+        // Both criteriaGroups should evaluate the same criteria
         assertThat(outcome.criteriaGroupResults()).hasSize(2);
-        assertThat(outcome.ruleResults()).hasSize(2); // Rules evaluated once
+        assertThat(outcome.evaluationResults()).hasSize(2); // Criteria evaluated once
     }
 
-    // ========== Graceful Degradation in RuleSets ==========
+    // ========== Graceful Degradation in CriteriaGroups ==========
 
     @Test
-    void ruleSet_withUndeterminedRule_shouldStillEvaluate() {
+    void criteriaGroup_withUndeterminedCriterion_shouldStillEvaluate() {
         List<Criterion> criteria = List.of(
             new Criterion("determined", Map.of("age", Map.of("$gte", 18))),
             new Criterion("undetermined", Map.of("salary", Map.of("$gt", 50000)))
@@ -255,14 +255,14 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
         assertThat(outcome.criteriaGroupResults()).hasSize(1);
-        CriteriaGroupResult result = outcome.criteriaGroupResults().get(0);
+        CriteriaGroupResult result = outcome.criteriaGroupResults().getFirst();
         // AND requires all to match - undetermined criterion doesn't match
         assertThat(result.matched()).isFalse();
-        assertThat(result.ruleResults()).hasSize(2);
+        assertThat(result.evaluationResults()).hasSize(2);
     }
 
     @Test
-    void ruleSet_withUnknownOperator_shouldStillEvaluate() {
+    void criteriaGroup_withUnknownOperator_shouldStillEvaluate() {
         List<Criterion> criteria = List.of(
             new Criterion("good", Map.of("age", Map.of("$gte", 18))),
             new Criterion("bad", Map.of("age", Map.of("$unknown", 25)))
@@ -273,7 +273,7 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
         assertThat(outcome.criteriaGroupResults()).hasSize(1);
-        CriteriaGroupResult result = outcome.criteriaGroupResults().get(0);
+        CriteriaGroupResult result = outcome.criteriaGroupResults().getFirst();
         // OR requires at least one to match - "good" matches
         assertThat(result.matched()).isTrue();
     }
@@ -291,10 +291,10 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
         EvaluationSummary summary = outcome.summary();
-        assertThat(summary.totalRules()).isEqualTo(2);
-        assertThat(summary.matchedRules()).isEqualTo(2);
-        assertThat(summary.notMatchedRules()).isEqualTo(0);
-        assertThat(summary.undeterminedRules()).isEqualTo(0);
+        assertThat(summary.total()).isEqualTo(2);
+        assertThat(summary.matched()).isEqualTo(2);
+        assertThat(summary.notMatched()).isEqualTo(0);
+        assertThat(summary.undetermined()).isEqualTo(0);
         assertThat(summary.fullyDetermined()).isTrue();
     }
 
@@ -310,10 +310,10 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
         EvaluationSummary summary = outcome.summary();
-        assertThat(summary.totalRules()).isEqualTo(3);
-        assertThat(summary.matchedRules()).isEqualTo(1);
-        assertThat(summary.notMatchedRules()).isEqualTo(1);
-        assertThat(summary.undeterminedRules()).isEqualTo(1);
+        assertThat(summary.total()).isEqualTo(3);
+        assertThat(summary.matched()).isEqualTo(1);
+        assertThat(summary.notMatched()).isEqualTo(1);
+        assertThat(summary.undetermined()).isEqualTo(1);
         assertThat(summary.fullyDetermined()).isFalse();
     }
 
@@ -334,8 +334,8 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
         // All should evaluate successfully
-        assertThat(outcome.ruleResults()).hasSize(5);
-        assertThat(outcome.ruleResults()).allMatch(r -> r.state() == EvaluationState.MATCHED);
+        assertThat(outcome.evaluationResults()).hasSize(5);
+        assertThat(outcome.evaluationResults()).allMatch(r -> r.state() == EvaluationState.MATCHED);
     }
 
     // ========== Edge Cases ==========
@@ -350,13 +350,13 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(emptyDoc, spec);
 
-        assertThat(outcome.ruleResults()).hasSize(1);
-        assertThat(outcome.ruleResults().get(0).state()).isEqualTo(EvaluationState.UNDETERMINED);
-        assertThat(outcome.summary().undeterminedRules()).isEqualTo(1);
+        assertThat(outcome.evaluationResults()).hasSize(1);
+        assertThat(outcome.evaluationResults().getFirst().state()).isEqualTo(EvaluationState.UNDETERMINED);
+        assertThat(outcome.summary().undetermined()).isEqualTo(1);
     }
 
     @Test
-    void ruleSet_withSingleRule_shouldWork() {
+    void criteriaGroup_withSingleCriterion_shouldWork() {
         List<Criterion> criteria = List.of(
             new Criterion("only-criterion", Map.of("age", Map.of("$gte", 18)))
         );
@@ -365,13 +365,13 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        CriteriaGroupResult result = outcome.criteriaGroupResults().get(0);
+        CriteriaGroupResult result = outcome.criteriaGroupResults().getFirst();
         assertThat(result.matched()).isTrue();
-        assertThat(result.ruleResults()).hasSize(1);
+        assertThat(result.evaluationResults()).hasSize(1);
     }
 
     @Test
-    void ruleSet_withManyRules_shouldEvaluateAll() {
+    void criteriaGroup_withManyCriteria_shouldEvaluateAll() {
         List<Criterion> criteria = List.of(
             new Criterion("r1", Map.of("age", Map.of("$gte", 18))),
             new Criterion("r2", Map.of("age", Map.of("$lte", 65))),
@@ -385,13 +385,13 @@ class SpecificationEvaluatorTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
-        CriteriaGroupResult result = outcome.criteriaGroupResults().get(0);
+        CriteriaGroupResult result = outcome.criteriaGroupResults().getFirst();
         assertThat(result.matched()).isTrue();
-        assertThat(result.ruleResults()).hasSize(5);
+        assertThat(result.evaluationResults()).hasSize(5);
     }
 
     @Test
-    void evaluate_shouldPreserveRuleOrder() {
+    void evaluate_shouldPreserveCriterionOrder() {
         List<Criterion> criteria = List.of(
             new Criterion("first", Map.of("age", Map.of("$gte", 18))),
             new Criterion("second", Map.of("status", Map.of("$eq", "ACTIVE"))),
@@ -402,8 +402,8 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
 
         // Results should be present (order not guaranteed due to parallel streams)
-        assertThat(outcome.ruleResults()).hasSize(3);
-        assertThat(outcome.ruleResults())
+        assertThat(outcome.evaluationResults()).hasSize(3);
+        assertThat(outcome.evaluationResults())
             .extracting(EvaluationResult::id)
             .containsExactlyInAnyOrder("first", "second", "third");
     }

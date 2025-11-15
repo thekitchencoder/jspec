@@ -36,7 +36,7 @@ class TriStateEvaluationTest {
     @Test
     void matchedState_simpleEquality() {
         Criterion criterion = new Criterion("age-check", Map.of("age", Map.of("$eq", 25)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
         assertThat(result.matched()).isTrue();
@@ -48,7 +48,7 @@ class TriStateEvaluationTest {
     @Test
     void matchedState_complexOperator() {
         Criterion criterion = new Criterion("age-range", Map.of("age", Map.of("$gte", 18, "$lte", 30)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
         assertThat(result.matched()).isTrue();
@@ -58,7 +58,7 @@ class TriStateEvaluationTest {
     void matchedState_inOperator() {
         Criterion criterion = new Criterion("tag-check", Map.of("tags", Map.of("$in", List.of("admin", "moderator"))));
         Map<String, Object> doc = Map.of("tags", "admin");
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -68,7 +68,7 @@ class TriStateEvaluationTest {
     @Test
     void notMatchedState_simpleEquality() {
         Criterion criterion = new Criterion("age-check", Map.of("age", Map.of("$eq", 30)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
         assertThat(result.matched()).isFalse();
@@ -79,7 +79,7 @@ class TriStateEvaluationTest {
     @Test
     void notMatchedState_greaterThan() {
         Criterion criterion = new Criterion("age-check", Map.of("age", Map.of("$gt", 30)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
         assertThat(result.matched()).isFalse();
@@ -90,7 +90,7 @@ class TriStateEvaluationTest {
     @Test
     void undeterminedState_missingField() {
         Criterion criterion = new Criterion("salary-check", Map.of("salary", Map.of("$gt", 50000)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.matched()).isFalse();
@@ -104,7 +104,7 @@ class TriStateEvaluationTest {
         Map<String, Object> doc = Map.of("name", "John", "age", Map.of());
         // age is an empty map, but we're querying age.value which doesn't exist
         Criterion criterion = new Criterion("nested-check", Map.of("age", Map.of("value", Map.of("$eq", 25))));
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
     }
@@ -114,7 +114,7 @@ class TriStateEvaluationTest {
     @Test
     void undeterminedState_unknownOperator() {
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$unknown", 18)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.matched()).isFalse();
@@ -126,7 +126,7 @@ class TriStateEvaluationTest {
     @Test
     void undeterminedState_multipleUnknownOperators() {
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$fake", 18, "$invalid", 20)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.failureReason()).containsAnyOf("$fake", "$invalid");
@@ -137,7 +137,7 @@ class TriStateEvaluationTest {
     @Test
     void undeterminedState_typeMismatch_inOperatorExpectsList() {
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$in", "not-a-list")));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         // Type mismatch is logged but treated as NOT_MATCHED, not UNDETERMINED
         // This is by design - the junction returns false gracefully
@@ -148,7 +148,7 @@ class TriStateEvaluationTest {
     @Test
     void undeterminedState_typeMismatch_existsOperatorExpectsBoolean() {
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$exists", "yes")));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         // Type mismatch is logged but treated as NOT_MATCHED
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -159,7 +159,7 @@ class TriStateEvaluationTest {
     @Test
     void undeterminedState_invalidRegexPattern() {
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$regex", "[invalid")));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         // Invalid regex is logged but treated as NOT_MATCHED
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -169,15 +169,15 @@ class TriStateEvaluationTest {
     @Test
     void matchedState_validRegexPattern() {
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$regex", "John.*")));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
 
-    // ========== Graceful Degradation - Multiple Rules ==========
+    // ========== Graceful Degradation - Multiple Criteria ==========
 
     @Test
-    void gracefulDegradation_oneRuleUndetermined_othersEvaluate() {
+    void gracefulDegradation_oneCriterionUndetermined_othersEvaluate() {
         List<Criterion> criteria = List.of(
                 new Criterion("good1", Map.of("age", Map.of("$eq", 25))),
                 new Criterion("bad", Map.of("age", Map.of("$unknown", 18))),
@@ -189,30 +189,30 @@ class TriStateEvaluationTest {
         EvaluationOutcome outcome = specEvaluator.evaluate(validDocument, spec);
 
         // All 3 criteria should have results
-        assertThat(outcome.ruleResults()).hasSize(3);
+        assertThat(outcome.evaluationResults()).hasSize(3);
 
         // Check individual states
-        EvaluationResult good1 = outcome.ruleResults().stream()
+        EvaluationResult good1 = outcome.evaluationResults().stream()
                 .filter(r -> r.id().equals("good1")).findFirst().orElseThrow();
         assertThat(good1.state()).isEqualTo(EvaluationState.MATCHED);
 
-        EvaluationResult bad = outcome.ruleResults().stream()
+        EvaluationResult bad = outcome.evaluationResults().stream()
                 .filter(r -> r.id().equals("bad")).findFirst().orElseThrow();
         assertThat(bad.state()).isEqualTo(EvaluationState.UNDETERMINED);
 
-        EvaluationResult good2 = outcome.ruleResults().stream()
+        EvaluationResult good2 = outcome.evaluationResults().stream()
                 .filter(r -> r.id().equals("good2")).findFirst().orElseThrow();
         assertThat(good2.state()).isEqualTo(EvaluationState.MATCHED);
 
         // Check summary
-        assertThat(outcome.summary().totalRules()).isEqualTo(3);
-        assertThat(outcome.summary().matchedRules()).isEqualTo(2);
-        assertThat(outcome.summary().undeterminedRules()).isEqualTo(1);
+        assertThat(outcome.summary().total()).isEqualTo(3);
+        assertThat(outcome.summary().matched()).isEqualTo(2);
+        assertThat(outcome.summary().undetermined()).isEqualTo(1);
         assertThat(outcome.summary().fullyDetermined()).isFalse();
     }
 
     @Test
-    void gracefulDegradation_allRulesDetermined() {
+    void gracefulDegradation_allCriteriaDetermined() {
         List<Criterion> criteria = List.of(
                 new Criterion("match", Map.of("age", Map.of("$eq", 25))),
                 new Criterion("no-match", Map.of("age", Map.of("$eq", 30)))
@@ -222,10 +222,10 @@ class TriStateEvaluationTest {
         SpecificationEvaluator specEvaluator = new SpecificationEvaluator();
         EvaluationOutcome outcome = specEvaluator.evaluate(validDocument, spec);
 
-        assertThat(outcome.summary().totalRules()).isEqualTo(2);
-        assertThat(outcome.summary().matchedRules()).isEqualTo(1);
-        assertThat(outcome.summary().notMatchedRules()).isEqualTo(1);
-        assertThat(outcome.summary().undeterminedRules()).isEqualTo(0);
+        assertThat(outcome.summary().total()).isEqualTo(2);
+        assertThat(outcome.summary().matched()).isEqualTo(1);
+        assertThat(outcome.summary().notMatched()).isEqualTo(1);
+        assertThat(outcome.summary().undetermined()).isEqualTo(0);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
     }
 
@@ -235,7 +235,7 @@ class TriStateEvaluationTest {
     void edgeCase_emptyDocument() {
         Map<String, Object> emptyDoc = Map.of();
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 25)));
-        EvaluationResult result = evaluator.evaluateRule(emptyDoc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(emptyDoc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("age");
@@ -247,7 +247,7 @@ class TriStateEvaluationTest {
         SpecificationEvaluator specEvaluator = new SpecificationEvaluator();
         EvaluationOutcome outcome = specEvaluator.evaluate(validDocument, spec);
 
-        assertThat(outcome.summary().totalRules()).isEqualTo(0);
+        assertThat(outcome.summary().total()).isEqualTo(0);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
     }
 
@@ -255,7 +255,7 @@ class TriStateEvaluationTest {
     void edgeCase_nestedMissingData() {
         Map<String, Object> doc = Map.of("user", Map.of("name", "John"));
         Criterion criterion = new Criterion("test", Map.of("user", Map.of("address", Map.of("city", Map.of("$eq", "NYC")))));
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("user.address");
@@ -266,7 +266,7 @@ class TriStateEvaluationTest {
     @Test
     void operator_size_withValidList() {
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 2)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -274,7 +274,7 @@ class TriStateEvaluationTest {
     @Test
     void operator_size_withWrongSize() {
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 5)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -282,7 +282,7 @@ class TriStateEvaluationTest {
     @Test
     void operator_exists_true() {
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$exists", true)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -290,7 +290,7 @@ class TriStateEvaluationTest {
     @Test
     void operator_exists_false() {
         Criterion criterion = new Criterion("test", Map.of("missingField", Map.of("$exists", false)));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -298,7 +298,7 @@ class TriStateEvaluationTest {
     @Test
     void operator_all_matches() {
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin", "user"))));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -306,7 +306,7 @@ class TriStateEvaluationTest {
     @Test
     void operator_all_doesNotMatch() {
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin", "superuser"))));
-        EvaluationResult result = evaluator.evaluateRule(validDocument, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }

@@ -25,31 +25,31 @@ public record SpecificationEvaluator(CriterionEvaluator evaluator) {
         log.info("Starting evaluation of specification '{}'", specification.id());
 
         // FIX: Use this.evaluator instead of creating new instance
-        Map<String, EvaluationResult> ruleResults =
+        Map<String, EvaluationResult> criteriaResultMap =
                 specification.criteria().parallelStream()
-                        .map(rule -> this.evaluator.evaluateRule(doc, rule))
+                        .map(criterion -> this.evaluator.evaluateCriterion(doc, criterion))
                         .collect(Collectors.toMap(result -> result.criterion().id(), Function.identity()));
 
-        log.debug("Evaluated {} criteria for specification '{}'", ruleResults.size(), specification.id());
+        log.debug("Evaluated {} criteria for specification '{}'", criteriaResultMap.size(), specification.id());
 
-        List<CriteriaGroupResult> results = specification.criteriaGroups().parallelStream().map(ruleSet -> {
-            List<EvaluationResult> ruleSetResults = ruleSet.criteria().parallelStream()
-                    .map(rule -> ruleResults.getOrDefault(rule.id(), this.evaluator.evaluateRule(doc, rule)))
+        List<CriteriaGroupResult> results = specification.criteriaGroups().parallelStream().map(criteriaGroup -> {
+            List<EvaluationResult> criteriaGroupResults = criteriaGroup.criteria().parallelStream()
+                    .map(criterion -> criteriaResultMap.getOrDefault(criterion.id(), this.evaluator.evaluateCriterion(doc, criterion)))
                     .toList();
 
-            boolean match = (Junction.AND == ruleSet.junction())
-                    ? ruleSetResults.stream().allMatch(EvaluationResult::matched)
-                    : ruleSetResults.stream().anyMatch(EvaluationResult::matched);
-            return new CriteriaGroupResult(ruleSet.id(), ruleSet.junction(), ruleSetResults, match);
+            boolean match = (Junction.AND == criteriaGroup.junction())
+                    ? criteriaGroupResults.stream().allMatch(EvaluationResult::matched)
+                    : criteriaGroupResults.stream().anyMatch(EvaluationResult::matched);
+            return new CriteriaGroupResult(criteriaGroup.id(), criteriaGroup.junction(), criteriaGroupResults, match);
         }).toList();
 
         // Create summary
-        EvaluationSummary summary = EvaluationSummary.from(ruleResults.values());
+        EvaluationSummary summary = EvaluationSummary.from(criteriaResultMap.values());
 
         log.info("Completed evaluation of specification '{}' - Total: {}, Matched: {}, Not Matched: {}, Undetermined: {}, Fully Determined: {}",
-                   specification.id(), summary.totalRules(), summary.matchedRules(),
-                   summary.notMatchedRules(), summary.undeterminedRules(), summary.fullyDetermined());
+                   specification.id(), summary.total(), summary.matched(),
+                   summary.notMatched(), summary.undetermined(), summary.fullyDetermined());
 
-        return new EvaluationOutcome(specification.id(), new ArrayList<>(ruleResults.values()), results, summary);
+        return new EvaluationOutcome(specification.id(), new ArrayList<>(criteriaResultMap.values()), results, summary);
     }
 }

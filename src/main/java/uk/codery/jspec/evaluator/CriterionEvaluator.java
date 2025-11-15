@@ -72,7 +72,7 @@ public class CriterionEvaluator {
         }
     }
 
-    public EvaluationResult evaluateRule(Object doc, Criterion criterion) {
+    public EvaluationResult evaluateCriterion(Object doc, Criterion criterion) {
         log.debug("Evaluating criterion '{}' against document", criterion.id());
 
         return Optional.of(criterion)

@@ -31,7 +31,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John", "age", 25);
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$exists", true)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -41,7 +41,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$exists", true)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Field doesn't exist, but we're checking if it exists=true
         // Missing field becomes null in evaluation
@@ -53,7 +53,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$exists", false)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Field doesn't exist, checking exists=false should match
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -64,7 +64,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John", "age", 25);
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$exists", false)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -74,7 +74,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$exists", "yes")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Type mismatch logged as warning
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -85,7 +85,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("user", Map.of("profile", Map.of("email", "test@example.com")));
         Criterion criterion = new Criterion("test", Map.of("user", Map.of("profile", Map.of("email", Map.of("$exists", true)))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -95,7 +95,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "unimportant");
         Criterion criterion = new Criterion("test", Map.of("missing", Map.of("$exists", true)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Missing field returns null from navigation
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -108,7 +108,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$type", "string")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -118,7 +118,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$type", "number")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -128,7 +128,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("price", 19.99);
         Criterion criterion = new Criterion("test", Map.of("price", Map.of("$type", "number")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -138,7 +138,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("active", true);
         Criterion criterion = new Criterion("test", Map.of("active", Map.of("$type", "boolean")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -148,7 +148,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$type", "array")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -158,7 +158,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("user", Map.of("name", "John"));
         Criterion criterion = new Criterion("test", Map.of("user", Map.of("$type", "object")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -168,7 +168,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$type", "string")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -178,7 +178,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$type", "number")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("age");
@@ -189,7 +189,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$type", "String")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Type is lowercase "string", not "String"
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -202,7 +202,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("email", "test@example.com");
         Criterion criterion = new Criterion("test", Map.of("email", Map.of("$regex", ".*@example\\.com")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -212,7 +212,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("email", "test@example.com");
         Criterion criterion = new Criterion("test", Map.of("email", Map.of("$regex", ".*@gmail\\.com")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -222,7 +222,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John Doe");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$regex", "John.*")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -232,7 +232,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "john doe");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$regex", "John.*")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -242,7 +242,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("code", "ABC123");
         Criterion criterion = new Criterion("test", Map.of("code", Map.of("$regex", ".*\\d+$")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -252,7 +252,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$regex", "^John$")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -262,7 +262,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$regex", "[invalid")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Invalid regex logged as warning, returns NOT_MATCHED
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -273,7 +273,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$regex", 123)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Type mismatch logged as warning
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -284,7 +284,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("code", 123);
         Criterion criterion = new Criterion("test", Map.of("code", Map.of("$regex", "\\d+")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Number converts to string via String.valueOf()
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -295,7 +295,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("description", "This is a test description");
         Criterion criterion = new Criterion("test", Map.of("description", Map.of("$regex", "test")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // find() matches substring
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -306,7 +306,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("name", "");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$regex", "^$")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -323,7 +323,7 @@ class AdvancedOperatorsTest {
             Map.of("age", Map.of("$gte", 30))
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -338,7 +338,7 @@ class AdvancedOperatorsTest {
             Map.of("age", Map.of("$gte", 30))
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -353,7 +353,7 @@ class AdvancedOperatorsTest {
             Map.of("age", Map.of("$gte", 30), "active", Map.of("$eq", false))
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -365,7 +365,7 @@ class AdvancedOperatorsTest {
             Map.of("age", Map.of("$gte", 30))
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -377,7 +377,7 @@ class AdvancedOperatorsTest {
             Map.of("name", Map.of("$eq", "Alice"))
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Value is not a list
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -388,7 +388,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("users", List.of("Alice", "Bob"));
         Criterion criterion = new Criterion("test", Map.of("users", Map.of("$elemMatch", "Alice")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Operand is not a Map
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -405,7 +405,7 @@ class AdvancedOperatorsTest {
             Map.of("value", Map.of("$eq", 20))
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -420,7 +420,7 @@ class AdvancedOperatorsTest {
             Map.of("tags", Map.of("$in", List.of("sale", "clearance")))
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -432,7 +432,7 @@ class AdvancedOperatorsTest {
             Map.of("age", Map.of("$gte", 30))
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("users");
@@ -448,7 +448,7 @@ class AdvancedOperatorsTest {
             "$type", "string"
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -461,7 +461,7 @@ class AdvancedOperatorsTest {
             "$regex", ".*@example\\.com"
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -475,7 +475,7 @@ class AdvancedOperatorsTest {
             "$regex", ".*@gmail\\.com"
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // All operators must match, regex fails
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -488,7 +488,7 @@ class AdvancedOperatorsTest {
         Map<String, Object> doc = Map.of("path", "/api/v1/users");
         Criterion criterion = new Criterion("test", Map.of("path", Map.of("$regex", "^/api/.*")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -503,7 +503,7 @@ class AdvancedOperatorsTest {
             Map.of("priority", Map.of("$eq", 1))
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -518,7 +518,7 @@ class AdvancedOperatorsTest {
             Map.of("priority", Map.of("$eq", 2))
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }

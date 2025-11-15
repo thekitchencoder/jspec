@@ -35,7 +35,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -51,7 +51,7 @@ class CriterionEvaluatorTest {
         );
         Criterion criterion = new Criterion("test", Map.of("user", Map.of("profile", Map.of("age", Map.of("$eq", 25)))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -81,7 +81,7 @@ class CriterionEvaluatorTest {
             )
         ));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -91,7 +91,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("user", Map.of("name", "John"));
         Criterion criterion = new Criterion("test", Map.of("user", Map.of("profile", Map.of("age", Map.of("$eq", 25)))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("user.profile");
@@ -110,7 +110,7 @@ class CriterionEvaluatorTest {
             "status", Map.of("$eq", "ACTIVE")
         ));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -128,7 +128,7 @@ class CriterionEvaluatorTest {
             "status", Map.of("$eq", "ACTIVE")
         ));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -140,7 +140,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("name", "John"));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -150,7 +150,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("name", "Jane"));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -160,7 +160,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", 25));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -170,7 +170,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("active", true);
         Criterion criterion = new Criterion("test", Map.of("active", true));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -182,7 +182,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", List.of("admin", "user")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -192,7 +192,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", List.of("admin", "moderator")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -202,7 +202,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", List.of("admin")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -212,7 +212,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("tags", "admin");
         Criterion criterion = new Criterion("test", Map.of("tags", List.of("admin")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -228,7 +228,7 @@ class CriterionEvaluatorTest {
             Map.of("id", 2)
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -240,7 +240,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$unknown", 18)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.failureReason()).contains("Unknown junction");
@@ -252,7 +252,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$fake", 18, "$invalid", 20)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.failureReason()).containsAnyOf("$fake", "$invalid");
@@ -264,7 +264,7 @@ class CriterionEvaluatorTest {
         // Has both valid ($eq) and invalid ($fake) operators
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 25, "$fake", 18)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Unknown junction fails first
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
@@ -277,7 +277,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("age");
@@ -289,7 +289,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("user", Map.of("name", "John"));
         Criterion criterion = new Criterion("test", Map.of("user", Map.of("profile", Map.of("age", Map.of("$eq", 25)))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("user.profile");
@@ -303,7 +303,7 @@ class CriterionEvaluatorTest {
             "status", Map.of("$eq", "ACTIVE")
         ));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         // At least one missing path should be tracked
@@ -317,7 +317,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of();
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("age");
@@ -328,7 +328,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of();
         Criterion criterion = new Criterion("test", Map.of());
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Empty query matches empty document
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -349,7 +349,7 @@ class CriterionEvaluatorTest {
             "tags", Map.of("$all", List.of("admin"))
         ));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -373,7 +373,7 @@ class CriterionEvaluatorTest {
             )
         ));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -385,7 +385,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("name", "");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$eq", "")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -395,7 +395,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("count", 0);
         Criterion criterion = new Criterion("test", Map.of("count", Map.of("$eq", 0)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -405,7 +405,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("balance", -100);
         Criterion criterion = new Criterion("test", Map.of("balance", Map.of("$lt", 0)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -415,7 +415,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("tags", List.of());
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 0)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -426,7 +426,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("description", longString);
         Criterion criterion = new Criterion("test", Map.of("description", Map.of("$eq", longString)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -436,7 +436,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("text", "Hello!@#$%^&*()");
         Criterion criterion = new Criterion("test", Map.of("text", Map.of("$eq", "Hello!@#$%^&*()")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -446,7 +446,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("name", "José");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$eq", "José")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -458,7 +458,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test-criterion", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.criterion()).isEqualTo(criterion);
         assertThat(result.id()).isEqualTo("test-criterion");
@@ -474,7 +474,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test-criterion", Map.of("age", Map.of("$eq", 30)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.criterion()).isEqualTo(criterion);
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -488,7 +488,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test-criterion", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.criterion()).isEqualTo(criterion);
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
@@ -503,7 +503,7 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test-criterion", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         String reason = result.reason();
         assertThat(reason).isNotNull();

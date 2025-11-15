@@ -30,7 +30,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
         assertThat(result.matched()).isTrue();
@@ -41,7 +41,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 30)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
         assertThat(result.matched()).isFalse();
@@ -52,7 +52,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$eq", "John")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -62,7 +62,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("active", true);
         Criterion criterion = new Criterion("test", Map.of("active", Map.of("$eq", true)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -72,7 +72,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("price", 19.99);
         Criterion criterion = new Criterion("test", Map.of("price", Map.of("$eq", 19.99)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -82,7 +82,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$eq", "john")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -94,7 +94,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$ne", 30)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -104,7 +104,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$ne", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -114,7 +114,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$ne", "25")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -124,7 +124,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("active", true);
         Criterion criterion = new Criterion("test", Map.of("active", Map.of("$ne", false)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -136,7 +136,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 30);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gt", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -146,7 +146,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 20);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gt", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -156,7 +156,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gt", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -166,7 +166,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("price", 29.99);
         Criterion criterion = new Criterion("test", Map.of("price", Map.of("$gt", 19.99)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -176,7 +176,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 30);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gt", 25.5)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -186,7 +186,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("name", "Bob");
         Criterion criterion = new Criterion("test", Map.of("name", Map.of("$gt", "Alice")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // String comparison uses Comparable
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -197,7 +197,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("value", Map.of("nested", "value"));
         Criterion criterion = new Criterion("test", Map.of("value", Map.of("$gt", 10)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Map is not comparable to Number, returns 0 from compare()
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -210,7 +210,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 30);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gte", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -220,7 +220,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gte", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -230,7 +230,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 20);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gte", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -240,7 +240,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("price", 19.99);
         Criterion criterion = new Criterion("test", Map.of("price", Map.of("$gte", 19.99)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -252,7 +252,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 20);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$lt", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -262,7 +262,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 30);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$lt", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -272,7 +272,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$lt", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -282,7 +282,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("temperature", -5);
         Criterion criterion = new Criterion("test", Map.of("temperature", Map.of("$lt", 0)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -294,7 +294,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 20);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$lte", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -304,7 +304,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$lte", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -314,7 +314,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 30);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$lte", 25)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -326,7 +326,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gte", 18, "$lte", 65)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -336,7 +336,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 70);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gte", 18, "$lte", 65)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -346,7 +346,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gt", 18, "$lt", 65)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -356,7 +356,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("age", 18);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gt", 18, "$lt", 65)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -368,7 +368,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gt", 18)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("age");
@@ -379,7 +379,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("value", 999999999L);
         Criterion criterion = new Criterion("test", Map.of("value", Map.of("$gt", 1000000)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -389,7 +389,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("value", 0);
         Criterion criterion = new Criterion("test", Map.of("value", Map.of("$eq", 0)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -399,7 +399,7 @@ class ComparisonOperatorsTest {
         Map<String, Object> doc = Map.of("price", 10.001);
         Criterion criterion = new Criterion("test", Map.of("price", Map.of("$gt", 10.0)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }

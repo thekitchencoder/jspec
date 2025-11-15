@@ -10,7 +10,7 @@ import java.util.List;
  */
 public record EvaluationOutcome(
         String specificationId,
-        List<EvaluationResult> ruleResults,
+        List<EvaluationResult> evaluationResults,
         List<CriteriaGroupResult> criteriaGroupResults,
         EvaluationSummary summary) {
 }

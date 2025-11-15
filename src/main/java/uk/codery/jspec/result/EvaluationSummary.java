@@ -11,20 +11,20 @@ package uk.codery.jspec.result;
  * assess the confidence level of the evaluation result.
  */
 public record EvaluationSummary(
-        int totalRules,
-        int matchedRules,
-        int notMatchedRules,
-        int undeterminedRules,
+        int total,
+        int matched,
+        int notMatched,
+        int undetermined,
         boolean fullyDetermined) {
 
     /**
      * Validates that the sum of matched, not matched, and undetermined criteria equals total criteria.
      */
     public EvaluationSummary {
-        if (matchedRules + notMatchedRules + undeterminedRules != totalRules) {
+        if (matched + notMatched + undetermined != total) {
             throw new IllegalArgumentException(
                     "Sum of matched (%d), notMatched (%d), and undetermined (%d) must equal total (%d)"
-                            .formatted(matchedRules, notMatchedRules, undeterminedRules, totalRules));
+                            .formatted(matched, notMatched, undetermined, total));
         }
     }
 

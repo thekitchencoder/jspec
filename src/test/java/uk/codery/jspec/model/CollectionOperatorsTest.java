@@ -31,7 +31,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("status", "ACTIVE");
         Criterion criterion = new Criterion("test", Map.of("status", Map.of("$in", List.of("ACTIVE", "PENDING"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -41,7 +41,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("status", "INACTIVE");
         Criterion criterion = new Criterion("test", Map.of("status", Map.of("$in", List.of("ACTIVE", "PENDING"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -51,7 +51,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$in", List.of(18, 25, 30, 40))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -61,7 +61,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("status", "ACTIVE");
         Criterion criterion = new Criterion("test", Map.of("status", Map.of("$in", List.of("ACTIVE"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -71,7 +71,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("status", "ACTIVE");
         Criterion criterion = new Criterion("test", Map.of("status", Map.of("$in", List.of())));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -81,7 +81,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("status", "ACTIVE");
         Criterion criterion = new Criterion("test", Map.of("status", Map.of("$in", "ACTIVE")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Type mismatch logged as warning, returns NOT_MATCHED
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -92,7 +92,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("value", 42);
         Criterion criterion = new Criterion("test", Map.of("value", Map.of("$in", List.of("42", 42, true))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -103,7 +103,7 @@ class CollectionOperatorsTest {
         // Querying missing field
         Criterion criterion = new Criterion("test", Map.of("missing", Map.of("$in", List.of("", "value"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Missing field becomes UNDETERMINED
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
@@ -116,7 +116,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("status", "INACTIVE");
         Criterion criterion = new Criterion("test", Map.of("status", Map.of("$nin", List.of("ACTIVE", "PENDING"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -126,7 +126,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("status", "ACTIVE");
         Criterion criterion = new Criterion("test", Map.of("status", Map.of("$nin", List.of("ACTIVE", "PENDING"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -136,7 +136,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("status", "ACTIVE");
         Criterion criterion = new Criterion("test", Map.of("status", Map.of("$nin", List.of())));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Not in empty list means matches (everything is not in empty list)
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -147,7 +147,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("age", 35);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$nin", List.of(18, 25, 30))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -157,7 +157,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("status", "INACTIVE");
         Criterion criterion = new Criterion("test", Map.of("status", Map.of("$nin", "ACTIVE")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Type mismatch logged as warning, returns NOT_MATCHED
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -170,7 +170,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user", "verified"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin", "user"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -180,7 +180,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin", "verified"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -190,7 +190,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin", "user"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -200,7 +200,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of())));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Empty list means all elements are present (vacuous truth)
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -211,7 +211,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of());
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -221,7 +221,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -231,7 +231,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", "admin");
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Value is not a list
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -242,7 +242,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", "admin")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Operand is not a list
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -253,7 +253,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("admin", "admin"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // containsAll should handle duplicates correctly
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -264,7 +264,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("numbers", List.of(1, 2, 3, 4, 5));
         Criterion criterion = new Criterion("test", Map.of("numbers", Map.of("$all", List.of(2, 4))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -276,7 +276,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 2)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -286,7 +286,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 3)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -296,7 +296,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of());
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 0)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -306,7 +306,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", "single-value");
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 1)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Value is not a list
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -317,7 +317,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", "2")));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Operand is not a number
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -329,7 +329,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("numbers", largeList);
         Criterion criterion = new Criterion("test", Map.of("numbers", Map.of("$size", 10)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -339,7 +339,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 2.0)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Double 2.0 should convert to int 2
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -350,7 +350,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", -1)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // List can never have negative size
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -369,7 +369,7 @@ class CollectionOperatorsTest {
             "tags", Map.of("$size", 2)
         ));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -383,7 +383,7 @@ class CollectionOperatorsTest {
             "$size", 3
         )));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -395,7 +395,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("name", "John");
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 2)));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("tags");
@@ -406,7 +406,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("nested", Map.of("status", "ACTIVE"));
         Criterion criterion = new Criterion("test", Map.of("nested", Map.of("status", Map.of("$in", List.of("ACTIVE", "PENDING")))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -416,7 +416,7 @@ class CollectionOperatorsTest {
         Map<String, Object> doc = Map.of("tags", List.of("user", "admin", "verified"));
         Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$all", List.of("verified", "admin"))));
 
-        EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
         // Order shouldn't matter for $all
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);

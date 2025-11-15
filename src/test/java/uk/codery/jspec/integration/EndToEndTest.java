@@ -79,9 +79,9 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(citizen, spec);
 
-        assertThat(outcome.summary().matchedRules()).isEqualTo(4);
+        assertThat(outcome.summary().matched()).isEqualTo(4);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
-        assertThat(outcome.criteriaGroupResults().get(0).matched()).isTrue();
+        assertThat(outcome.criteriaGroupResults().getFirst().matched()).isTrue();
     }
 
     @Test
@@ -129,9 +129,9 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(citizen, spec);
 
-        assertThat(outcome.summary().matchedRules()).isEqualTo(3);
-        assertThat(outcome.summary().notMatchedRules()).isEqualTo(1);
-        assertThat(outcome.criteriaGroupResults().get(0).matched()).isFalse();
+        assertThat(outcome.summary().matched()).isEqualTo(3);
+        assertThat(outcome.summary().notMatched()).isEqualTo(1);
+        assertThat(outcome.criteriaGroupResults().getFirst().matched()).isFalse();
     }
 
     @Test
@@ -167,8 +167,8 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(citizen, spec);
 
-        assertThat(outcome.summary().matchedRules()).isEqualTo(1);
-        assertThat(outcome.summary().undeterminedRules()).isEqualTo(2);
+        assertThat(outcome.summary().matched()).isEqualTo(1);
+        assertThat(outcome.summary().undetermined()).isEqualTo(2);
         assertThat(outcome.summary().fullyDetermined()).isFalse();
     }
 
@@ -204,7 +204,7 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(user, spec);
 
-        assertThat(outcome.criteriaGroupResults().get(0).matched()).isTrue();
+        assertThat(outcome.criteriaGroupResults().getFirst().matched()).isTrue();
     }
 
     @Test
@@ -294,7 +294,7 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(order, spec);
 
-        assertThat(outcome.criteriaGroupResults().get(0).matched()).isTrue();
+        assertThat(outcome.criteriaGroupResults().getFirst().matched()).isTrue();
     }
 
     // ========== Content Moderation Scenario ==========
@@ -345,8 +345,8 @@ class EndToEndTest {
         EvaluationOutcome outcome = evaluator.evaluate(post, spec);
 
         // Should match because multiple flags are triggered
-        assertThat(outcome.criteriaGroupResults().get(0).matched()).isTrue();
-        assertThat(outcome.summary().matchedRules()).isGreaterThan(1);
+        assertThat(outcome.criteriaGroupResults().getFirst().matched()).isTrue();
+        assertThat(outcome.summary().matched()).isGreaterThan(1);
     }
 
     // ========== Complex Nested Document Scenario ==========
@@ -416,9 +416,9 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(application, spec);
 
-        assertThat(outcome.summary().matchedRules()).isEqualTo(6);
+        assertThat(outcome.summary().matched()).isEqualTo(6);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
-        assertThat(outcome.criteriaGroupResults().get(0).matched()).isTrue();
+        assertThat(outcome.criteriaGroupResults().getFirst().matched()).isTrue();
     }
 
     // ========== Mixed Success/Failure Scenario ==========
@@ -443,17 +443,17 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(data, spec);
 
-        assertThat(outcome.summary().totalRules()).isEqualTo(5);
-        assertThat(outcome.summary().matchedRules()).isEqualTo(3);
-        assertThat(outcome.summary().notMatchedRules()).isEqualTo(1);
-        assertThat(outcome.summary().undeterminedRules()).isEqualTo(1);
+        assertThat(outcome.summary().total()).isEqualTo(5);
+        assertThat(outcome.summary().matched()).isEqualTo(3);
+        assertThat(outcome.summary().notMatched()).isEqualTo(1);
+        assertThat(outcome.summary().undetermined()).isEqualTo(1);
         assertThat(outcome.summary().fullyDetermined()).isFalse();
     }
 
-    // ========== Performance Test with Many Rules ==========
+    // ========== Performance Test with Many Criteria ==========
 
     @Test
-    void performance_withManyRules_shouldEvaluateEfficiently() {
+    void performance_withManyCriteria_shouldEvaluateEfficiently() {
         Map<String, Object> doc = Map.of(
             "value", 50,
             "status", "ACTIVE",
@@ -488,9 +488,9 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(doc, spec);
 
-        assertThat(outcome.ruleResults()).hasSize(20);
+        assertThat(outcome.evaluationResults()).hasSize(20);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
         // Most should match given the document structure
-        assertThat(outcome.summary().matchedRules()).isGreaterThan(15);
+        assertThat(outcome.summary().matched()).isGreaterThan(15);
     }
 }
