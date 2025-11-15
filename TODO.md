@@ -21,16 +21,16 @@
 ## 📋 Priority 1: Foundation (CRITICAL)
 
 ### Testing (Week 1)
-- [ ] Unit tests for all 13 operators in RuleEvaluator
+- [ ] Unit tests for all 13 junctions in CriterionEvaluator
 - [ ] Unit tests for SpecificationEvaluator (parallel evaluation, result caching)
 - [ ] Integration tests for end-to-end scenarios
 - [ ] Edge case testing (nulls, type mismatches, deep nesting)
 
 ### Error Handling - Graceful Degradation (Week 1)
-**Contract:** Rules never fail hard - return MATCHED/NOT_MATCHED/UNDETERMINED
+**Contract:** Criteria never fail hard - return MATCHED/NOT_MATCHED/UNDETERMINED
 - [ ] Add `EvaluationState` enum (MATCHED / NOT_MATCHED / UNDETERMINED)
 - [ ] Update `EvaluationResult` with state + failureReason
-- [ ] Handle unknown operators → UNDETERMINED + warn log (RuleEvaluator.java:194)
+- [ ] Handle unknown junctions → UNDETERMINED + warn log (CriterionEvaluator.java:194)
 - [ ] Handle type mismatches → UNDETERMINED + warn log
 - [ ] Handle invalid regex patterns → UNDETERMINED + warn log
 - [ ] Add SLF4J logging (replace System.err.println)
@@ -41,16 +41,16 @@
 
 ## 📋 Priority 2: Extensibility (HIGH)
 
-### Public API for Custom Operators (Week 2)
-- [ ] Extract `OperatorHandler` interface to public API
-- [ ] Create `OperatorRegistry` class for dynamic operator registration
-- [ ] Make `RuleEvaluator` public (currently package-private)
-- [ ] Add constructor accepting custom OperatorRegistry
+### Public API for Custom Junctions (Week 2)
+- [ ] Extract `JunctionHandler` interface to public API
+- [ ] Create `JunctionRegistry` class for dynamic junction registration
+- [ ] Make `CriterionEvaluator` public (currently package-private)
+- [ ] Add constructor accepting custom JunctionRegistry
 
 ### Builder Pattern (Week 2)
-- [ ] Create `RuleEvaluatorBuilder` for configuration
+- [ ] Create `CriterionEvaluatorBuilder` for configuration
 - [ ] Create `SpecificationEvaluatorBuilder` for configuration
-- [ ] Add fluent API for building Rules programmatically
+- [ ] Add fluent API for building Criteria programmatically
 - [ ] Add QueryBuilder for complex query construction
 
 ### Bug Fixes
@@ -68,7 +68,7 @@
 
 ### Logging (Week 3)
 - [ ] Add SLF4J dependency (facade only, no implementation)
-- [ ] Add logging to RuleEvaluator (DEBUG: evaluations, WARN: unknown operators)
+- [ ] Add logging to CriterionEvaluator (DEBUG: evaluations, WARN: unknown junctions)
 - [ ] Add logging to SpecificationEvaluator (INFO: results)
 - [ ] Document logging configuration for users
 
@@ -84,15 +84,15 @@
 
 ### User Documentation (Week 4)
 - [ ] Create README.md with quick start guide
-- [ ] Document all 13 operators with examples
-- [ ] Add "Building Rules Programmatically" section
+- [ ] Document all 13 junctions with examples
+- [ ] Add "Building Criteria Programmatically" section
 - [ ] Show Spring integration examples
 - [ ] Create CHANGELOG.md
 
 ### Examples (Week 4)
 - [ ] Create standalone Java example
 - [ ] Create Spring Boot integration example (separate module)
-- [ ] Create custom operators example
+- [ ] Create custom junctions example
 - [ ] Add real-world use case examples
 
 ---
@@ -118,14 +118,14 @@
 
 ### Type Safety
 - [ ] Add generic document type support
-- [ ] Create TypedRuleEvaluator<T>
+- [ ] Create TypedCriterionEvaluator<T>
 - [ ] Improve type casting and validation
 
-### Additional Operators
-- [ ] String operators: `$startsWith`, `$endsWith`, `$contains`, `$length`
-- [ ] Date operators: `$before`, `$after`, `$between`
-- [ ] Arithmetic operators: `$mod`, `$abs`, `$ceil`, `$floor`
-- [ ] Logical operators: `$not`, `$nor`
+### Additional Junctions
+- [ ] String junctions: `$startsWith`, `$endsWith`, `$contains`, `$length`
+- [ ] Date junctions: `$before`, `$after`, `$between`
+- [ ] Arithmetic junctions: `$mod`, `$abs`, `$ceil`, `$floor`
+- [ ] Logical junctions: `$not`, `$nor`
 
 ---
 
@@ -136,7 +136,7 @@ Consider reorganizing for v1.0:
 ```
 uk.codery.jspec.api.*        → Public API (interfaces, builders)
 uk.codery.jspec.core.*       → Core implementation
-uk.codery.jspec.model.*  → Operator implementations
+uk.codery.jspec.model.*  → Junction implementations
 uk.codery.jspec.exceptions.* → Exception hierarchy
 ```
 
@@ -152,19 +152,19 @@ uk.codery.jspec.exceptions.* → Exception hierarchy
 1. **SpecificationEvaluator.java:15** - Ignores constructor parameter
    ```java
    // BUG: Should use this.evaluator, not create new instance
-   RuleEvaluator evaluator = new RuleEvaluator();
+   CriterionEvaluator evaluator = new CriterionEvaluator();
    ```
 
-2. **RuleEvaluator.java:60** - Pattern recreation on every evaluation
+2. **CriterionEvaluator.java:60** - Pattern recreation on every evaluation
    ```java
    // PERFORMANCE: Cache compiled patterns
    Pattern pattern = Pattern.compile((String) operand);
    ```
 
-3. **RuleEvaluator.java:194** - Prints errors to stderr
+3. **CriterionEvaluator.java:194** - Prints errors to stderr
    ```java
    // ERROR HANDLING: Throw exception instead
-   System.err.println("Unknown operator: " + op);
+   System.err.println("Unknown junction: " + op);
    ```
 
 ---
@@ -174,7 +174,7 @@ uk.codery.jspec.exceptions.* → Exception hierarchy
 After completing Priorities 1-4, you'll have:
 
 - ✅ **100% test coverage** → Confidence in correctness
-- ✅ **Extensible API** → Users can add custom operators
+- ✅ **Extensible API** → Users can add custom junctions
 - ✅ **Proper error handling** → Debuggable failures
 - ✅ **Performance optimized** → 10-100x faster regex evaluation
 - ✅ **Well documented** → Easy to use and understand
@@ -211,23 +211,23 @@ After completing Priorities 1-4, you'll have:
 
 ```
 src/main/java/uk/codery/jspec/
-├── OperatorHandler.java
-├── OperatorRegistry.java
+├── JunctionHandler.java
+├── JunctionRegistry.java
 ├── builder/
-│   ├── RuleEvaluatorBuilder.java
+│   ├── CriterionEvaluatorBuilder.java
 │   ├── SpecificationEvaluatorBuilder.java
-│   └── RuleBuilder.java
+│   └── CriterionBuilder.java
 └── exceptions/
-    ├── RuleEvaluationException.java
-    ├── InvalidOperatorException.java
+    ├── CriterionEvaluationException.java
+    ├── InvalidJunctionException.java
     └── InvalidQueryException.java
 
 src/test/java/uk/codery/jspec/
-├── RuleEvaluatorTest.java
+├── CriterionEvaluatorTest.java
 ├── SpecificationEvaluatorTest.java
-└── operators/
-    ├── ComparisonOperatorsTest.java
-    └── LogicalOperatorsTest.java
+└── junctions/
+    ├── ComparisonJunctionsTest.java
+    └── LogicalJunctionsTest.java
 
 examples/
 ├── standalone/
@@ -245,8 +245,8 @@ docs/
 
 1. **Fix the evaluator bug** (SpecificationEvaluator.java:15) - 2 minutes
 2. **Add JUnit dependency** to pom.xml - 5 minutes
-3. **Write first operator test** (e.g., `$eq`) - 30 minutes
-4. **Create RuleEvaluationException** - 15 minutes
+3. **Write first junction test** (e.g., `$eq`) - 30 minutes
+4. **Create CriterionEvaluationException** - 15 minutes
 5. **Add basic README** with usage example - 1 hour
 
 These 5 quick wins give you tests, error handling foundation, and documentation!

@@ -84,7 +84,7 @@ public record EvaluationResult(
     Criterion criterion,
     EvaluationState state,
     List<String> missingPaths,
-    String failureReason  // For UNDETERMINED: "Unknown junction: $foo", "Missing data at: x.y.z"
+    String failureReason  // For UNDETERMINED: "Unknown operator: $foo", "Missing data at: x.y.z"
 ) implements Result {
 
     @Override
@@ -264,7 +264,7 @@ CriterionEvaluator evaluator = CriterionEvaluator.builder()
 ```java
 private static final Logger logger = LoggerFactory.getLogger(CriterionEvaluator.class);
 
-// In junction evaluation
+// In operator evaluation
 if (handler == null) {
     logger.warn("Unknown operator '{}' in criterion '{}' - marking as UNDETERMINED",
                 op, getCurrentCriterionId());
@@ -363,7 +363,7 @@ void unknownOperator_shouldReturnUndetermined() {
     EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
 
     assertEquals(EvaluationState.UNDETERMINED, result.state());
-    assertThat(result.failureReason()).contains("Unknown junction: $unknown");
+    assertThat(result.failureReason()).contains("Unknown operator: $unknown");
 }
 
 @Test
@@ -398,7 +398,7 @@ void missingData_shouldReturnUndetermined() {
 void multipleCriteria_oneUndetermined_shouldContinue() {
     List<Criterion> criteria = List.of(
         new Criterion("good", Map.of("age", Map.of("$eq", 25))),
-        new Criterion("bad", Map.of("age", Map.of("$unknown", 18))),  // Unknown junction
+        new Criterion("bad", Map.of("age", Map.of("$unknown", 18))),  // Unknown operator
         new Criterion("good2", Map.of("name", Map.of("$eq", "John")))
     );
 

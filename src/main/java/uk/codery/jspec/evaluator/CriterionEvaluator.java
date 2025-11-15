@@ -11,7 +11,7 @@ import java.util.regex.PatternSyntaxException;
 
 @Slf4j
 public class CriterionEvaluator {
-    private final Map<String, OperatorHandler> operators = new HashMap<>();
+    private final Map<String, JunctionHandler> junctions = new HashMap<>();
 
     /**
      * Thread-safe LRU cache for compiled regex patterns.
@@ -27,7 +27,7 @@ public class CriterionEvaluator {
             }
     );
 
-    interface OperatorHandler {
+    interface JunctionHandler {
         boolean evaluate(Object val, Object operand);
     }
 
@@ -86,27 +86,27 @@ public class CriterionEvaluator {
     }
 
     public CriterionEvaluator() {
-        registerOperators();
+        registerJunctions();
     }
 
-    private void registerOperators() {
-        operators.put("$eq", Objects::equals);
-        operators.put("$ne", (val, operand) -> !Objects.equals(val, operand));
-        operators.put("$gt", (val, operand) -> compare(val, operand) > 0);
-        operators.put("$gte", (val, operand) -> compare(val, operand) >= 0);
-        operators.put("$lt", (val, operand) -> compare(val, operand) < 0);
-        operators.put("$lte", (val, operand) -> compare(val, operand) <= 0);
-        operators.put("$in", this::evaluateInOperator);
-        operators.put("$nin", this::evaluateNotInOperator);
-        operators.put("$exists", this::evaluateExistsOperator);
-        operators.put("$type", (val, operand) -> getType(val).equals(operand));
-        operators.put("$regex", this::evaluateRegexOperator);
-        operators.put("$size", this::evaluateSizeOperator);
-        operators.put("$elemMatch", this::evaluateElemMatchOperator);
-        operators.put("$all", this::evaluateAllOperator);
+    private void registerJunctions() {
+        junctions.put("$eq", Objects::equals);
+        junctions.put("$ne", (val, operand) -> !Objects.equals(val, operand));
+        junctions.put("$gt", (val, operand) -> compare(val, operand) > 0);
+        junctions.put("$gte", (val, operand) -> compare(val, operand) >= 0);
+        junctions.put("$lt", (val, operand) -> compare(val, operand) < 0);
+        junctions.put("$lte", (val, operand) -> compare(val, operand) <= 0);
+        junctions.put("$in", this::evaluateInJunction);
+        junctions.put("$nin", this::evaluateNotInJunction);
+        junctions.put("$exists", this::evaluateExistsJunction);
+        junctions.put("$type", (val, operand) -> getType(val).equals(operand));
+        junctions.put("$regex", this::evaluateRegexJunction);
+        junctions.put("$size", this::evaluateSizeJunction);
+        junctions.put("$elemMatch", this::evaluateElemMatchJunction);
+        junctions.put("$all", this::evaluateAllJunction);
     }
 
-    private boolean evaluateInOperator(Object val, Object operand) {
+    private boolean evaluateInJunction(Object val, Object operand) {
         try {
             if (!(operand instanceof List<?> list)) {
                 log.warn("Junction $in expects List, got {} - treating as not matched",
@@ -132,7 +132,7 @@ public class CriterionEvaluator {
         }
     }
 
-    private boolean evaluateNotInOperator(Object val, Object operand) {
+    private boolean evaluateNotInJunction(Object val, Object operand) {
         try {
             if (!(operand instanceof List<?> list)) {
                 log.warn("Junction $nin expects List, got {} - treating as not matched",
@@ -158,7 +158,7 @@ public class CriterionEvaluator {
         }
     }
 
-    private boolean evaluateExistsOperator(Object val, Object operand) {
+    private boolean evaluateExistsJunction(Object val, Object operand) {
         try {
             if (!(operand instanceof Boolean)) {
                 log.warn("Junction $exists expects Boolean, got {} - treating as not matched",
@@ -173,7 +173,7 @@ public class CriterionEvaluator {
         }
     }
 
-    private boolean evaluateRegexOperator(Object val, Object operand) {
+    private boolean evaluateRegexJunction(Object val, Object operand) {
         try {
             if (!(operand instanceof String patternString)) {
                 log.warn("Junction $regex expects String pattern, got {} - treating as not matched",
@@ -214,7 +214,7 @@ public class CriterionEvaluator {
         return pattern;
     }
 
-    private boolean evaluateSizeOperator(Object val, Object operand) {
+    private boolean evaluateSizeJunction(Object val, Object operand) {
         try {
             if (!(val instanceof List)) {
                 log.debug("Junction $size expects List value, got {} - treating as not matched",
@@ -233,7 +233,7 @@ public class CriterionEvaluator {
         }
     }
 
-    private boolean evaluateElemMatchOperator(Object val, Object operand) {
+    private boolean evaluateElemMatchJunction(Object val, Object operand) {
         try {
             if (!(val instanceof List)) {
                 log.debug("Junction $elemMatch expects List value, got {} - treating as not matched",
@@ -259,7 +259,7 @@ public class CriterionEvaluator {
         }
     }
 
-    private boolean evaluateAllOperator(Object val, Object operand) {
+    private boolean evaluateAllJunction(Object val, Object operand) {
         try {
             if (!(val instanceof List<?> valList)) {
                 log.debug("Junction $all expects List value, got {} - treating as not matched",
@@ -400,27 +400,27 @@ public class CriterionEvaluator {
     }
 
     private InnerResult matchMapValue(Object val, Map<String, Object> queryMap, String path) {
-        boolean isOperatorQuery = isOperatorQuery(queryMap);
+        boolean isJunctionQuery = isJunctionQuery(queryMap);
 
-        if (isOperatorQuery) {
-            return evaluateOperatorQuery(val, queryMap);
+        if (isJunctionQuery) {
+            return evaluateJunctionQuery(val, queryMap);
         }
 
         return evaluateFieldQuery(val, queryMap, path);
     }
 
-    private boolean isOperatorQuery(Map<String, Object> queryMap) {
+    private boolean isJunctionQuery(Map<String, Object> queryMap) {
         return queryMap.keySet().stream().anyMatch(k -> k.startsWith("$"));
     }
 
-    private InnerResult evaluateOperatorQuery(Object val, Map<String, Object> queryMap) {
+    private InnerResult evaluateJunctionQuery(Object val, Map<String, Object> queryMap) {
         boolean allMatched = true;
 
         for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
             String op = entry.getKey();
             if (!op.startsWith("$")) continue;
 
-            OperatorHandler handler = operators.get(op);
+            JunctionHandler handler = junctions.get(op);
             if (handler == null) {
                 log.warn("Unknown junction '{}' - marking criterion as UNDETERMINED", op);
                 return InnerResult.undetermined("Unknown junction: " + op);

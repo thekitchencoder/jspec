@@ -11,10 +11,10 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Comprehensive tests for comparison operators: $eq, $ne, $gt, $gte, $lt, $lte
- * These tests baseline the current behavior for all comparison operators.
+ * Comprehensive tests for comparison junctions: $eq, $ne, $gt, $gte, $lt, $lte
+ * These tests baseline the current behavior for all comparison junctions.
  */
-class ComparisonOperatorsTest {
+class ComparisonJunctionsTest {
 
     private CriterionEvaluator evaluator;
 
@@ -319,7 +319,7 @@ class ComparisonOperatorsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 
-    // ========== Combined Operators Tests ==========
+    // ========== Combined Junctions Tests ==========
 
     @Test
     void combined_gteAndLte_withinRange_shouldMatch() {

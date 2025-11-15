@@ -147,10 +147,10 @@ public class Example
 
 #### Naming Conventions
 
-- **Classes**: PascalCase (`RuleEvaluator`, `EvaluationResult`)
-- **Methods**: camelCase (`evaluateRule`, `navigate`)
+- **Classes**: PascalCase (`CriterionEvaluator`, `EvaluationResult`)
+- **Methods**: camelCase (`evaluateCriterion`, `navigate`)
 - **Constants**: UPPER_SNAKE_CASE (`MAX_DEPTH`, `DEFAULT_SIZE`)
-- **Variables**: camelCase (`evaluator`, `ruleResult`)
+- **Variables**: camelCase (`evaluator`, `criterionResult`)
 - **Packages**: lowercase (`uk.codery.jspec`)
 
 #### Code Organization
@@ -183,14 +183,14 @@ All domain models must be immutable.
 
 ```java
 // Good
-public record Rule(String id, Map<String, Object> query) {
-    public Rule {
+public record Criterion(String id, Map<String, Object> query) {
+    public Criterion {
         query = Map.copyOf(query); // Defensive copy
     }
 }
 
 // Bad
-public class Rule {
+public class Criterion {
     private String id;
     public void setId(String id) { this.id = id; } // Mutable!
 }
@@ -202,7 +202,7 @@ Code must be thread-safe by default. Avoid mutable shared state.
 
 ```java
 // Good
-private static final Logger logger = LoggerFactory.getLogger(RuleEvaluator.class);
+private static final Logger logger = LoggerFactory.getLogger(CriterionEvaluator.class);
 private final Map<String, OperatorHandler> operators; // Final reference
 
 // Bad
@@ -246,14 +246,14 @@ Use AAA pattern (Arrange, Act, Assert):
 
 ```java
 @Test
-void evaluateRule_withMatchingQuery_shouldReturnMatched() {
+void evaluateCriterion_withMatchingQuery_shouldReturnMatched() {
     // Arrange
     Map<String, Object> document = Map.of("age", 25);
-    Rule criterion = new Rule("age-check", Map.of("age", Map.of("$gte", 18)));
-    RuleEvaluator evaluator = new RuleEvaluator();
+    Criterion criterion = new Criterion("age-check", Map.of("age", Map.of("$gte", 18)));
+    CriterionEvaluator evaluator = new CriterionEvaluator();
 
     // Act
-    EvaluationResult result = evaluator.evaluateRule(document, criterion);
+    EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
 
     // Assert
     assertEquals(EvaluationState.MATCHED, result.state());
@@ -288,7 +288,7 @@ Test components working together:
 
 ```java
 @Test
-void evaluateSpecification_withMultipleRules_shouldEvaluateAll() {
+void evaluateSpecification_withMultipleCriteria_shouldEvaluateAll() {
     Specification spec = new Specification(
         "test",
         List.of(criterion1, criterion2, criterion3),
@@ -297,7 +297,7 @@ void evaluateSpecification_withMultipleRules_shouldEvaluateAll() {
 
     EvaluationOutcome outcome = evaluator.evaluate(document, spec);
 
-    assertEquals(3, outcome.ruleResults().size());
+    assertEquals(3, outcome.criterionResults().size());
 }
 ```
 
@@ -307,17 +307,17 @@ Test boundary conditions:
 
 ```java
 @Test
-void evaluateRule_withNullDocument_shouldReturnUndetermined() {
+void evaluateCriterion_withNullDocument_shouldReturnUndetermined() {
     // Test null handling
 }
 
 @Test
-void evaluateRule_withEmptyQuery_shouldHandleGracefully() {
+void evaluateCriterion_withEmptyQuery_shouldHandleGracefully() {
     // Test empty input
 }
 
 @Test
-void evaluateRule_withMissingField_shouldReturnUndetermined() {
+void evaluateCriterion_withMissingField_shouldReturnUndetermined() {
     // Test missing data
 }
 ```
@@ -329,10 +329,10 @@ void evaluateRule_withMissingField_shouldReturnUndetermined() {
 mvn test
 
 # Run specific test class
-mvn test -Dtest=RuleEvaluatorTest
+mvn test -Dtest=CriterionEvaluatorTest
 
 # Run specific test method
-mvn test -Dtest=RuleEvaluatorTest#testMethodName
+mvn test -Dtest=CriterionEvaluatorTest#testMethodName
 
 # Run with coverage
 mvn test jacoco:report

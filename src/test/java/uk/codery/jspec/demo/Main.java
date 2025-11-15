@@ -20,13 +20,13 @@ import static java.util.function.Predicate.not;
 /**
  * Alternative CLI that uses Jackson (jackson-dataformat-yaml) to parse both the
  * input document and the specification from YAML files. The command-line
- * interface mirrors YamlRuleEvaluatorCli.
- * Usage: java JacksonYamlRuleEvaluatorCli <criteria.yaml> <document.yaml> [--json] [--summary]
+ * interface mirrors YamlCriterionEvaluatorCli.
+ * Usage: java JacksonYamlCriterionEvaluatorCli <criteria.yaml> <document.yaml> [--json] [--summary]
  */
 public class Main {
     public static void main(String[] args) {
         if (args.length < 2) {
-            System.err.println("Usage: java JacksonYamlRuleEvaluatorCli <criteria.yaml> <document.yaml> [--json] [--summary]");
+            System.err.println("Usage: java JacksonYamlCriterionEvaluatorCli <criteria.yaml> <document.yaml> [--json] [--summary]");
             System.err.println("\nOptions:");
             System.err.println("  --json     Output results in JSON format");
             System.err.println("  --summary  Only show summary of results");
@@ -73,10 +73,10 @@ public class Main {
     }
 
     private static void outputSummary(EvaluationOutcome outcome) {
-        long passedRules = outcome.evaluationResults().stream()
+        long passedCriteria = outcome.evaluationResults().stream()
                 .filter(Result::matched)
                 .count();
-        long failedRules = outcome.evaluationResults().stream()
+        long failedCriteria = outcome.evaluationResults().stream()
                 .filter(not(Result::matched))
                 .count();
         long passedSets = outcome.criteriaGroupResults().stream()
@@ -87,18 +87,18 @@ public class Main {
                 .count();
 
         System.out.println(outcome.specificationId() + " evaluation summary.");
-        System.out.println("Rules: " + (passedRules + failedRules) + " total, " + passedRules + " passed, " + failedRules + " failed");
-        System.out.println("RuleSets: " + (passedSets + failedSets) + " total, " + passedSets + " passed, " + failedSets + " failed");
+        System.out.println("Criteria: " + (passedCriteria + failedCriteria) + " total, " + passedCriteria + " passed, " + failedCriteria + " failed");
+        System.out.println("CriteriaGroups: " + (passedSets + failedSets) + " total, " + passedSets + " passed, " + failedSets + " failed");
 
-        if (failedRules > 0) {
-            System.out.println("\nFailed Rules:");
+        if (failedCriteria > 0) {
+            System.out.println("\nFailed Criteria:");
             outcome.evaluationResults().stream()
                     .filter(not(Result::matched))
                     .forEach(r -> System.out.println("  " + r.id() + ": " + r.reason()));
         }
 
         if (failedSets > 0) {
-            System.out.println("\nFailed RuleSets:");
+            System.out.println("\nFailed CriteriaGroups:");
             outcome.criteriaGroupResults().stream()
                     .filter(not(Result::matched))
                     .forEach(rs -> {

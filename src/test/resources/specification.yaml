@@ -13,7 +13,7 @@ criteria:
     query: {provision: {$elemMatch: {$nin: [restart,whp]}}}
 
 criteriaGroups:
-  - id: restart-ruleset
+  - id: restart-criteriaGroup
     junction: AND
     criteria:
       - id: uc-active

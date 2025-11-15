@@ -51,7 +51,7 @@ This roadmap has been updated to reflect the significant progress made on the JS
 
 - [x] **Unit tests for SpecificationEvaluator** - `SpecificationEvaluatorTest.java` created
   - Parallel criterion evaluation
-  - CriteriaGroup evaluation with AND/OR operators
+  - CriteriaGroup evaluation with AND/OR junctions
   - Result caching behavior
   - Thread safety verification
 

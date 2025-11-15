@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-Core engine code lives under `src/main/java/uk/codery/jspec`, with `Specification`, `Rule`, operator evaluators, and the tri-state `EvaluationOutcome` pipeline. Tests and demos sit in `src/test/java`, while reusable fixtures (JSON/YAML specs, sample documents) live in `src/test/resources`. Skim `README.md`, `ERROR_HANDLING_DESIGN.md`, and `IMPROVEMENT_ROADMAP.md` before altering behavior.
+Core engine code lives under `src/main/java/uk/codery/jspec`, with `Specification`, `Criterion`, operator evaluators, and the tri-state `EvaluationOutcome` pipeline. Tests and demos sit in `src/test/java`, while reusable fixtures (JSON/YAML specs, sample documents) live in `src/test/resources`. Skim `README.md`, `ERROR_HANDLING_DESIGN.md`, and `IMPROVEMENT_ROADMAP.md` before altering behavior.
 
 ## Build, Test, and Development Commands
 - `mvn clean verify` — full build plus unit suite; run before pushing.

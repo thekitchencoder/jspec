@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for CriterionEvaluator core functionality including:
  * - Document navigation (nested fields, dot notation)
  * - Error handling and graceful degradation
- * - Unknown operators
+ * - Unknown junctions
  * - Complex query structures
  * - Edge cases
  */
@@ -236,7 +236,7 @@ class CriterionEvaluatorTest {
     // ========== Unknown Junction Tests ==========
 
     @Test
-    void unknownOperator_shouldReturnUndetermined() {
+    void unknownJunction_shouldReturnUndetermined() {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$unknown", 18)));
 
@@ -248,7 +248,7 @@ class CriterionEvaluatorTest {
     }
 
     @Test
-    void unknownOperator_withMultipleOperators_shouldReturnUndetermined() {
+    void unknownJunction_withMultipleJunctions_shouldReturnUndetermined() {
         Map<String, Object> doc = Map.of("age", 25);
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$fake", 18, "$invalid", 20)));
 
@@ -259,9 +259,9 @@ class CriterionEvaluatorTest {
     }
 
     @Test
-    void unknownOperator_withValidAndInvalidOperators_shouldReturnUndetermined() {
+    void unknownJunction_withValidAndInvalidJunctions_shouldReturnUndetermined() {
         Map<String, Object> doc = Map.of("age", 25);
-        // Has both valid ($eq) and invalid ($fake) operators
+        // Has both valid ($eq) and invalid ($fake) junctions
         Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 25, "$fake", 18)));
 
         EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
@@ -337,7 +337,7 @@ class CriterionEvaluatorTest {
     // ========== Complex Query Tests ==========
 
     @Test
-    void complexQuery_withMixedOperators_shouldWork() {
+    void complexQuery_withMixedJunctions_shouldWork() {
         Map<String, Object> doc = Map.of(
             "age", 25,
             "status", "ACTIVE",
@@ -355,7 +355,7 @@ class CriterionEvaluatorTest {
     }
 
     @Test
-    void complexQuery_withNestedOperators_shouldWork() {
+    void complexQuery_withNestedJunctions_shouldWork() {
         Map<String, Object> doc = Map.of(
             "user", Map.of(
                 "profile", Map.of(

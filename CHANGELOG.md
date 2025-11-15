@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Advanced: `$exists`, `$type`, `$regex`, `$elemMatch`
 - Deep document navigation with dot notation
 - Parallel criterion evaluation using streams
-- CriteriaGroup support with AND/OR operators
+- CriteriaGroup support with AND/OR junctions
 - Thread-safe evaluation
 - YAML/JSON specification loading via Jackson
 - Comprehensive test suite (TriStateEvaluationTest, EvaluationSummaryTest)
@@ -89,7 +89,7 @@ See [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md) for planned enhancements:
 ### Planned for v0.1.0
 - Comprehensive test coverage (80%+)
 - Enhanced error handling with exception hierarchy
-- Public API for custom operators
+- Public API for custom operator
 - OperatorRegistry for extensibility
 - Regex pattern caching (LRU cache)
 - JavaDoc for all public classes

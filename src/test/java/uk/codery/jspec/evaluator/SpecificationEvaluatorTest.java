@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Tests for SpecificationEvaluator focusing on:
  * - Specification orchestration
- * - CriteriaGroup evaluation with AND/OR operators
+ * - CriteriaGroup evaluation with AND/OR junctions
  * - Parallel evaluation behavior
  * - Result caching
  * - Summary generation
@@ -262,7 +262,7 @@ class SpecificationEvaluatorTest {
     }
 
     @Test
-    void criteriaGroup_withUnknownOperator_shouldStillEvaluate() {
+    void criteriaGroup_withUnknownJunction_shouldStillEvaluate() {
         List<Criterion> criteria = List.of(
             new Criterion("good", Map.of("age", Map.of("$gte", 18))),
             new Criterion("bad", Map.of("age", Map.of("$unknown", 25)))

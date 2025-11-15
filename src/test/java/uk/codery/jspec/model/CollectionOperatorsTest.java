@@ -12,10 +12,10 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Comprehensive tests for collection operators: $in, $nin, $all, $size
- * These tests baseline the current behavior for all collection operators.
+ * Comprehensive tests for collection junctions: $in, $nin, $all, $size
+ * These tests baseline the current behavior for all collection junctions.
  */
-class CollectionOperatorsTest {
+class CollectionJunctionsTest {
 
     private CriterionEvaluator evaluator;
 
@@ -356,7 +356,7 @@ class CollectionOperatorsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 
-    // ========== Combined Collection Operators ==========
+    // ========== Combined Collection Junctions ==========
 
     @Test
     void combined_inAndSize_shouldWork() {

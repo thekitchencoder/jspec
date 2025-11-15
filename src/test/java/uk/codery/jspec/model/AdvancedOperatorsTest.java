@@ -12,10 +12,10 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Comprehensive tests for advanced operators: $exists, $type, $regex, $elemMatch
- * These tests baseline the current behavior for all advanced operators.
+ * Comprehensive tests for advanced junctions: $exists, $type, $regex, $elemMatch
+ * These tests baseline the current behavior for all advanced junctions.
  */
-class AdvancedOperatorsTest {
+class AdvancedJunctionsTest {
 
     private CriterionEvaluator evaluator;
 
@@ -411,7 +411,7 @@ class AdvancedOperatorsTest {
     }
 
     @Test
-    void elemMatch_withNestedOperators_shouldMatch() {
+    void elemMatch_withNestedJunctions_shouldMatch() {
         Map<String, Object> doc = Map.of("items", List.of(
             Map.of("tags", List.of("sale", "new")),
             Map.of("tags", List.of("featured"))
@@ -438,7 +438,7 @@ class AdvancedOperatorsTest {
         assertThat(result.missingPaths()).contains("users");
     }
 
-    // ========== Combined Advanced Operators ==========
+    // ========== Combined Advanced Junctions ==========
 
     @Test
     void combined_existsAndType_shouldWork() {
@@ -477,7 +477,7 @@ class AdvancedOperatorsTest {
 
         EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
-        // All operators must match, regex fails
+        // All junctions must match, regex fails
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
 

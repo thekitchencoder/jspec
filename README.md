@@ -1,10 +1,10 @@
 # JSON Specification Evalutor
 
-A lightweight, Spring-independent Java library for evaluating business criteria against JSON/YAML documents using MongoDB-style query operators.
+A lightweight, Spring-independent Java library for evaluating business criteria against JSON/YAML documents using MongoDB-style query junctions.
 
 ## Features
 
-- **13 MongoDB-style operators** - Familiar query syntax for developers
+- **13 MongoDB-style junctions** - Familiar query syntax for developers
 - **Tri-state evaluation model** - Distinguishes between MATCHED, NOT_MATCHED, and UNDETERMINED states
 - **Graceful error handling** - One failed criterion never stops evaluation of others
 - **Zero framework dependencies** - Works with or without Spring
@@ -60,7 +60,7 @@ Criterion ageCheck = new Criterion("age-check",
 for(
         EvaluationResult result :outcome.
 
-        ruleResults()){
+        criterionResults()){
         System.out.
 
         println(result.criterion().
@@ -91,7 +91,7 @@ criteria:
             $gte: 6
 criteriaGroups:
   - id: restart-program
-    operator: AND
+    junction: AND
     criteria: [uc-active, time-on-uc]
 ```
 
@@ -104,9 +104,9 @@ Specification spec = mapper.readValue(
 );
 ```
 
-## Supported Operators
+## Supported Junctions
 
-### Comparison Operators
+### Comparison Junctions
 
 - `$eq` - Equal to
 - `$ne` - Not equal to
@@ -120,7 +120,7 @@ Specification spec = mapper.readValue(
 Map.of("age", Map.of("$gte", 18))
 ```
 
-### Collection Operators
+### Collection Junctions
 
 - `$in` - Value in list
 - `$nin` - Value not in list
@@ -135,7 +135,7 @@ Map.of("status", Map.of("$in", List.of("ACTIVE", "PENDING")))
 Map.of("tags", Map.of("$all", List.of("urgent", "verified")))
 ```
 
-### Advanced Operators
+### Advanced Junctions
 
 - `$exists` - Field exists (boolean check)
 - `$type` - Value is of specified type
@@ -154,7 +154,7 @@ Map.of("addresses", Map.of("$elemMatch",
     Map.of("isPrimary", Map.of("$eq", true))))
 ```
 
-### Supported Types for `$type` operator
+### Supported Types for `$type` junction
 
 - `null`, `array`, `string`, `number`, `boolean`, `object`
 
@@ -169,25 +169,25 @@ The engine uses a three-state evaluation model for robust error handling:
 
 ### States
 
-1. **MATCHED** - Rule evaluated successfully, condition is TRUE
-2. **NOT_MATCHED** - Rule evaluated successfully, condition is FALSE
-3. **UNDETERMINED** - Rule could not be evaluated
+1. **MATCHED** - Criterion evaluated successfully, condition is TRUE
+2. **NOT_MATCHED** - Criterion evaluated successfully, condition is FALSE
+3. **UNDETERMINED** - Criterion could not be evaluated
 
-### When Rules Are UNDETERMINED
+### When Criteria Are UNDETERMINED
 
-Rules become UNDETERMINED when:
+Criteria become UNDETERMINED when:
 - Required data is missing from the document
-- Unknown operator is used
+- Unknown junction is used
 - Type mismatch occurs (e.g., string provided where number expected)
 - Invalid regex pattern
 - Any evaluation error
 
 ```java
-EvaluationResult result = evaluator.evaluateRule(document, criterion);
+EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
 
 switch (result.state()) {
-    case MATCHED -> System.out.println("Rule passed");
-    case NOT_MATCHED -> System.out.println("Rule failed");
+    case MATCHED -> System.out.println("Criterion passed");
+    case NOT_MATCHED -> System.out.println("Criterion failed");
     case UNDETERMINED -> {
         System.out.println("Could not evaluate: " + result.reason());
         // Check missing paths
@@ -198,25 +198,25 @@ switch (result.state()) {
 }
 ```
 
-## Rule Sets
+## Criterion Sets
 
 Combine multiple criteria with AND/OR logic:
 
 ```java
-Rule criterion1 = new Rule("r1", Map.of("age", Map.of("$gte", 18)));
-Rule criterion2 = new Rule("r2", Map.of("status", Map.of("$eq", "ACTIVE")));
+Criterion criterion1 = new Criterion("r1", Map.of("age", Map.of("$gte", 18)));
+Criterion criterion2 = new Criterion("r2", Map.of("status", Map.of("$eq", "ACTIVE")));
 
 // Both criteria must match (AND)
-RuleSet andSet = new RuleSet(
+CriteriaGroup andSet = new CriteriaGroup(
     "adult-and-active",
-    Operator.AND,
+    Junction.AND,
     List.of("r1", "r2")
 );
 
 // Either criterion must match (OR)
-RuleSet orSet = new RuleSet(
+CriteriaGroup orSet = new CriteriaGroup(
     "adult-or-active",
-    Operator.OR,
+    Junction.OR,
     List.of("r1", "r2")
 );
 
@@ -244,7 +244,7 @@ Map<String, Object> document = Map.of(
 );
 
 // Query nested field
-Rule criterion = new Rule("city-check",
+Criterion criterion = new Criterion("city-check",
     Map.of("user.profile.address.city", Map.of("$eq", "London"))
 );
 ```
@@ -257,10 +257,10 @@ Get statistics about evaluation outcomes:
 EvaluationOutcome outcome = evaluator.evaluate(document, spec);
 EvaluationSummary summary = outcome.summary();
 
-System.out.println("Total criteria: " + summary.totalRules());
-System.out.println("Matched: " + summary.matchedRules());
-System.out.println("Not matched: " + summary.notMatchedRules());
-System.out.println("Undetermined: " + summary.undeterminedRules());
+System.out.println("Total criteria: " + summary.total());
+System.out.println("Matched: " + summary.matched());
+System.out.println("Not matched: " + summary.notMatched());
+System.out.println("Undetermined: " + summary.undetermined());
 System.out.println("Fully determined: " + summary.fullyDetermined());
 ```
 
@@ -269,7 +269,7 @@ System.out.println("Fully determined: " + summary.fullyDetermined());
 The engine is thread-safe and uses parallel evaluation by default:
 
 ```java
-// Rules are evaluated in parallel using parallel streams
+// Criteria are evaluated in parallel using parallel streams
 SpecificationEvaluator evaluator = new SpecificationEvaluator();
 
 // Safe to use from multiple threads
@@ -286,7 +286,7 @@ for (int i = 0; i < 100; i++) {
 
 The engine follows a **graceful degradation** approach:
 
-- Rules never throw exceptions that halt evaluation
+- Criteria never throw exceptions that halt evaluation
 - One bad criterion never prevents evaluation of other criteria
 - All failures are logged via SLF4J for debugging
 - Missing data results in UNDETERMINED state, not errors
@@ -337,7 +337,7 @@ This evaluates sample specifications against test documents using both JSON and 
 The engine has a clean three-layer architecture:
 
 1. **Data Layer** - Immutable records for specifications, criteria, and documents
-2. **Evaluation Layer** - `RuleEvaluator` (operators) and `SpecificationEvaluator` (orchestration)
+2. **Evaluation Layer** - `CriterionEvaluator` (junctions) and `SpecificationEvaluator` (orchestration)
 3. **Result Layer** - Tri-state results with detailed failure reasons
 
 Key design principles:
@@ -390,6 +390,6 @@ For issues, questions, or suggestions:
 
 ## Acknowledgments
 
-- Operator design inspired by MongoDB query language
+- Junction design inspired by MongoDB query language
 - Tri-state evaluation model based on graceful degradation principles
 - Built with modern Java 21 features for clean, maintainable code
