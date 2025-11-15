@@ -4,14 +4,14 @@ This document provides context for AI assistants (like Claude) working with the 
 
 ## Project Overview
 
-**JSON Specification Evaluator** is a lightweight Java 21 library for evaluating business criteria against JSON/YAML documents using MongoDB-style operators. The codebase is intentionally minimal (~757 lines) with a focus on clean architecture and zero framework dependencies.
+**JSON Specification Evaluator** is a lightweight Java 21 library for evaluating business criteria against JSON/YAML documents using MongoDB-style operators. The codebase is intentionally minimal (~826 lines) with a focus on clean architecture, performance optimization, and zero framework dependencies.
 
 ### Key Characteristics
 
-- **Language**: Java 21 (uses records, sealed classes, streams, text blocks)
+- **Language**: Java 21 (uses records, sealed classes, pattern matching, switch expressions, streams, text blocks)
 - **Build Tool**: Maven
 - **Architecture**: Clean 3-layer design (Data → Evaluation → Results)
-- **Design Philosophy**: Immutable, thread-safe, graceful degradation
+- **Design Philosophy**: Immutable, thread-safe, graceful degradation, performance-optimized
 - **Dependencies**: Jackson YAML (parsing), Lombok (boilerplate), SLF4J (logging)
 
 ## Codebase Structure
@@ -223,25 +223,29 @@ For a complete audit of the terminology refactoring, see:
 
 ## Key Files Deep Dive
 
-### CriterionEvaluator.java (418 lines)
+### CriterionEvaluator.java (488 lines)
 
-**Purpose**: Core query evaluation engine
+**Purpose**: Core query evaluation engine with performance optimizations
 
 **Key Methods**:
 - `evaluateCriterion(document, criterion)` - Main entry point for single criterion
 - `evaluate(document, query)` - Recursive query evaluation
 - `navigate(document, path)` - Deep document navigation with dot notation
-- Operator handlers (lines 50-100) - Lambda-based operator implementations
+- `getOrCompilePattern(pattern)` - Thread-safe regex pattern caching (lines 199-212)
+- Operator handlers (lines 89-104) - Lambda-based operator implementations
 
 **Important Patterns**:
 - Uses `InnerResult` record for tracking missing paths during evaluation
 - Operator handlers: `BiFunction<Object, Object, Boolean>`
 - Type checking before casting to prevent ClassCastException
-- Regex pattern compilation (potential caching opportunity - see IMPROVEMENT_ROADMAP.md)
+- **Thread-safe LRU pattern cache** (lines 18-25) - Up to 100 compiled regex patterns
+- **HashSet-based $all operator** (line 272) - O(n) complexity instead of O(n²)
+- **Modern Java 21 pattern matching** (lines 292-302) - Switch expressions in getType()
 
-**Known Issues**:
-- Line 194: Used to print to stderr for unknown operators (now logs via SLF4J)
-- No regex pattern caching yet (creates new Pattern on each evaluation)
+**Performance Optimizations**:
+- Regex pattern caching: ~10-100x faster for repeated patterns
+- Collection operator optimization: Significant speedup for large arrays
+- Modern type checking with pattern matching: More efficient and readable
 
 ### SpecificationEvaluator.java (49 lines)
 
@@ -253,7 +257,7 @@ For a complete audit of the terminology refactoring, see:
 - Caches criterion results for efficient criteriaGroup evaluation
 
 **Architecture**:
-- Line 15: Creates internal CriterionEvaluator instance
+- Line 14: Creates internal CriterionEvaluator instance
 - Lines 16-22: Parallel evaluation of all criteria
 - Lines 24-35: Sequential evaluation of criteriaGroups (uses cached results)
 - Lines 37-46: Build EvaluationOutcome with summary
@@ -436,37 +440,62 @@ Potential configuration points:
 - **Operator evaluation**: O(1) map lookup
 - **Document navigation**: O(d) where d = dot-notation depth
 - **Parallel evaluation**: Criteria evaluated concurrently using parallel streams
-- **Regex**: Pattern compiled on every evaluation (no caching)
+- **Regex**: Thread-safe LRU pattern cache (~10-100x faster for repeated patterns)
+- **Collection operators**: Optimized algorithms (HashSet-based $all for O(n) performance)
 
 ### Known Bottlenecks
 
-1. **Regex Pattern Compilation** (CriterionEvaluator.java:60)
-   - Currently: `Pattern.compile()` called on every `$regex` evaluation
-   - Impact: 10-100x slower for repeated patterns
-   - Solution: Add LRU pattern cache (see IMPROVEMENT_ROADMAP.md § 3.1)
+1. ✅ **Regex Pattern Compilation** - **RESOLVED** (CriterionEvaluator.java:18-25, 199-212)
+   - Previously: `Pattern.compile()` called on every `$regex` evaluation
+   - Now: Thread-safe LRU cache with 100 pattern limit
+   - Performance: ~10-100x faster for repeated patterns
 
-2. **Deep Document Navigation**
+2. ✅ **Collection Operator Performance** - **RESOLVED** (RuleEvaluator.java:272)
+   - Previously: `containsAll()` on List - O(n²) complexity
+   - Now: HashSet-based containsAll - O(n) complexity
+   - Performance: Significant speedup for large arrays
+
+3. **Deep Document Navigation** (Minor)
    - Each dot notation lookup traverses the document
    - Impact: O(d) lookups for depth d
-   - Solution: Consider path caching for repeated queries
+   - Status: Acceptable performance, path caching not currently needed
 
-### Optimization Opportunities
+### Remaining Optimization Opportunities
 
-- Regex pattern caching (high impact)
-- Document path caching (medium impact)
-- Operator handler inlining (low impact - JIT already does this)
+- Document path caching (low priority - current performance is acceptable)
+- Operator handler inlining (no action needed - JIT already optimizes this)
 
 ## Recent Changes
 
 ### Latest Commits
 
 ```
-b393adc - Merge PR: implement tri-state evaluation
-f06b836 - refactor: remove backward compatibility, simplify implementation
-2b4828e - feat: implement tri-state evaluation model with graceful error handling
-85002b3 - Merge PR: analyze codebase improvements
-71c8161 - docs: add graceful error handling design
+121d67e - fix: optimize $all operator and improve type checking logic
+38c79a8 - chore: update formatting in ROADMAP example for LRU pattern cache snippet
+c676814 - test: add RegexPatternCacheTest for regex caching and thread safety
+4b67f36 - chore: update ROADMAP
+294f574 - Merge PR: fix $exists undetermined logic
+572abd5 - fix: correct $exists null handling and $in/$nin array behavior
+75264b7 - fix: allow $exists and $type operators to evaluate on missing fields
 ```
+
+### Recent Performance Enhancements (2025-11-14 to 2025-11-15)
+
+**1. Regex Pattern Caching** (c676814)
+- Added thread-safe LRU cache for compiled regex patterns
+- Cache limit: 100 patterns
+- Performance: ~10-100x faster for repeated patterns
+- Comprehensive test suite with thread safety verification
+
+**2. Collection Operator Optimization** (121d67e)
+- $all operator now uses HashSet for O(n) containsAll check
+- Previously: List.containsAll() was O(n²)
+- Significant speedup for large arrays
+
+**3. Java 21 Modernization** (121d67e)
+- Refactored getType() method to use switch expressions with pattern matching
+- More concise and readable code
+- Compiler-enforced exhaustiveness
 
 ### What Changed in Tri-State Implementation
 
@@ -478,21 +507,25 @@ f06b836 - refactor: remove backward compatibility, simplify implementation
 - `failureReason` field in `EvaluationResult`
 - `EvaluationSummary` with `undeterminedCriteria` count
 - Comprehensive error tracking
+- Regex pattern caching infrastructure
+- Modern Java 21 features throughout
 
 **Changed**:
 - All operators now check types before casting
 - Unknown operators log warnings instead of printing to stderr
 - Invalid regex patterns handled gracefully
+- $all operator uses optimized HashSet algorithm
+- Type checking uses modern pattern matching
 
 ## Known Limitations
 
-1. **No custom operator support** - Operators are hardcoded (planned fix)
-2. **No regex caching** - Patterns recompiled every time (planned fix)
-3. **Package-private classes** - Limited extensibility (planned fix)
-4. **No builder API** - Verbose Map construction (planned fix)
-5. **No Spring integration examples** - Works with Spring but no documented patterns
+1. **No custom operator support** - Operators are hardcoded (planned fix - see IMPROVEMENT_ROADMAP.md § 2.1)
+2. ✅ ~~**No regex caching**~~ - **RESOLVED**: Thread-safe LRU cache implemented
+3. ✅ ~~**Package-private classes**~~ - **RESOLVED**: RuleEvaluator is now public
+4. **No builder API** - Verbose Map construction (optional enhancement - see IMPROVEMENT_ROADMAP.md § 2.3)
+5. **No Spring integration examples** - Works with Spring but no dedicated example project (see README.md for Spring configuration)
 
-See IMPROVEMENT_ROADMAP.md for planned solutions.
+See IMPROVEMENT_ROADMAP.md for planned solutions and detailed status.
 
 ## Troubleshooting
 
@@ -670,3 +703,4 @@ For questions about this codebase:
 **Last Updated**: 2025-11-15 (Added terminology section documenting Rules→Criteria pivot and Junction vs Operator distinction)
 **Version**: 0.1.0-SNAPSHOT
 **Java Version**: 21
+**Total Lines of Code**: ~826 (main source)
