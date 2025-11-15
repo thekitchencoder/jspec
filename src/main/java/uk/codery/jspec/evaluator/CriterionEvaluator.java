@@ -2,6 +2,7 @@ package uk.codery.jspec.evaluator;
 
 import lombok.extern.slf4j.Slf4j;
 import uk.codery.jspec.model.Criterion;
+import uk.codery.jspec.operator.OperatorHandler;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationState;
 
@@ -27,10 +28,6 @@ public class CriterionEvaluator {
                 }
             }
     );
-
-    interface OperatorHandler {
-        boolean evaluate(Object val, Object operand);
-    }
 
     /**
      * Internal result that includes tri-state model.
