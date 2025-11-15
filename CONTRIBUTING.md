@@ -1,6 +1,6 @@
-# Contributing to JSON Specification Evalutor
+# Contributing to JSON Specification Evaluator
 
-Thank you for considering contributing to the JSON Specification Evalutor! This document provides guidelines and information for contributors.
+Thank you for considering contributing to the JSON Specification Evaluator! This document provides guidelines and information for contributors.
 
 ## Table of Contents
 
@@ -528,4 +528,4 @@ Contributors will be recognized in:
 - CHANGELOG.md (for significant contributions)
 - Release notes
 
-Thank you for contributing to JSON Specification Evalutor!
+Thank you for contributing to JSON Specification Evaluator!

@@ -1,4 +1,4 @@
-# JSON Specification Evalutor - TODO List
+# JSON Specification Evaluator - TODO List
 
 ## 🎯 Quick Summary
 
@@ -30,7 +30,7 @@
 **Contract:** Criteria never fail hard - return MATCHED/NOT_MATCHED/UNDETERMINED
 - [ ] Add `EvaluationState` enum (MATCHED / NOT_MATCHED / UNDETERMINED)
 - [ ] Update `EvaluationResult` with state + failureReason
-- [ ] Handle unknown junctions → UNDETERMINED + warn log (CriterionEvaluator.java:194)
+- [ ] Handle unknown operators → UNDETERMINED + warn log (CriterionEvaluator.java:194)
 - [ ] Handle type mismatches → UNDETERMINED + warn log
 - [ ] Handle invalid regex patterns → UNDETERMINED + warn log
 - [ ] Add SLF4J logging (replace System.err.println)
@@ -41,11 +41,11 @@
 
 ## 📋 Priority 2: Extensibility (HIGH)
 
-### Public API for Custom Junctions (Week 2)
-- [ ] Extract `JunctionHandler` interface to public API
-- [ ] Create `JunctionRegistry` class for dynamic junction registration
+### Public API for Custom Operators (Week 2)
+- [ ] Extract `OperatorHandler` interface to public API
+- [ ] Create `OperatorRegistry` class for dynamic operator registration
 - [ ] Make `CriterionEvaluator` public (currently package-private)
-- [ ] Add constructor accepting custom JunctionRegistry
+- [ ] Add constructor accepting custom OperatorRegistry
 
 ### Builder Pattern (Week 2)
 - [ ] Create `CriterionEvaluatorBuilder` for configuration
@@ -68,7 +68,7 @@
 
 ### Logging (Week 3)
 - [ ] Add SLF4J dependency (facade only, no implementation)
-- [ ] Add logging to CriterionEvaluator (DEBUG: evaluations, WARN: unknown junctions)
+- [ ] Add logging to CriterionEvaluator (DEBUG: evaluations, WARN: unknown operators)
 - [ ] Add logging to SpecificationEvaluator (INFO: results)
 - [ ] Document logging configuration for users
 
@@ -84,7 +84,7 @@
 
 ### User Documentation (Week 4)
 - [ ] Create README.md with quick start guide
-- [ ] Document all 13 junctions with examples
+- [ ] Document all 13 operators with examples
 - [ ] Add "Building Criteria Programmatically" section
 - [ ] Show Spring integration examples
 - [ ] Create CHANGELOG.md
@@ -92,7 +92,7 @@
 ### Examples (Week 4)
 - [ ] Create standalone Java example
 - [ ] Create Spring Boot integration example (separate module)
-- [ ] Create custom junctions example
+- [ ] Create custom operators example
 - [ ] Add real-world use case examples
 
 ---
@@ -121,11 +121,11 @@
 - [ ] Create TypedCriterionEvaluator<T>
 - [ ] Improve type casting and validation
 
-### Additional Junctions
-- [ ] String junctions: `$startsWith`, `$endsWith`, `$contains`, `$length`
-- [ ] Date junctions: `$before`, `$after`, `$between`
-- [ ] Arithmetic junctions: `$mod`, `$abs`, `$ceil`, `$floor`
-- [ ] Logical junctions: `$not`, `$nor`
+### Additional Operators
+- [ ] String operators: `$startsWith`, `$endsWith`, `$contains`, `$length`
+- [ ] Date operators: `$before`, `$after`, `$between`
+- [ ] Arithmetic operators: `$mod`, `$abs`, `$ceil`, `$floor`
+- [ ] Logical operators: `$not`, `$nor`
 
 ---
 
@@ -136,7 +136,7 @@ Consider reorganizing for v1.0:
 ```
 uk.codery.jspec.api.*        → Public API (interfaces, builders)
 uk.codery.jspec.core.*       → Core implementation
-uk.codery.jspec.model.*  → Junction implementations
+uk.codery.jspec.model.*      → Operator implementations
 uk.codery.jspec.exceptions.* → Exception hierarchy
 ```
 
@@ -164,7 +164,7 @@ uk.codery.jspec.exceptions.* → Exception hierarchy
 3. **CriterionEvaluator.java:194** - Prints errors to stderr
    ```java
    // ERROR HANDLING: Throw exception instead
-   System.err.println("Unknown junction: " + op);
+   System.err.println("Unknown operator: " + op);
    ```
 
 ---
@@ -174,7 +174,7 @@ uk.codery.jspec.exceptions.* → Exception hierarchy
 After completing Priorities 1-4, you'll have:
 
 - ✅ **100% test coverage** → Confidence in correctness
-- ✅ **Extensible API** → Users can add custom junctions
+- ✅ **Extensible API** → Users can add custom operators
 - ✅ **Proper error handling** → Debuggable failures
 - ✅ **Performance optimized** → 10-100x faster regex evaluation
 - ✅ **Well documented** → Easy to use and understand
@@ -211,23 +211,23 @@ After completing Priorities 1-4, you'll have:
 
 ```
 src/main/java/uk/codery/jspec/
-├── JunctionHandler.java
-├── JunctionRegistry.java
+├── OperatorHandler.java
+├── OperatorRegistry.java
 ├── builder/
 │   ├── CriterionEvaluatorBuilder.java
 │   ├── SpecificationEvaluatorBuilder.java
 │   └── CriterionBuilder.java
 └── exceptions/
     ├── CriterionEvaluationException.java
-    ├── InvalidJunctionException.java
+    ├── InvalidOperatorException.java
     └── InvalidQueryException.java
 
 src/test/java/uk/codery/jspec/
 ├── CriterionEvaluatorTest.java
 ├── SpecificationEvaluatorTest.java
-└── junctions/
-    ├── ComparisonJunctionsTest.java
-    └── LogicalJunctionsTest.java
+└── operators/
+    ├── ComparisonOperatorsTest.java
+    └── LogicalOperatorsTest.java
 
 examples/
 ├── standalone/
@@ -245,7 +245,7 @@ docs/
 
 1. **Fix the evaluator bug** (SpecificationEvaluator.java:15) - 2 minutes
 2. **Add JUnit dependency** to pom.xml - 5 minutes
-3. **Write first junction test** (e.g., `$eq`) - 30 minutes
+3. **Write first operator test** (e.g., `$eq`) - 30 minutes
 4. **Create CriterionEvaluationException** - 15 minutes
 5. **Add basic README** with usage example - 1 hour
 

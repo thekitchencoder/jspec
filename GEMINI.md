@@ -1,4 +1,4 @@
-# Gemini Context: JSON Specification Evalutor
+# Gemini Context: JSON Specification Evaluator
 
 This document provides an overview of the `jspec` project to be used as instructional context for Gemini.
 

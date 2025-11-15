@@ -1,8 +1,8 @@
-# JSON Specification Evalutor - Improvement Roadmap
+# JSON Specification Evaluator - Improvement Roadmap
 
 ## Executive Summary
 
-Your JSON Specification Evalutor is a **production-ready, Spring-independent library** with minimal dependencies (Jackson YAML + Lombok + SLF4J). The codebase consists of ~757 lines of well-architected Java 21 code using modern features (records, streams, functional programming).
+Your JSON Specification Evaluator is a **production-ready, Spring-independent library** with minimal dependencies (Jackson YAML + Lombok + SLF4J). The codebase consists of ~757 lines of well-architected Java 21 code using modern features (records, streams, functional programming).
 
 **Current State (Updated 2025-11-14):**
 - ✅ Zero Spring coupling
@@ -20,7 +20,7 @@ Your JSON Specification Evalutor is a **production-ready, Spring-independent lib
 
 ## What Changed Since Original Roadmap
 
-This roadmap has been updated to reflect the significant progress made on the JSON Specification Evalutor. Here's a quick summary:
+This roadmap has been updated to reflect the significant progress made on the JSON Specification Evaluator. Here's a quick summary:
 
 **Major Achievements:**
 - ✅ **Testing** - 9 comprehensive test files created (was: "No test coverage")
@@ -253,7 +253,7 @@ Criterion criterion = Criterion.builder()
 - [ ] **Add package-info.java** - Not created yet
   ```java
   /**
-   * JSON Specification Evalutor - MongoDB-style query evaluation for Java.
+   * JSON Specification Evaluator - MongoDB-style query evaluation for Java.
    *
    * <p>Main entry points:
    * <ul>

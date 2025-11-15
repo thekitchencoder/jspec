@@ -1,10 +1,10 @@
 # CLAUDE.md - AI Assistant Context
 
-This document provides context for AI assistants (like Claude) working with the JSON Specification Evalutor codebase.
+This document provides context for AI assistants (like Claude) working with the JSON Specification Evaluator codebase.
 
 ## Project Overview
 
-**JSON Specification Evalutor** is a lightweight Java 21 library for evaluating business criteria against JSON/YAML documents using MongoDB-style junctions. The codebase is intentionally minimal (~757 lines) with a focus on clean architecture and zero framework dependencies.
+**JSON Specification Evaluator** is a lightweight Java 21 library for evaluating business criteria against JSON/YAML documents using MongoDB-style operators. The codebase is intentionally minimal (~757 lines) with a focus on clean architecture and zero framework dependencies.
 
 ### Key Characteristics
 
@@ -35,7 +35,7 @@ jspec/
 │   │   ├── EvaluationSummary.java                  # [60 lines] Evaluation statistics
 │   │   ├── CriteriaGroupResult.java                # [30 lines] CriteriaGroup evaluation result
 │   │   └── Result.java                             # [7 lines] Interface for results
-│   └── junction/                                   # Future: custom junction support
+│   └── operator/                                   # Future: custom operator support
 ├── src/test/java/uk/codery/jspec/                  # Tests and demo
 │   ├── TriStateEvaluationTest.java                 # Comprehensive test suite
 │   ├── EvaluationSummaryTest.java                  # Summary calculation tests
@@ -105,16 +105,16 @@ Uses dot notation to traverse nested maps:
 - `evaluateCriterion(document, criterion)` - Main entry point for single criterion
 - `evaluate(document, query)` - Recursive query evaluation
 - `navigate(document, path)` - Deep document navigation with dot notation
-- Junction handlers (lines 50-100) - Lambda-based junction implementations
+- Operator handlers (lines 50-100) - Lambda-based operator implementations
 
 **Important Patterns**:
 - Uses `InnerResult` record for tracking missing paths during evaluation
-- Junction handlers: `BiFunction<Object, Object, Boolean>`
+- Operator handlers: `BiFunction<Object, Object, Boolean>`
 - Type checking before casting to prevent ClassCastException
 - Regex pattern compilation (potential caching opportunity - see IMPROVEMENT_ROADMAP.md)
 
 **Known Issues**:
-- Line 194: Used to print to stderr for unknown junctions (now logs via SLF4J)
+- Line 194: Used to print to stderr for unknown operators (now logs via SLF4J)
 - No regex pattern caching yet (creates new Pattern on each evaluation)
 
 ### SpecificationEvaluator.java (49 lines)
@@ -181,7 +181,7 @@ record Specification(String id, List<Criterion> criteria, List<CriteriaGroup> cr
 
 3. **Follow Graceful Degradation**: Never throw exceptions in evaluation logic. Return UNDETERMINED state instead.
 
-4. **Add Tests**: Every new junction or feature needs comprehensive tests.
+4. **Add Tests**: Every new operator or feature needs comprehensive tests.
 
 5. **Log, Don't Print**: Use SLF4J logger, not System.out/err.
 

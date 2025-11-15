@@ -1,4 +1,4 @@
-# JSON Specification Evalutor
+# JSON Specification Evaluator
 
 A lightweight, Spring-independent Java library for evaluating business criteria against JSON/YAML documents using MongoDB-style query junctions.
 
@@ -21,7 +21,7 @@ Add to your `pom.xml`:
 ```xml
 <dependency>
     <groupId>uk.codery</groupId>
-    <artifactId>criteria</artifactId>
+    <artifactId>jspec</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -104,9 +104,9 @@ Specification spec = mapper.readValue(
 );
 ```
 
-## Supported Junctions
+## Supported Operators
 
-### Comparison Junctions
+### Comparison Operators
 
 - `$eq` - Equal to
 - `$ne` - Not equal to
@@ -120,7 +120,7 @@ Specification spec = mapper.readValue(
 Map.of("age", Map.of("$gte", 18))
 ```
 
-### Collection Junctions
+### Collection Operators
 
 - `$in` - Value in list
 - `$nin` - Value not in list
@@ -135,7 +135,7 @@ Map.of("status", Map.of("$in", List.of("ACTIVE", "PENDING")))
 Map.of("tags", Map.of("$all", List.of("urgent", "verified")))
 ```
 
-### Advanced Junctions
+### Advanced Operators
 
 - `$exists` - Field exists (boolean check)
 - `$type` - Value is of specified type
@@ -154,7 +154,7 @@ Map.of("addresses", Map.of("$elemMatch",
     Map.of("isPrimary", Map.of("$eq", true))))
 ```
 
-### Supported Types for `$type` junction
+### Supported Types for `$type` operator
 
 - `null`, `array`, `string`, `number`, `boolean`, `object`
 
@@ -177,7 +177,7 @@ The engine uses a three-state evaluation model for robust error handling:
 
 Criteria become UNDETERMINED when:
 - Required data is missing from the document
-- Unknown junction is used
+- Unknown operator is used
 - Type mismatch occurs (e.g., string provided where number expected)
 - Invalid regex pattern
 - Any evaluation error
@@ -337,7 +337,7 @@ This evaluates sample specifications against test documents using both JSON and 
 The engine has a clean three-layer architecture:
 
 1. **Data Layer** - Immutable records for specifications, criteria, and documents
-2. **Evaluation Layer** - `CriterionEvaluator` (junctions) and `SpecificationEvaluator` (orchestration)
+2. **Evaluation Layer** - `CriterionEvaluator` (operators) and `SpecificationEvaluator` (orchestration)
 3. **Result Layer** - Tri-state results with detailed failure reasons
 
 Key design principles:
@@ -390,6 +390,6 @@ For issues, questions, or suggestions:
 
 ## Acknowledgments
 
-- Junction design inspired by MongoDB query language
+- Operator design inspired by MongoDB query language
 - Tri-state evaluation model based on graceful degradation principles
 - Built with modern Java 21 features for clean, maintainable code

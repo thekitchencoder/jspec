@@ -298,10 +298,10 @@ public record EvaluationOutcome(
 )
 
 public record EvaluationSummary(
-    int totalCriteria,
-    int matchedCriteria,
-    int notMatchedCriteria,
-    int undeterminedCriteria,     // NEW - count of criteria that couldn't evaluate
+    int total,
+    int matched,
+    int notMatched,
+    int undetermined,     // NEW - count of criteria that couldn't evaluate
     boolean fullyDetermined    // true if all criteria evaluated successfully
 )
 ```

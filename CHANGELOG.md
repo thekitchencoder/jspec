@@ -89,7 +89,7 @@ See [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md) for planned enhancements:
 ### Planned for v0.1.0
 - Comprehensive test coverage (80%+)
 - Enhanced error handling with exception hierarchy
-- Public API for custom operator
+- Public API for custom operators
 - OperatorRegistry for extensibility
 - Regex pattern caching (LRU cache)
 - JavaDoc for all public classes
