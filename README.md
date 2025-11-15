@@ -76,23 +76,21 @@ for(
 
 ```yaml
 # specification.yaml
-id: employment-eligibility
+id: order-validation
 criteria:
-  - id: uc-active
+  - id: minimum-order
     query:
-      benefits:
-        universal_credit:
-          status: ACTIVE
-  - id: time-on-uc
+      order:
+        total:
+          $gte: 25.00
+  - id: customer-verified
     query:
-      benefits:
-        universal_credit:
-          duration_months:
-            $gte: 6
+      customer:
+        verified: true
 criteriaGroups:
-  - id: restart-program
+  - id: express-shipping-eligible
     junction: AND
-    criteria: [uc-active, time-on-uc]
+    criteria: [minimum-order, customer-verified]
 ```
 
 ```java
@@ -348,11 +346,11 @@ Key design principles:
 
 ## Use Cases
 
-- **Benefits eligibility** - Determine program qualification based on citizen data
-- **Business criterion validation** - Enforce complex business criteria on documents
+- **E-commerce order validation** - Validate orders for shipping eligibility, discounts, and fraud detection
+- **Business rule validation** - Enforce complex business rules on documents
 - **Policy enforcement** - Check compliance against defined policies
 - **Dynamic filtering** - Filter data based on user-defined criteria
-- **Form validation** - Validate complex forms with interdependent criteria
+- **Form validation** - Validate complex forms with interdependent fields
 
 ## Project Status
 

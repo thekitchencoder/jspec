@@ -1,24 +1,23 @@
-id: YAML contracted_provision_demo
+id: shopping-cart-validation
 criteria:
-  - id: uc-active
-    query: {benefits: {universal_credit:{status: "ACTIVE"}}}
+  - id: minimum-order-value
+    query: {order: {total: {$gte: 25.00}}}
 
-  - id: intensive-workgroup
-    query: {benefits: {universal_credit: {workgroup: "INTENSIVE"}}}
+  - id: customer-verified
+    query: {customer: {verified: true}}
 
-  - id: time-on-uc
-    query: {benefits: {universal_credit: {duration_months: { $gte: 6}}}}
+  - id: shipping-eligible
+    query: {order: {shipping: {country: {$in: [US, CA, UK, AU]}}}}
 
-  - id: previous-provision
-    query: {provision: {$elemMatch: {$nin: [restart,whp]}}}
+  - id: items-in-stock
+    query: {order: {items: {$elemMatch: {in_stock: true}}}}
 
 criteriaGroups:
-  - id: restart-criteriaGroup
+  - id: express-shipping-eligibility
     junction: AND
     criteria:
-      - id: uc-active
-      - id: intensive-workgroup
-      - id: time-on-uc
-      - id: bad-bernard-criterion
-      - id: bernard-element
-        query: {bernard: {$exists: false}}
+      - id: minimum-order-value
+      - id: customer-verified
+      - id: shipping-eligible
+      - id: prime-member
+        query: {customer: {membership: {$eq: PRIME}}}

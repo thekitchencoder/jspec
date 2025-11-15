@@ -1,0 +1,144 @@
+[
+  {
+    "service_id": "express_domestic",
+    "name": "Express Domestic Shipping",
+    "provider": "FastShip Logistics",
+    "description": "Next-day delivery for domestic orders",
+    "eligibility_criteria": {
+      "min_order_value": 50.00,
+      "countries": [
+        "US",
+        "UK",
+        "AU"
+      ],
+      "customer_verification": {
+        "required": true,
+        "description": "Customer account must be verified"
+      },
+      "items_in_stock": {
+        "required": true,
+        "description": "All items must be in stock at time of order"
+      },
+      "warehouse_distance": {
+        "max_miles": 500,
+        "description": "Customer must be within 500 miles of warehouse"
+      }
+    },
+    "service_details": {
+      "delivery_time": "1 business day",
+      "cost": 12.99,
+      "free_threshold": 100.00,
+      "tracking": true,
+      "signature_required": true
+    },
+    "excluded_categories": [
+      "hazardous",
+      "perishable",
+      "oversized"
+    ]
+  },
+  {
+    "service_id": "prime_free_shipping",
+    "name": "Prime Member Free Shipping",
+    "provider": "E-Commerce Platform",
+    "description": "Free express shipping for Prime members",
+    "eligibility_criteria": {
+      "membership": {
+        "required": "PRIME",
+        "description": "Active Prime membership required"
+      },
+      "min_order_value": 0.00,
+      "countries": [
+        "US",
+        "CA",
+        "UK",
+        "AU"
+      ],
+      "items_in_stock": {
+        "required": true,
+        "description": "All items must be in stock"
+      },
+      "prime_eligible": {
+        "required": true,
+        "description": "All items must be Prime eligible"
+      }
+    },
+    "service_details": {
+      "delivery_time": "1-2 business days",
+      "cost": 0.00,
+      "tracking": true,
+      "signature_required": false
+    },
+    "excluded_categories": [
+      "marketplace_seller"
+    ]
+  },
+  {
+    "service_id": "standard_shipping",
+    "name": "Standard Shipping",
+    "provider": "Global Postal Service",
+    "description": "Economical shipping option for all orders",
+    "eligibility_criteria": {
+      "min_order_value": 0.00,
+      "countries": [
+        "US",
+        "CA",
+        "UK",
+        "AU",
+        "DE",
+        "FR",
+        "ES",
+        "IT"
+      ],
+      "customer_verification": {
+        "required": false
+      }
+    },
+    "service_details": {
+      "delivery_time": "5-7 business days",
+      "cost": 4.99,
+      "free_threshold": 35.00,
+      "tracking": true,
+      "signature_required": false
+    },
+    "excluded_categories": []
+  },
+  {
+    "service_id": "international_express",
+    "name": "International Express",
+    "provider": "WorldWide Express",
+    "description": "Fast international shipping with customs clearance",
+    "eligibility_criteria": {
+      "min_order_value": 100.00,
+      "countries": [
+        "all_international"
+      ],
+      "customer_verification": {
+        "required": true,
+        "description": "Verified customers only for international orders"
+      },
+      "payment_verification": {
+        "required": true,
+        "description": "Payment method must be verified"
+      },
+      "export_restricted": {
+        "allowed": false,
+        "description": "Items must not be export-restricted"
+      }
+    },
+    "service_details": {
+      "delivery_time": "3-5 business days",
+      "cost": 29.99,
+      "tracking": true,
+      "signature_required": true,
+      "insurance_included": true,
+      "customs_clearance": true
+    },
+    "excluded_categories": [
+      "hazardous",
+      "perishable",
+      "batteries",
+      "liquids"
+    ]
+  }
+]

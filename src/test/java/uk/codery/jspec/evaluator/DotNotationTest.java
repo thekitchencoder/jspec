@@ -365,24 +365,26 @@ class DotNotationTest {
     // ==================== Real-World Examples ====================
 
     @Test
-    void dotNotation_realWorld_benefitsCheck() {
+    void dotNotation_realWorld_accountsCheck() {
         Map<String, Object> doc = Map.of(
-                "benefits", Map.of(
-                        "universal_credit", Map.of(
+                "accounts", Map.of(
+                        "current", Map.of(
                                 "status", "active",
                                 "amount", 650,
                                 "startDate", "2024-01-01"
                         ),
-                        "housing_benefit", Map.of(
-                                "status", "inactive"
+                        "mortgage", Map.of(
+                                "status", "inactive",
+                                "amount", 0,
+                                "endDate", "2024-01-01"
                         )
                 )
         );
 
         Criterion criterion = Criterion.builder()
-                .id("benefits-eligibility")
-                .field("benefits.universal_credit.status").eq("active")
-                .field("benefits.universal_credit.amount").gte(500)
+                .id("eligibility")
+                .field("accounts.current.status").eq("active")
+                .field("accounts.current.amount").gte(500)
                 .build();
 
         EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);

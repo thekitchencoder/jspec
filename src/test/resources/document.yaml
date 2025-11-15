@@ -1,13 +1,27 @@
-user:
-  name: Alice
-  age: 30
+customer:
+  name: Alice Johnson
   email: alice@example.com
+  verified: true
+  membership: STANDARD
   tags:
-    - admin
-    - user
-  status: active
-benefits:
-  universal_credit:
-    status: ACTIVE
-    duration_months: 4
-    workgroup: INTENSIVE
+    - frequent-buyer
+    - newsletter-subscriber
+
+order:
+  id: ORD-2024-12345
+  total: 89.99
+  currency: USD
+  shipping:
+    country: US
+    method: STANDARD
+  items:
+    - id: ITEM-001
+      name: Wireless Mouse
+      price: 29.99
+      quantity: 2
+      in_stock: true
+    - id: ITEM-002
+      name: USB Cable
+      price: 9.99
+      quantity: 3
+      in_stock: true

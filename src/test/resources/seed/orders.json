@@ -1,0 +1,236 @@
+[
+  {
+    "order_id": "ORD-2024-001",
+    "customer": {
+      "customer_id": "CUST-12345",
+      "name": "Marcus Thompson",
+      "email": "marcus.t@email.com",
+      "verified": true,
+      "membership": "STANDARD",
+      "account_age_days": 245,
+      "location": {
+        "city": "Leeds",
+        "country": "UK",
+        "postal_code": "LS1 4AP"
+      }
+    },
+    "order": {
+      "total": 124.98,
+      "currency": "GBP",
+      "status": "pending_payment",
+      "created_at": "2024-11-15T10:30:00Z",
+      "items": [
+        {
+          "sku": "ELEC-1001",
+          "name": "Wireless Keyboard",
+          "category": "electronics",
+          "price": 49.99,
+          "quantity": 1,
+          "in_stock": true,
+          "warehouse": "UK-NORTH"
+        },
+        {
+          "sku": "ELEC-2034",
+          "name": "USB-C Cable 2m",
+          "category": "electronics",
+          "price": 12.99,
+          "quantity": 2,
+          "in_stock": true,
+          "warehouse": "UK-NORTH"
+        },
+        {
+          "sku": "DESK-5501",
+          "name": "Desk Lamp",
+          "category": "home",
+          "price": 49.00,
+          "quantity": 1,
+          "in_stock": false,
+          "warehouse": "UK-SOUTH"
+        }
+      ],
+      "shipping": {
+        "method": "standard",
+        "country": "UK",
+        "estimated_days": 5,
+        "cost": 4.99
+      }
+    },
+    "payment": {
+      "method": "credit_card",
+      "last_four": "4242",
+      "verified": true
+    },
+    "notes": "Customer requested gift wrapping for the keyboard. Out of stock item (desk lamp) will be shipped separately when available."
+  },
+  {
+    "order_id": "ORD-2024-002",
+    "customer": {
+      "customer_id": "CUST-67890",
+      "name": "Sarah Chen",
+      "email": "sarah.chen@email.com",
+      "verified": true,
+      "membership": "PRIME",
+      "account_age_days": 892,
+      "location": {
+        "city": "San Francisco",
+        "country": "US",
+        "postal_code": "94102"
+      }
+    },
+    "order": {
+      "total": 299.97,
+      "currency": "USD",
+      "status": "shipped",
+      "created_at": "2024-11-14T14:22:00Z",
+      "items": [
+        {
+          "sku": "ELEC-3401",
+          "name": "Wireless Mouse",
+          "category": "electronics",
+          "price": 79.99,
+          "quantity": 1,
+          "in_stock": true,
+          "warehouse": "US-WEST"
+        },
+        {
+          "sku": "BOOK-9102",
+          "name": "JavaScript: The Good Parts",
+          "category": "books",
+          "price": 34.99,
+          "quantity": 1,
+          "in_stock": true,
+          "warehouse": "US-WEST"
+        },
+        {
+          "sku": "ELEC-7755",
+          "name": "Laptop Stand",
+          "category": "electronics",
+          "price": 89.99,
+          "quantity": 2,
+          "in_stock": true,
+          "warehouse": "US-WEST"
+        }
+      ],
+      "shipping": {
+        "method": "express",
+        "country": "US",
+        "estimated_days": 1,
+        "cost": 12.99
+      }
+    },
+    "payment": {
+      "method": "paypal",
+      "email": "sarah.chen@email.com",
+      "verified": true
+    },
+    "notes": "Prime member - free express shipping applied. Customer has excellent order history."
+  },
+  {
+    "order_id": "ORD-2024-003",
+    "customer": {
+      "customer_id": "CUST-24680",
+      "name": "James Wilson",
+      "email": "j.wilson@email.com",
+      "verified": false,
+      "membership": "STANDARD",
+      "account_age_days": 12,
+      "location": {
+        "city": "Toronto",
+        "country": "CA",
+        "postal_code": "M5H 2N2"
+      }
+    },
+    "order": {
+      "total": 18.50,
+      "currency": "CAD",
+      "status": "cancelled",
+      "created_at": "2024-11-13T09:15:00Z",
+      "items": [
+        {
+          "sku": "HOME-2211",
+          "name": "Coffee Mug Set",
+          "category": "home",
+          "price": 18.50,
+          "quantity": 1,
+          "in_stock": true,
+          "warehouse": "CA-EAST"
+        }
+      ],
+      "shipping": {
+        "method": "standard",
+        "country": "CA",
+        "estimated_days": 7,
+        "cost": 8.99
+      }
+    },
+    "payment": {
+      "method": "credit_card",
+      "last_four": "9999",
+      "verified": false
+    },
+    "notes": "Order cancelled - failed payment verification. Customer's first order, unverified account. Below minimum order value for free shipping."
+  },
+  {
+    "order_id": "ORD-2024-004",
+    "customer": {
+      "customer_id": "CUST-13579",
+      "name": "Emma Rodriguez",
+      "email": "emma.r@email.com",
+      "verified": true,
+      "membership": "PRIME",
+      "account_age_days": 1456,
+      "location": {
+        "city": "Sydney",
+        "country": "AU",
+        "postal_code": "2000"
+      }
+    },
+    "order": {
+      "total": 549.95,
+      "currency": "AUD",
+      "status": "delivered",
+      "created_at": "2024-11-10T16:45:00Z",
+      "items": [
+        {
+          "sku": "ELEC-8901",
+          "name": "Mechanical Keyboard",
+          "category": "electronics",
+          "price": 189.99,
+          "quantity": 1,
+          "in_stock": true,
+          "warehouse": "AU-SYDNEY"
+        },
+        {
+          "sku": "ELEC-8902",
+          "name": "Gaming Mouse",
+          "category": "electronics",
+          "price": 119.99,
+          "quantity": 1,
+          "in_stock": true,
+          "warehouse": "AU-SYDNEY"
+        },
+        {
+          "sku": "ELEC-8903",
+          "name": "Headset",
+          "category": "electronics",
+          "price": 159.98,
+          "quantity": 2,
+          "in_stock": true,
+          "warehouse": "AU-SYDNEY"
+        }
+      ],
+      "shipping": {
+        "method": "express",
+        "country": "AU",
+        "estimated_days": 2,
+        "cost": 0.00
+      }
+    },
+    "payment": {
+      "method": "credit_card",
+      "last_four": "1234",
+      "verified": true
+    },
+    "notes": "Loyal customer, gaming equipment purchase. Free express shipping for Prime member. All items delivered successfully."
+  }
+]

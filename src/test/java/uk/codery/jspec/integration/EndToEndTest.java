@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * End-to-end integration tests simulating real-world scenarios:
- * - Employment eligibility checks
+ * - E-commerce order validation
  * - User access control
  * - Complex business criteria
  * - Multi-level nested documents
@@ -30,54 +30,56 @@ class EndToEndTest {
         evaluator = new SpecificationEvaluator();
     }
 
-    // ========== Employment Eligibility Scenario ==========
+    // ========== Order Validation Scenario ==========
 
     @Test
-    void employmentEligibility_qualifiedCandidate_shouldMatch() {
-        // Real-world scenario: Checking eligibility for employment program
-        Map<String, Object> citizen = Map.of(
-            "age", 28,
-            "benefits", Map.of(
-                "universal_credit", Map.of(
-                    "status", "ACTIVE",
-                    "duration_months", 8
-                )
+    void orderValidation_qualifiedOrder_shouldMatch() {
+        // Real-world scenario: Checking eligibility for express shipping
+        Map<String, Object> order = Map.of(
+            "customer", Map.of(
+                "verified", true,
+                "membership", "PRIME"
             ),
-            "employment", Map.of(
-                "status", "UNEMPLOYED",
-                "seeking_work", true
+            "cart", Map.of(
+                "total", 125.00,
+                "items_count", 5
+            ),
+            "shipping", Map.of(
+                "country", "US",
+                "method_requested", "EXPRESS"
             )
         );
 
-        // Specification: Must be on UC for 6+ months, unemployed, and seeking work
+        // Specification: Must be verified, meet minimum order, and ship to eligible country
         List<Criterion> criteria = List.of(
-            new Criterion("uc-active", Map.of("benefits", Map.of(
-                "universal_credit", Map.of("status", Map.of("$eq", "ACTIVE"))
+            new Criterion("customer-verified", Map.of("customer", Map.of(
+                "verified", Map.of("$eq", true)
             ))),
-            new Criterion("uc-duration", Map.of("benefits", Map.of(
-                "universal_credit", Map.of("duration_months", Map.of("$gte", 6))
+            new Criterion("minimum-order", Map.of("cart", Map.of(
+                "total", Map.of("$gte", 25.00)
             ))),
-            new Criterion("unemployed", Map.of("employment", Map.of(
-                "status", Map.of("$eq", "UNEMPLOYED")
+            new Criterion("eligible-country", Map.of("shipping", Map.of(
+                "country", Map.of("$in", List.of("US", "CA", "UK", "AU"))
             ))),
-            new Criterion("seeking-work", Map.of("employment", Map.of(
-                "seeking_work", Map.of("$eq", true)
+            new Criterion("has-items", Map.of("cart", Map.of(
+                "items_count", Map.of("$gt", 0)
             )))
         );
 
         CriteriaGroup eligibilitySet = new CriteriaGroup(
-            "restart-eligible",
+            "express-shipping-eligible",
             Junction.AND,
-            List.of(new Criterion("uc-active"), new Criterion("uc-duration"), new Criterion("unemployed"), new Criterion("seeking-work"))
+            List.of(new Criterion("customer-verified"), new Criterion("minimum-order"),
+                    new Criterion("eligible-country"), new Criterion("has-items"))
         );
 
         Specification spec = new Specification(
-            "restart-programme-eligibility",
+            "express-shipping-eligibility",
                 criteria,
             List.of(eligibilitySet)
         );
 
-        EvaluationOutcome outcome = evaluator.evaluate(citizen, spec);
+        EvaluationOutcome outcome = evaluator.evaluate(order, spec);
 
         assertThat(outcome.summary().matched()).isEqualTo(4);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
@@ -85,49 +87,51 @@ class EndToEndTest {
     }
 
     @Test
-    void employmentEligibility_unqualifiedCandidate_shouldNotMatch() {
-        Map<String, Object> citizen = Map.of(
-            "age", 28,
-            "benefits", Map.of(
-                "universal_credit", Map.of(
-                    "status", "ACTIVE",
-                    "duration_months", 3  // Only 3 months, needs 6
-                )
+    void orderValidation_unqualifiedOrder_shouldNotMatch() {
+        Map<String, Object> order = Map.of(
+            "customer", Map.of(
+                "verified", true,
+                "membership", "STANDARD"
             ),
-            "employment", Map.of(
-                "status", "UNEMPLOYED",
-                "seeking_work", true
+            "cart", Map.of(
+                "total", 15.00,  // Below minimum of $25
+                "items_count", 2
+            ),
+            "shipping", Map.of(
+                "country", "US",
+                "method_requested", "EXPRESS"
             )
         );
 
         List<Criterion> criteria = List.of(
-            new Criterion("uc-active", Map.of("benefits", Map.of(
-                "universal_credit", Map.of("status", Map.of("$eq", "ACTIVE"))
+            new Criterion("customer-verified", Map.of("customer", Map.of(
+                "verified", Map.of("$eq", true)
             ))),
-            new Criterion("uc-duration", Map.of("benefits", Map.of(
-                "universal_credit", Map.of("duration_months", Map.of("$gte", 6))
+            new Criterion("minimum-order", Map.of("cart", Map.of(
+                "total", Map.of("$gte", 25.00)
             ))),
-            new Criterion("unemployed", Map.of("employment", Map.of(
-                "status", Map.of("$eq", "UNEMPLOYED")
+            new Criterion("eligible-country", Map.of("shipping", Map.of(
+                "country", Map.of("$in", List.of("US", "CA", "UK", "AU"))
             ))),
-            new Criterion("seeking-work", Map.of("employment", Map.of(
-                "seeking_work", Map.of("$eq", true)
+            new Criterion("has-items", Map.of("cart", Map.of(
+                "items_count", Map.of("$gt", 0)
             )))
         );
 
         CriteriaGroup eligibilitySet = new CriteriaGroup(
-            "restart-eligible",
+            "express-shipping-eligible",
             Junction.AND,
-            List.of(new Criterion("uc-active"), new Criterion("uc-duration"), new Criterion("unemployed"), new Criterion("seeking-work"))
+            List.of(new Criterion("customer-verified"), new Criterion("minimum-order"),
+                    new Criterion("eligible-country"), new Criterion("has-items"))
         );
 
         Specification spec = new Specification(
-            "restart-programme-eligibility",
+            "express-shipping-eligibility",
                 criteria,
             List.of(eligibilitySet)
         );
 
-        EvaluationOutcome outcome = evaluator.evaluate(citizen, spec);
+        EvaluationOutcome outcome = evaluator.evaluate(order, spec);
 
         assertThat(outcome.summary().matched()).isEqualTo(3);
         assertThat(outcome.summary().notMatched()).isEqualTo(1);
@@ -135,37 +139,38 @@ class EndToEndTest {
     }
 
     @Test
-    void employmentEligibility_incompleteData_shouldBeUndetermined() {
-        Map<String, Object> citizen = Map.of(
-            "age", 28,
-            "benefits", Map.of(
-                "universal_credit", Map.of(
-                    "status", "ACTIVE"
-                    // Missing duration_months
-                )
+    void orderValidation_incompleteData_shouldBeUndetermined() {
+        Map<String, Object> order = Map.of(
+            "customer", Map.of(
+                "verified", true
+                // Missing membership
+            ),
+            "cart", Map.of(
+                "items_count", 3
+                // Missing total
             )
-            // Missing employment section
+            // Missing shipping section
         );
 
         List<Criterion> criteria = List.of(
-            new Criterion("uc-active", Map.of("benefits", Map.of(
-                "universal_credit", Map.of("status", Map.of("$eq", "ACTIVE"))
+            new Criterion("customer-verified", Map.of("customer", Map.of(
+                "verified", Map.of("$eq", true)
             ))),
-            new Criterion("uc-duration", Map.of("benefits", Map.of(
-                "universal_credit", Map.of("duration_months", Map.of("$gte", 6))
+            new Criterion("minimum-order", Map.of("cart", Map.of(
+                "total", Map.of("$gte", 25.00)
             ))),
-            new Criterion("unemployed", Map.of("employment", Map.of(
-                "status", Map.of("$eq", "UNEMPLOYED")
+            new Criterion("eligible-country", Map.of("shipping", Map.of(
+                "country", Map.of("$in", List.of("US", "CA", "UK", "AU"))
             )))
         );
 
         Specification spec = new Specification(
-            "restart-programme-eligibility",
+            "express-shipping-eligibility",
                 criteria,
             List.of()
         );
 
-        EvaluationOutcome outcome = evaluator.evaluate(citizen, spec);
+        EvaluationOutcome outcome = evaluator.evaluate(order, spec);
 
         assertThat(outcome.summary().matched()).isEqualTo(1);
         assertThat(outcome.summary().undetermined()).isEqualTo(2);

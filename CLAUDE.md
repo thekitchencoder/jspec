@@ -43,7 +43,7 @@ jspec/
 └── src/test/resources/                             # Test data
     ├── specification.{json,yaml}                   # Sample specifications
     ├── document.yaml                               # Sample document
-    └── seed/citizens.json                          # Employment/benefits data
+    └── seed/orders.json                            # E-commerce order data
 
 Documentation:
 ├── README.md                              # User-facing documentation
@@ -92,7 +92,7 @@ Operators are implemented as lambda-based handlers in a map (CriterionEvaluator.
 ### 4. Deep Document Navigation
 
 Uses dot notation to traverse nested maps:
-- `benefits.universal_credit.status` → `document.get("benefits").get("universal_credit").get("status")`
+- `order.shipping.country` → `document.get("order").get("shipping").get("country")`
 - Implemented in `CriterionEvaluator.navigate()` method
 
 ## Terminology & Naming Decisions
