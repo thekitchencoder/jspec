@@ -14,7 +14,7 @@ Your JSON Specification Evalutor is a **production-ready, Spring-independent lib
 - ✅ **SLF4J logging integration** (graceful degradation with proper logging)
 - ✅ **Comprehensive documentation** (README.md, CLAUDE.md, ERROR_HANDLING_DESIGN.md, CONTRIBUTING.md, CHANGELOG.md)
 - ✅ **Regex pattern caching** (Thread-safe LRU cache with ~10-100x performance improvement)
-- ⚠️ Limited extensibility (RuleEvaluator is public but no custom operator API)
+- ⚠️ Limited extensibility (CriterionEvaluator is public but no custom operator API)
 - ❌ No builder APIs
 - ❌ No example projects
 
@@ -28,7 +28,7 @@ This roadmap has been updated to reflect the significant progress made on the JS
 - ✅ **Logging** - SLF4J fully integrated (was: "uses System.err.println")
 - ✅ **Documentation** - Comprehensive README, CLAUDE.md, ERROR_HANDLING_DESIGN.md created
 - ✅ **Bug Fix** - SpecificationEvaluator now correctly uses injected evaluator
-- ✅ **Public API** - RuleEvaluator is now public class
+- ✅ **Public API** - CriterionEvaluator is now public class
 - ✅ **Performance** - Regex pattern caching with LRU eviction (~10-100x faster for repeated patterns)
 
 **Key Remaining Work:**
@@ -45,13 +45,13 @@ This roadmap has been updated to reflect the significant progress made on the JS
 ### 1.1 Testing Infrastructure ✅ **COMPLETED**
 **Status:** Comprehensive test suite implemented
 
-- [x] **Unit tests for RuleEvaluator** - `RuleEvaluatorTest.java` created
+- [x] **Unit tests for CriterionEvaluator** - `CriterionEvaluatorTest.java` created
   - All 13 operators tested individually
   - Edge cases: null values, type mismatches, nested structures
 
 - [x] **Unit tests for SpecificationEvaluator** - `SpecificationEvaluatorTest.java` created
   - Parallel criterion evaluation
-  - RuleSet evaluation with AND/OR operators
+  - CriteriaGroup evaluation with AND/OR operators
   - Result caching behavior
   - Thread safety verification
 
@@ -77,12 +77,12 @@ This roadmap has been updated to reflect the significant progress made on the JS
 **Design Decision:** Rather than creating exception hierarchy (which would cause hard failures), implemented a **graceful degradation approach** using tri-state evaluation model:
 
 - [x] **Tri-state evaluation model** - `EvaluationState` enum created
-  - `MATCHED` - Rule evaluated successfully, condition is TRUE
-  - `NOT_MATCHED` - Rule evaluated successfully, condition is FALSE
+  - `MATCHED` - Criterion evaluated successfully, condition is TRUE
+  - `NOT_MATCHED` - Criterion evaluated successfully, condition is FALSE
   - `UNDETERMINED` - Could not evaluate (missing data, unknown operator, type mismatch)
 
 - [x] **SLF4J logging integration** - Replaced all `System.err.println()` with proper logging
-  - `RuleEvaluator.java:386` - Unknown operators now logged via `log.warn()`
+  - `CriterionEvaluator.java:386` - Unknown operators now logged via `log.warn()`
   - Type mismatches logged with context
   - Invalid patterns logged gracefully
 
@@ -91,7 +91,7 @@ This roadmap has been updated to reflect the significant progress made on the JS
   - `missingPaths` field - Tracks which document fields are missing
   - `reason()` method - Provides detailed failure context
 
-- [x] **Graceful degradation** - Rules never throw exceptions during evaluation
+- [x] **Graceful degradation** - Criteria never throw exceptions during evaluation
   - Unknown operators → UNDETERMINED + warning log
   - Type mismatches → UNDETERMINED + warning log
   - Missing data → UNDETERMINED (not an error)
@@ -108,16 +108,16 @@ This roadmap has been updated to reflect the significant progress made on the JS
 ## Priority 2: Extensibility & API Design ⚠️ **PARTIALLY COMPLETED**
 
 ### 2.1 Public API for Custom Operators ⚠️ **PARTIAL**
-**Status:** RuleEvaluator is public, but custom operator API not yet implemented
+**Status:** CriterionEvaluator is public, but custom operator API not yet implemented
 
 **Progress:**
-- [x] **Make `RuleEvaluator` public** - `RuleEvaluator.java:10` is now `public class`
-- [x] **`OperatorHandler` interface exists** - Defined at `RuleEvaluator.java:13-15` (package-private)
+- [x] **Make `CriterionEvaluator` public** - `CriterionEvaluator.java:10` is now `public class`
+- [x] **`OperatorHandler` interface exists** - Defined at `CriterionEvaluator.java:13-15` (package-private)
 - [ ] **Extract `OperatorHandler` to public interface** - Still package-private, should move to separate file
 - [ ] **Create `OperatorRegistry` class** - Not implemented
 - [ ] **Constructor accepting custom `OperatorRegistry`** - Not implemented
 
-**Current limitation:** While RuleEvaluator is public, operators are still hardcoded in constructor with no way to extend.
+**Current limitation:** While CriterionEvaluator is public, operators are still hardcoded in constructor with no way to extend.
 
 **Next steps:**
 ```java
@@ -136,7 +136,7 @@ public class OperatorRegistry {
 }
 
 // TODO: Update CriterionEvaluator constructor
-public RuleEvaluator(OperatorRegistry registry) {
+public CriterionEvaluator(OperatorRegistry registry) {
     this.operators.putAll(registry.getAll());
 }
 ```
@@ -144,26 +144,26 @@ public RuleEvaluator(OperatorRegistry registry) {
 ### 2.2 Builder Pattern for Configuration ❌ **NOT IMPLEMENTED**
 **Why:** Make API more fluent and easier to configure
 
-- [ ] **Create `RuleEvaluatorBuilder`**
+- [ ] **Create `CriterionEvaluatorBuilder`**
 - [ ] **Create `SpecificationEvaluatorBuilder`**
 
 **Note:** Current record-based API is clean and simple. Builders may add complexity without much benefit given the immutable design. Consider if this is truly needed.
 
-### 2.3 Fluent API for Programmatic Rule Building ❌ **NOT IMPLEMENTED**
+### 2.3 Fluent API for Programmatic Criterion Building ❌ **NOT IMPLEMENTED**
 **Why:** Current API requires manual Map construction (verbose)
 
-- [ ] **Create fluent builders for Rule construction**
+- [ ] **Create fluent builders for Criterion construction**
 
 **Current approach:**
 ```java
 // Verbose but works
-Rule criterion = new Rule("age-check", Map.of("age", Map.of("$gte", 18)));
+Criterion criterion = new Criterion("age-check", Map.of("age", Map.of("$gte", 18)));
 ```
 
 **Proposed approach:**
 ```java
 // More readable
-Rule criterion = Rule.builder()
+Criterion criterion = Criterion.builder()
     .id("age-check")
     .field("age").gte(18)
     .build();
@@ -181,7 +181,7 @@ Rule criterion = Rule.builder()
 **Status:** ✅ Implemented with thread-safe LRU cache
 
 **Implementation Details:**
-- [x] **Implemented LRU pattern cache** (`RuleEvaluator.java:18-25`)
+- [x] **Implemented LRU pattern cache** (`CriterionEvaluator.java:18-25`)
   ```java
     private final Map<String, Pattern> patternCache = Collections.synchronizedMap(
             new LinkedHashMap <>(16, 0.75f, true) {
@@ -193,12 +193,12 @@ Rule criterion = Rule.builder()
     );
    ```
 
-- [x] **Cache helper method** (`RuleEvaluator.java:196-217`)
+- [x] **Cache helper method** (`CriterionEvaluator.java:196-217`)
   - `getOrCompilePattern(String)` - Gets from cache or compiles and caches
   - Thread-safe implementation
   - TRACE logging for cache hits, DEBUG logging for cache misses
 
-- [x] **Updated regex operator** (`RuleEvaluator.java:185`)
+- [x] **Updated regex operator** (`CriterionEvaluator.java:185`)
   - Now uses `getOrCompilePattern()` instead of direct `Pattern.compile()`
   - Maintains all existing error handling
 
@@ -216,15 +216,15 @@ Rule criterion = Rule.builder()
 **Progress:**
 - [x] **Add SLF4J dependency** - Added to `pom.xml:36-39` (compile scope)
 - [x] **Add slf4j-simple for tests** - Added to `pom.xml:55-60` (test scope)
-- [x] **Add logging to RuleEvaluator**
+- [x] **Add logging to CriterionEvaluator**
   - Uses `@Slf4j` annotation (Lombok)
-  - DEBUG: Rule evaluation started (line 59)
+  - DEBUG: Criterion evaluation started (line 59)
   - WARN: Unknown operators (line 386), type mismatches, invalid patterns
 - [x] **Add logging to SpecificationEvaluator**
   - Uses `@Slf4j` annotation
   - INFO: Specification evaluation started (line 19)
   - INFO: Evaluation completed with summary (line 43-45)
-  - DEBUG: Rule count (line 27)
+  - DEBUG: Criterion count (line 27)
 - [x] **Keep library neutral** - Using slf4j-api only, no implementation forced
 
 **Result:** Comprehensive logging throughout evaluation pipeline with proper levels
@@ -243,7 +243,7 @@ Rule criterion = Rule.builder()
   - `EvaluationResult.java` - Has JavaDoc
   - `EvaluationState.java` - Has JavaDoc
   - `EvaluationSummary.java` - Has JavaDoc
-  - `RuleEvaluator.java` - Partial JavaDoc (inner classes documented)
+  - `CriterionEvaluator.java` - Partial JavaDoc (inner classes documented)
 
 - [ ] **Add comprehensive JavaDoc to all public classes**
   - Class-level JavaDoc with usage examples
@@ -258,7 +258,7 @@ Rule criterion = Rule.builder()
    * <p>Main entry points:
    * <ul>
    *   <li>{@link SpecificationEvaluator} - Evaluate specifications
-   *   <li>{@link RuleEvaluator} - Evaluate individual criteria
+   *   <li>{@link CriterionEvaluator} - Evaluate individual criteria
    * </ul>
    */
   package uk.codery.jspec;
@@ -274,7 +274,7 @@ Rule criterion = Rule.builder()
   - Quick start guide with code examples
   - Complete operator reference (comparison, collection, advanced)
   - Tri-state evaluation model documentation
-  - Rule sets and nested queries
+  - Criterion sets and nested queries
   - Thread safety documentation
   - Error handling philosophy
   - Building from source instructions
@@ -359,8 +359,8 @@ docs/
 
 - [ ] **Add generic document type**
   ```java
-  public class TypedRuleEvaluator<T> {
-      public EvaluationResult evaluateRule(T document, Rule criterion) { }
+  public class TypedCriterionEvaluator<T> {
+      public EvaluationResult evaluateCriterion(T document, Criterion criterion) { }
   }
   ```
 
@@ -398,10 +398,10 @@ docs/
 ### Phase 2: Extensibility ⚠️ **PARTIALLY COMPLETED**
 1. ⚠️ Extract public interfaces - OperatorHandler exists but package-private
 2. ❌ Add operator registry - Not implemented
-3. ✅ Make RuleEvaluator public - Completed
+3. ✅ Make CriterionEvaluator public - Completed
 
 **Goal:** Library can be extended by users ⚠️ **PARTIALLY ACHIEVED**
-**Status:** RuleEvaluator is public but no API for custom operators yet
+**Status:** CriterionEvaluator is public but no API for custom operators yet
 
 ### Phase 3: Developer Experience ⚠️ **MOSTLY COMPLETED**
 1. ❌ Add builders and fluent API - Not implemented
@@ -429,14 +429,14 @@ If you're planning a v1.0 release, consider these breaking changes:
 1. **`SpecificationEvaluator.java:24`** ✅ **FIXED** - Now uses `this.evaluator` instead of creating new instance
    ```java
    // FIXED: Now correctly uses this.evaluator
-   .map(criterion -> this.evaluator.evaluateRule(doc, criterion))
+   .map(criterion -> this.evaluator.evaluateCriterion(doc, criterion))
    ```
 
 ### Completed Improvements ✅
 1. **Package structure** ✅ **COMPLETED in v0.1.0** - Classes organized into logical subpackages
    ```
-   uk.codery.jspec.model.*      (domain models: Rule, RuleSet, Specification, Operator)
-   uk.codery.jspec.evaluator.*  (evaluation engine: RuleEvaluator, SpecificationEvaluator)
+   uk.codery.jspec.model.*      (domain models: Criterion, CriteriaGroup, Specification, Operator)
+   uk.codery.jspec.evaluator.*  (evaluation engine: CriterionEvaluator, SpecificationEvaluator)
    uk.codery.jspec.result.*     (result types: EvaluationState, EvaluationResult, etc.)
    uk.codery.jspec.operator.*   (reserved for future custom operator support)
    ```
@@ -488,12 +488,12 @@ If you're planning a v1.0 release, consider these breaking changes:
 - ✅ **SLF4J logging integration** - Proper observability without System.err
 - ✅ **Spring-compatible** - Works with or without Spring
 - ✅ **Well-documented** - Comprehensive README.md, ERROR_HANDLING_DESIGN.md, CLAUDE.md, CONTRIBUTING.md
-- ✅ **Clean public API** - RuleEvaluator is public, record-based immutable design
+- ✅ **Clean public API** - CriterionEvaluator is public, record-based immutable design
 - ✅ **Performance optimized** - Regex pattern caching with LRU eviction (~10-100x faster for repeated patterns)
 
 **Still To Do:**
 
-- ⚠️ **Extensibility** - RuleEvaluator is public but no custom operator registration API yet
+- ⚠️ **Extensibility** - CriterionEvaluator is public but no custom operator registration API yet
 - ⚠️ **JavaDoc** - Partial coverage, needs completion for all public classes
 - ❌ **Builder APIs** - Fluent API not implemented (Map-based API works fine)
 - ❌ **Example projects** - No examples/ directory (demo exists in test code)
@@ -511,16 +511,16 @@ src/main/java/uk/codery/jspec/
 ├── OperatorHandler.java (extract from inner interface)
 ├── OperatorRegistry.java
 ├── builder/
-│   ├── RuleEvaluatorBuilder.java
+│   ├── CriterionEvaluatorBuilder.java
 │   ├── SpecificationEvaluatorBuilder.java
-│   └── RuleBuilder.java
+│   └── CriterionBuilder.java
 ├── exceptions/
-│   ├── RuleEvaluationException.java
+│   ├── CriterionEvaluationException.java
 │   ├── InvalidOperatorException.java
 │   └── InvalidQueryException.java
 
 src/test/java/uk/codery/jspec/
-├── RuleEvaluatorTest.java
+├── CriterionEvaluatorTest.java
 ├── SpecificationEvaluatorTest.java
 ├── operators/ (test per operator)
 
@@ -536,7 +536,7 @@ examples/
 
 ### Files to Modify
 - `pom.xml` - Add SLF4J, test dependencies, publishing config
-- `RuleEvaluator.java` - Make public, add logging, fix regex caching, use OperatorRegistry
+- `CriterionEvaluator.java` - Make public, add logging, fix regex caching, use OperatorRegistry
 - `SpecificationEvaluator.java` - Fix evaluator usage bug, add logging, add builder
 
 ---
@@ -569,7 +569,7 @@ examples/
 1. **Complete operator extensibility API**
    - Make `OperatorHandler` public
    - Create `OperatorRegistry` class
-   - Add constructor to `RuleEvaluator` accepting custom registry
+   - Add constructor to `CriterionEvaluator` accepting custom registry
    - Enables users to add custom operators
    - **Estimated effort:** 1-2 days
 

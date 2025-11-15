@@ -2,7 +2,7 @@
 
 ## Core Principle
 
-**Rules must never fail hard.** A failure in one criterion should never prevent evaluation of other criteria or stop the overall specification evaluation.
+**Criteria must never fail hard.** A failure in one criterion should never prevent evaluation of other criteria or stop the overall specification evaluation.
 
 ---
 
@@ -11,17 +11,17 @@
 Every criterion evaluation produces one of three states:
 
 ### 1. ✅ MATCHED
-- Rule evaluated successfully
+- Criterion evaluated successfully
 - Condition is TRUE
 - All required data present and valid
 
 ### 2. ❌ NOT_MATCHED
-- Rule evaluated successfully
+- Criterion evaluated successfully
 - Condition is FALSE
 - All required data present and valid
 
 ### 3. ⚠️ UNDETERMINED
-- Rule could not be evaluated definitively
+- Criterion could not be evaluated definitively
 - Reasons include:
   - **Missing data** in input document
   - **Invalid criterion** (unknown operator, malformed query)
@@ -38,7 +38,7 @@ The current `EvaluationResult` has the foundation:
 
 ```java
 public record EvaluationResult(
-    Rule criterion,
+    Criterion criterion,
     boolean matched,           // true/false
     List<String> missingPaths  // tracks missing data
 ) implements Result
@@ -62,7 +62,7 @@ public record EvaluationResult(
 - Or "couldn't evaluate" (UNDETERMINED)?
 
 **Current issues:**
-1. **Unknown operators** → Prints to stderr, continues silently (RuleEvaluator.java:194)
+1. **Unknown operators** → Prints to stderr, continues silently (CriterionEvaluator.java:194)
 2. **Type mismatches** → May throw ClassCastException
 3. **No distinction** between false and undetermined
 4. **Partial results** → No way to know if evaluation was complete
@@ -81,7 +81,7 @@ public enum EvaluationState {
 }
 
 public record EvaluationResult(
-    Rule criterion,
+    Criterion criterion,
     EvaluationState state,
     List<String> missingPaths,
     String failureReason  // For UNDETERMINED: "Unknown junction: $foo", "Missing data at: x.y.z"
@@ -108,7 +108,7 @@ public record EvaluationResult(
 
 ```java
 public record EvaluationResult(
-    Rule criterion,
+    Criterion criterion,
     Optional<Boolean> result,  // empty = UNDETERMINED, true = MATCHED, false = NOT_MATCHED
     List<String> missingPaths,
     String failureReason
@@ -156,7 +156,7 @@ if (handler == null) {
 **Result:**
 - No exception thrown
 - Evaluation continues
-- Rule marked as UNDETERMINED
+- Criterion marked as UNDETERMINED
 - Logged for debugging
 
 ### Type Mismatches
@@ -180,7 +180,7 @@ List<?> list = (List<?>) operand;
 **Result:**
 - No exception thrown
 - Evaluation continues
-- Rule marked as UNDETERMINED
+- Criterion marked as UNDETERMINED
 - Logged for debugging
 
 ### Invalid Regex Patterns
@@ -206,7 +206,7 @@ try {
 **Result:**
 - No exception thrown
 - Evaluation continues
-- Rule marked as UNDETERMINED
+- Criterion marked as UNDETERMINED
 - Logged for debugging
 
 ### Missing Data
@@ -240,7 +240,7 @@ if (val == null) {
 
 **Configuration (future):**
 ```java
-RuleEvaluator evaluator = RuleEvaluator.builder()
+CriterionEvaluator evaluator = CriterionEvaluator.builder()
     .strictMode(true)  // Throw exceptions instead of UNDETERMINED
     .build();
 ```
@@ -262,18 +262,18 @@ RuleEvaluator evaluator = RuleEvaluator.builder()
 
 **Example:**
 ```java
-private static final Logger logger = LoggerFactory.getLogger(RuleEvaluator.class);
+private static final Logger logger = LoggerFactory.getLogger(CriterionEvaluator.class);
 
 // In junction evaluation
 if (handler == null) {
     logger.warn("Unknown operator '{}' in criterion '{}' - marking as UNDETERMINED",
-                op, getCurrentRuleId());
+                op, getCurrentCriterionId());
 }
 
 // In type checking
 if (!(operand instanceof List)) {
     logger.warn("Type mismatch: operator '{}' expects List but got {} in criterion '{}' - marking as UNDETERMINED",
-                op, operand.getClass().getSimpleName(), getCurrentRuleId());
+                op, operand.getClass().getSimpleName(), getCurrentCriterionId());
 }
 ```
 
@@ -292,16 +292,16 @@ if (!(operand instanceof List)) {
 ```java
 public record EvaluationOutcome(
     String specificationId,
-    List<EvaluationResult> ruleResults,
-    List<RuleSetResult> ruleSetResults,
+    List<EvaluationResult> criterionResults,
+    List<CriteriaGroupResult> criteriaGroupResults,
     EvaluationSummary summary  // NEW
 )
 
 public record EvaluationSummary(
-    int totalRules,
-    int matchedRules,
-    int notMatchedRules,
-    int undeterminedRules,     // NEW - count of criteria that couldn't evaluate
+    int totalCriteria,
+    int matchedCriteria,
+    int notMatchedCriteria,
+    int undeterminedCriteria,     // NEW - count of criteria that couldn't evaluate
     boolean fullyDetermined    // true if all criteria evaluated successfully
 )
 ```
@@ -359,8 +359,8 @@ public record EvaluationSummary(
 ```java
 @Test
 void unknownOperator_shouldReturnUndetermined() {
-    Rule criterion = new Rule("test", Map.of("age", Map.of("$unknown", 18)));
-    EvaluationResult result = evaluator.evaluateRule(document, criterion);
+    Criterion criterion = new Criterion("test", Map.of("age", Map.of("$unknown", 18)));
+    EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
 
     assertEquals(EvaluationState.UNDETERMINED, result.state());
     assertThat(result.failureReason()).contains("Unknown junction: $unknown");
@@ -368,8 +368,8 @@ void unknownOperator_shouldReturnUndetermined() {
 
 @Test
 void typeMismatch_shouldReturnUndetermined() {
-    Rule criterion = new Rule("test", Map.of("age", Map.of("$in", "not-a-list")));
-    EvaluationResult result = evaluator.evaluateRule(document, criterion);
+    Criterion criterion = new Criterion("test", Map.of("age", Map.of("$in", "not-a-list")));
+    EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
 
     assertEquals(EvaluationState.UNDETERMINED, result.state());
     assertThat(result.failureReason()).contains("Type mismatch");
@@ -377,8 +377,8 @@ void typeMismatch_shouldReturnUndetermined() {
 
 @Test
 void invalidRegex_shouldReturnUndetermined() {
-    Rule criterion = new Rule("test", Map.of("name", Map.of("$regex", "[invalid")));
-    EvaluationResult result = evaluator.evaluateRule(document, criterion);
+    Criterion criterion = new Criterion("test", Map.of("name", Map.of("$regex", "[invalid")));
+    EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
 
     assertEquals(EvaluationState.UNDETERMINED, result.state());
     assertThat(result.failureReason()).contains("Invalid regex");
@@ -387,33 +387,33 @@ void invalidRegex_shouldReturnUndetermined() {
 @Test
 void missingData_shouldReturnUndetermined() {
     Map<String, Object> doc = Map.of(); // empty
-    Rule criterion = new Rule("test", Map.of("age", Map.of("$gt", 18)));
-    EvaluationResult result = evaluator.evaluateRule(doc, criterion);
+    Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gt", 18)));
+    EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
 
     assertEquals(EvaluationState.UNDETERMINED, result.state());
     assertThat(result.missingPaths()).contains("age");
 }
 
 @Test
-void multipleRules_oneUndetermined_shouldContinue() {
-    List<Rule> criteria = List.of(
-        new Rule("good", Map.of("age", Map.of("$eq", 25))),
-        new Rule("bad", Map.of("age", Map.of("$unknown", 18))),  // Unknown junction
-        new Rule("good2", Map.of("name", Map.of("$eq", "John")))
+void multipleCriteria_oneUndetermined_shouldContinue() {
+    List<Criterion> criteria = List.of(
+        new Criterion("good", Map.of("age", Map.of("$eq", 25))),
+        new Criterion("bad", Map.of("age", Map.of("$unknown", 18))),  // Unknown junction
+        new Criterion("good2", Map.of("name", Map.of("$eq", "John")))
     );
 
     EvaluationOutcome outcome = evaluator.evaluate(document,
         new Specification("spec", criteria, List.of()));
 
     // All 3 criteria should have results
-    assertEquals(3, outcome.ruleResults().size());
+    assertEquals(3, outcome.criterionResults().size());
 
     // One should be UNDETERMINED
-    assertEquals(1, outcome.summary().undeterminedRules());
+    assertEquals(1, outcome.summary().undeterminedCriteria());
     assertFalse(outcome.summary().fullyDetermined());
 
     // Other two should have valid states
-    assertEquals(2, outcome.summary().matchedRules() + outcome.summary().notMatchedRules());
+    assertEquals(2, outcome.summary().matchedCriteria() + outcome.summary().notMatchedCriteria());
 }
 ```
 
@@ -439,7 +439,7 @@ void multipleRules_oneUndetermined_shouldContinue() {
 ## Summary
 
 **Design Contract:**
-- ✅ Rules never throw exceptions (lenient mode)
+- ✅ Criteria never throw exceptions (lenient mode)
 - ✅ Three explicit states: MATCHED / NOT_MATCHED / UNDETERMINED
 - ✅ One bad criterion never stops specification evaluation
 - ✅ All failures logged for debugging

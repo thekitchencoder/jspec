@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the JSON Specification Evalutor will be documented in this file.
+All notable changes to the JSON Specification Evaluator will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Advanced: `$exists`, `$type`, `$regex`, `$elemMatch`
 - Deep document navigation with dot notation
 - Parallel criterion evaluation using streams
-- RuleSet support with AND/OR operators
+- CriteriaGroup support with AND/OR operators
 - Thread-safe evaluation
 - YAML/JSON specification loading via Jackson
 - Comprehensive test suite (TriStateEvaluationTest, EvaluationSummaryTest)
@@ -120,8 +120,8 @@ boolean matched = result.matched(); // Ambiguous: false could mean not-matched O
 **After (0.0.1-SNAPSHOT)**:
 ```java
 switch (result.state()) {
-    case MATCHED -> System.out.println("Rule passed");
-    case NOT_MATCHED -> System.out.println("Rule failed");
+    case MATCHED -> System.out.println("Criterion passed");
+    case NOT_MATCHED -> System.out.println("Criterion failed");
     case UNDETERMINED -> System.out.println("Could not evaluate: " + result.reason());
 }
 
@@ -143,7 +143,7 @@ if (result.isDetermined()) {
 // Check overall evaluation completeness
 EvaluationSummary summary = outcome.summary();
 if (!summary.fullyDetermined()) {
-    System.out.println("Warning: " + summary.undeterminedRules() + " criteria could not be evaluated");
+    System.out.println("Warning: " + summary.undetermined() + " criteria could not be evaluated");
 }
 ```
 
