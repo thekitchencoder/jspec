@@ -6,7 +6,7 @@
 
     <groupId>uk.codery</groupId>
     <artifactId>jspec</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
     <name>JSON Specification</name>
     <description>Minimal JSON Specification Evaluation Engine</description>
     <packaging>jar</packaging>
