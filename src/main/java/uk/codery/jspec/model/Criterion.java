@@ -1,5 +1,7 @@
 package uk.codery.jspec.model;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import uk.codery.jspec.evaluator.EvaluationContext;
 import uk.codery.jspec.result.EvaluationResult;
 
@@ -85,6 +87,16 @@ import uk.codery.jspec.result.EvaluationResult;
  * @see Junction
  * @since 0.2.0
  */
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type"
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = QueryCriterion.class, name = "query"),
+        @JsonSubTypes.Type(value = CompositeCriterion.class, name = "composite"),
+        @JsonSubTypes.Type(value = CriterionReference.class, name = "reference")
+})
 public sealed interface Criterion
         permits QueryCriterion, CompositeCriterion, CriterionReference {
 

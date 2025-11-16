@@ -6,59 +6,72 @@ id: loan-eligibility-specification
 criteria:
   # ========== Comparison Operators ==========
 
-  - id: age-minimum
+  - type: query
+    id: age-minimum
     query:
       applicant.age: { $gte: 18 }
 
-  - id: age-maximum
+  - type: query
+    id: age-maximum
     query:
       applicant.age: { $lt: 65 }
 
-  - id: credit-score-good
+  - type: query
+    id: credit-score-good
     query:
       financial.credit_score: { $gt: 650 }
 
-  - id: employment-status
+  - type: query
+    id: employment-status
     query:
       employment.status: { $eq: EMPLOYED }
 
-  - id: not-bankrupt
+  - type: query
+    id: not-bankrupt
     query:
       financial.bankruptcy_flag: { $ne: true }
 
   # ========== Collection Operators ==========
 
-  - id: residence-in-approved-states
+  - type: query
+    id: residence-in-approved-states
     query:
       applicant.address.state: { $in: [CA, NY, TX, FL, WA] }
 
-  - id: no-excluded-industries
+  - type: query
+    id: no-excluded-industries
     query:
       employment.industry: { $nin: [gambling, cannabis, cryptocurrency] }
 
-  - id: income-sources-diverse
+  - type: query
+    id: income-sources-diverse
     query:
       financial.income_sources: { $all: [salary, investments] }
 
-  - id: references-count
+  - type: query
+    id: references-count
     query:
       applicant.references: { $size: 3 }
 
   # ========== Advanced Operators ==========
 
-  - id: email-exists
+  - type: query
+    id: email-exists
     query:
       applicant.contact.email: { $exists: true }
 
-  - id: phone-type-check
+  - type: query
+    id: phone-type-check
     query:
       applicant.contact.phone: { $type: string }
 
-  - id: email-format-valid
+  - type: query
+    id: email-format-valid
     query:
       applicant.contact.email: { $regex: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$" }
 
-  - id: has-previous-loans
+  - type: query
+    id: has-previous-loans
     query:
       financial.loan_history:
         $elemMatch:
@@ -67,64 +80,102 @@ criteria:
 
   # ========== Dot Notation Examples ==========
 
-  - id: deep-nested-city
+  - type: query
+    id: deep-nested-city
     query:
       applicant.address.city: { $eq: "San Francisco" }
 
-  - id: employer-name
+  - type: query
+    id: employer-name
     query:
       employment.current.employer.name: { $regex: "^(Google|Apple|Microsoft|Amazon)" }
 
   # ========== Multiple Conditions on Same Field ==========
 
-  - id: income-range
+  - type: query
+    id: income-range
     query:
       financial.annual_income:
         $gte: 50000
         $lte: 500000
 
-  - id: employment-duration
+  - type: query
+    id: employment-duration
     query:
       employment.current.months_employed:
         $gte: 12
         $lt: 360
 
-criteriaGroups:
+  # ========== Composite Criteria (replacing criteriaGroups) ==========
+
   # All basic criteria must pass
-  - id: basic-eligibility
+  - type: composite
+    id: basic-eligibility
     junction: AND
     criteria:
-      - age-minimum
-      - age-maximum
-      - employment-status
-      - not-bankrupt
+      - type: reference
+        id: age-minimum
+        referencedId: age-minimum
+      - type: reference
+        id: age-maximum
+        referencedId: age-maximum
+      - type: reference
+        id: employment-status
+        referencedId: employment-status
+      - type: reference
+        id: not-bankrupt
+        referencedId: not-bankrupt
 
   # Either good credit OR diverse income sources
-  - id: financial-strength
+  - type: composite
+    id: financial-strength
     junction: OR
     criteria:
-      - credit-score-good
-      - income-sources-diverse
+      - type: reference
+        id: credit-score-good
+        referencedId: credit-score-good
+      - type: reference
+        id: income-sources-diverse
+        referencedId: income-sources-diverse
 
   # All location and industry checks
-  - id: location-industry-checks
+  - type: composite
+    id: location-industry-checks
     junction: AND
     criteria:
-      - residence-in-approved-states
-      - no-excluded-industries
+      - type: reference
+        id: residence-in-approved-states
+        referencedId: residence-in-approved-states
+      - type: reference
+        id: no-excluded-industries
+        referencedId: no-excluded-industries
 
   # Contact validation
-  - id: contact-validation
+  - type: composite
+    id: contact-validation
     junction: AND
     criteria:
-      - email-exists
-      - email-format-valid
-      - phone-type-check
+      - type: reference
+        id: email-exists
+        referencedId: email-exists
+      - type: reference
+        id: email-format-valid
+        referencedId: email-format-valid
+      - type: reference
+        id: phone-type-check
+        referencedId: phone-type-check
 
   # Premium customer indicators (at least one)
-  - id: premium-indicators
+  - type: composite
+    id: premium-indicators
     junction: OR
     criteria:
-      - has-previous-loans
-      - employer-name
-      - income-range
+      - type: reference
+        id: has-previous-loans
+        referencedId: has-previous-loans
+      - type: reference
+        id: employer-name
+        referencedId: employer-name
+      - type: reference
+        id: income-range
+        referencedId: income-range
