@@ -1,10 +1,10 @@
 package uk.codery.jspec.evaluator;
 
 import lombok.extern.slf4j.Slf4j;
-import uk.codery.jspec.model.Criterion;
+import uk.codery.jspec.model.QueryCriterion;
 import uk.codery.jspec.operator.OperatorHandler;
 import uk.codery.jspec.operator.OperatorRegistry;
-import uk.codery.jspec.result.EvaluationResult;
+import uk.codery.jspec.result.QueryResult;
 import uk.codery.jspec.result.EvaluationState;
 
 import java.util.*;
@@ -12,9 +12,9 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
- * Core evaluation engine for individual {@link Criterion} instances using MongoDB-style query operators.
+ * Core evaluation engine for individual {@link QueryCriterion} instances using MongoDB-style query operators.
  *
- * <p>The {@code CriterionEvaluator} is responsible for evaluating a single criterion against
+ * <p>The {@code CriterionEvaluator} is responsible for evaluating a single query criterion against
  * a document. It supports 13 built-in MongoDB-style operators and can be extended with custom
  * operators via {@link uk.codery.jspec.operator.OperatorRegistry}.
  *
@@ -58,18 +58,18 @@ import java.util.regex.PatternSyntaxException;
  *
  * <h2>Usage Examples</h2>
  *
- * <h3>Basic Criterion Evaluation</h3>
+ * <h3>Basic Query Criterion Evaluation</h3>
  * <pre>{@code
  * CriterionEvaluator evaluator = new CriterionEvaluator();
  *
  * Map<String, Object> document = Map.of("age", 25, "status", "active");
  *
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("age-check")
  *     .field("age").gte(18)
  *     .build();
  *
- * EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
+ * QueryResult result = evaluator.evaluateQuery(document, criterion);
  *
  * if (result.state() == EvaluationState.MATCHED) {
  *     System.out.println("Criterion matched!");
@@ -88,12 +88,12 @@ import java.util.regex.PatternSyntaxException;
  *     )
  * );
  *
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("city-check")
  *     .field("user.address.city").eq("London")
  *     .build();
  *
- * EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
+ * QueryResult result = evaluator.evaluateQuery(document, criterion);
  * }</pre>
  *
  * <h3>Custom Operators</h3>
@@ -130,12 +130,12 @@ import java.util.regex.PatternSyntaxException;
  *   <li>Safe for concurrent evaluations</li>
  * </ul>
  *
- * @see Criterion
- * @see EvaluationResult
+ * @see QueryCriterion
+ * @see QueryResult
  * @see EvaluationState
  * @see uk.codery.jspec.operator.OperatorRegistry
  * @see uk.codery.jspec.operator.OperatorHandler
- * @since 0.1.0
+ * @since 0.2.0
  */
 @Slf4j
 public class CriterionEvaluator {
@@ -197,16 +197,16 @@ public class CriterionEvaluator {
         }
     }
 
-    public EvaluationResult evaluateCriterion(Object doc, Criterion criterion) {
-        log.debug("Evaluating criterion '{}' against document", criterion.id());
+    public QueryResult evaluateQuery(Object doc, QueryCriterion criterion) {
+        log.debug("Evaluating query criterion '{}' against document", criterion.id());
 
         return Optional.of(criterion)
-                .map(Criterion::query)
+                .map(QueryCriterion::query)
                 .map(query -> matchValue(doc, query, ""))
-                .map(result -> new EvaluationResult(criterion, result.state, result.missingPaths, result.failureReason))
+                .map(result -> new QueryResult(criterion, result.state, result.missingPaths, result.failureReason))
                 .orElseGet(() -> {
-                    log.warn("Criterion '{}' has no query defined", criterion.id());
-                    return EvaluationResult.missing(criterion);
+                    log.warn("Query criterion '{}' has no query defined", criterion.id());
+                    return QueryResult.missing(criterion);
                 });
     }
 

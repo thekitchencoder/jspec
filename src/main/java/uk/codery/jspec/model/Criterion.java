@@ -1,108 +1,119 @@
 package uk.codery.jspec.model;
 
-import uk.codery.jspec.builder.CriterionBuilder;
-
-import java.util.Collections;
-import java.util.Map;
+import uk.codery.jspec.evaluator.EvaluationContext;
+import uk.codery.jspec.result.EvaluationResult;
 
 /**
- * Represents a single evaluation criterion with an ID and query conditions.
+ * A criterion defines a condition that can be evaluated against a document.
  *
- * <p>A criterion defines a set of conditions that a document must satisfy.
- * Conditions are expressed as MongoDB-style queries using operators like
- * {@code $eq}, {@code $gt}, {@code $in}, {@code $regex}, etc.
+ * <p>This sealed interface supports three types of criteria:
+ * <ul>
+ *   <li>{@link QueryCriterion} - Evaluates MongoDB-style query operators against document fields</li>
+ *   <li>{@link CompositeCriterion} - Combines multiple criteria with AND/OR logic (enables nesting)</li>
+ *   <li>{@link CriterionReference} - References another criterion by ID for result reuse</li>
+ * </ul>
  *
- * <h2>Creating Criteria</h2>
+ * <h2>Design Benefits</h2>
+ * <ul>
+ *   <li><b>Unified Model:</b> No artificial distinction between criteria and groups</li>
+ *   <li><b>Composable:</b> Criteria can nest arbitrarily deep via CompositeCriterion</li>
+ *   <li><b>Reusable:</b> Evaluate once, reference many times via CriterionReference</li>
+ *   <li><b>Type-Safe:</b> Sealed interface enables exhaustive pattern matching</li>
+ * </ul>
  *
- * <h3>Using Constructor (Map-based)</h3>
+ * <h2>Usage Examples</h2>
+ *
+ * <h3>Simple Query Criterion</h3>
  * <pre>{@code
- * // Simple equality check
- * Criterion criterion = new Criterion("status-check",
- *     Map.of("status", Map.of("$eq", "active")));
- *
- * // Range check
- * Criterion criterion = new Criterion("age-check",
- *     Map.of("age", Map.of("$gte", 18, "$lte", 65)));
- *
- * // Nested field
- * Criterion criterion = new Criterion("city-check",
- *     Map.of("address.city", Map.of("$eq", "London")));
+ * Criterion ageCriterion = new QueryCriterion(
+ *     "age-check",
+ *     Map.of("age", Map.of("$gte", 18))
+ * );
  * }</pre>
  *
- * <h3>Using Builder (Fluent API)</h3>
+ * <h3>Composite Criterion (AND/OR Logic)</h3>
  * <pre>{@code
- * // Simple equality check
- * Criterion criterion = Criterion.builder()
- *     .id("status-check")
- *     .field("status").eq("active")
- *     .build();
- *
- * // Range check
- * Criterion criterion = Criterion.builder()
- *     .id("age-check")
- *     .field("age").gte(18).and().lte(65)
- *     .build();
- *
- * // Multiple fields
- * Criterion criterion = Criterion.builder()
- *     .id("user-validation")
- *     .field("age").gte(18)
- *     .field("status").eq("active")
- *     .field("email").exists(true)
- *     .build();
+ * Criterion eligibility = new CompositeCriterion(
+ *     "eligibility",
+ *     Junction.AND,
+ *     List.of(
+ *         new QueryCriterion("age-check", Map.of("age", Map.of("$gte", 18))),
+ *         new QueryCriterion("status-check", Map.of("status", Map.of("$eq", "active")))
+ *     )
+ * );
  * }</pre>
  *
- * <h2>Evaluation</h2>
+ * <h3>Reference-Based Reuse</h3>
  * <pre>{@code
- * CriterionEvaluator evaluator = new CriterionEvaluator();
- * Map<String, Object> document = Map.of("age", 25, "status", "active");
+ * // Define once
+ * Criterion ageCheck = new QueryCriterion("age-check", Map.of("age", Map.of("$gte", 18)));
  *
- * EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
+ * // Reference multiple times (result reused from cache)
+ * Criterion group1 = new CompositeCriterion("group1", Junction.AND, List.of(
+ *     new CriterionReference("age-check"),  // References cached result
+ *     new QueryCriterion("other", Map.of(...))
+ * ));
  *
- * if (result.state() == EvaluationState.MATCHED) {
- *     System.out.println("Document matches criterion");
- * }
+ * Criterion group2 = new CompositeCriterion("group2", Junction.OR, List.of(
+ *     new CriterionReference("age-check"),  // Reuses same cached result
+ *     new QueryCriterion("another", Map.of(...))
+ * ));
  * }</pre>
  *
- * @param id the unique identifier for this criterion
- * @param query the query conditions as a map (MongoDB-style operators)
- * @see CriterionBuilder
- * @see uk.codery.jspec.evaluator.CriterionEvaluator
- * @see uk.codery.jspec.result.EvaluationResult
- * @since 0.1.0
+ * <h3>Arbitrary Nesting</h3>
+ * <pre>{@code
+ * Criterion nested = new CompositeCriterion(
+ *     "complex",
+ *     Junction.AND,
+ *     List.of(
+ *         new QueryCriterion("base", Map.of(...)),
+ *         new CompositeCriterion(  // Nest composite inside composite!
+ *             "inner",
+ *             Junction.OR,
+ *             List.of(
+ *                 new QueryCriterion("opt1", Map.of(...)),
+ *                 new QueryCriterion("opt2", Map.of(...))
+ *             )
+ *         )
+ *     )
+ * );
+ * }</pre>
+ *
+ * @see QueryCriterion
+ * @see CompositeCriterion
+ * @see CriterionReference
+ * @see Junction
+ * @since 0.2.0
  */
-public record Criterion(String id, Map<String, Object> query) {
+public sealed interface Criterion
+        permits QueryCriterion, CompositeCriterion, CriterionReference {
 
     /**
-     * Creates a criterion with an empty query.
+     * Returns the unique identifier for this criterion.
      *
-     * <p>Useful for creating placeholder criteria that will be populated later.
-     *
-     * @param id the criterion identifier
+     * @return the criterion ID (never null)
      */
-    public Criterion(String id) {
-        this(id, Collections.emptyMap());
-    }
+    String id();
 
     /**
-     * Creates a new fluent builder for constructing criteria.
+     * Evaluates this criterion against a document.
      *
-     * <p>The builder provides a more readable alternative to manually constructing
-     * Map-based queries.
+     * <p>The evaluation context provides:
+     * <ul>
+     *   <li>Access to the {@link uk.codery.jspec.evaluator.CriterionEvaluator}</li>
+     *   <li>Result caching for referenced criteria (evaluate once, reuse many times)</li>
+     * </ul>
      *
-     * <h3>Example:</h3>
-     * <pre>{@code
-     * Criterion criterion = Criterion.builder()
-     *     .id("age-check")
-     *     .field("age").gte(18)
-     *     .field("status").eq("active")
-     *     .build();
-     * }</pre>
+     * <p><b>Implementation Notes:</b>
+     * <ul>
+     *   <li>{@link QueryCriterion} - Delegates to evaluator for MongoDB-style query matching</li>
+     *   <li>{@link CompositeCriterion} - Recursively evaluates children, applies junction logic</li>
+     *   <li>{@link CriterionReference} - Looks up cached result by ID</li>
+     * </ul>
      *
-     * @return a new CriterionBuilder instance
-     * @see CriterionBuilder
+     * @param document the document to evaluate against
+     * @param context the evaluation context (provides evaluator and result cache)
+     * @return the evaluation result (never null)
      */
-    public static CriterionBuilder builder() {
-        return new CriterionBuilder();
-    }
+    EvaluationResult evaluate(Object document, EvaluationContext context);
 }
