@@ -2,7 +2,7 @@ package uk.codery.jspec.evaluator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.codery.jspec.model.Criterion;
+import uk.codery.jspec.model.QueryCriterion;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationState;
 
@@ -34,16 +34,16 @@ class RegexPatternCacheTest {
     @Test
     void shouldCacheAndReuseRegexPatterns() {
         // Create a criterion with a regex pattern
-        Criterion criterion = new Criterion("email-check", Map.of("email", Map.of("$regex", "^[a-z]+@example\\.com$")));
+        QueryCriterion criterion = new QueryCriterion("email-check", Map.of("email", Map.of("$regex", "^[a-z]+@example\\.com$")));
 
         Map<String, Object> doc1 = Map.of("email", "user@example.com");
         Map<String, Object> doc2 = Map.of("email", "admin@example.com");
         Map<String, Object> doc3 = Map.of("email", "invalid@test.com");
 
         // Evaluate multiple times with the same pattern
-        EvaluationResult result1 = evaluator.evaluateCriterion(doc1, criterion);
-        EvaluationResult result2 = evaluator.evaluateCriterion(doc2, criterion);
-        EvaluationResult result3 = evaluator.evaluateCriterion(doc3, criterion);
+        EvaluationResult result1 = evaluator.evaluateQuery(doc1, criterion);
+        EvaluationResult result2 = evaluator.evaluateQuery(doc2, criterion);
+        EvaluationResult result3 = evaluator.evaluateQuery(doc3, criterion);
 
         // Verify results are correct
         assertThat(result1.matched()).isTrue();
@@ -60,14 +60,14 @@ class RegexPatternCacheTest {
         );
 
         // Create criteria with different patterns
-        Criterion emailCriterion = new Criterion("email", Map.of("email", Map.of("$regex", "^[a-z]+@[a-z]+\\.com$")));
-        Criterion phoneCriterion = new Criterion("phone", Map.of("phone", Map.of("$regex", "^\\+1-\\d{3}-\\d{4}$")));
-        Criterion nameCriterion = new Criterion("name", Map.of("name", Map.of("$regex", "^[A-Z][a-z]+ [A-Z][a-z]+$")));
+        QueryCriterion emailCriterion = new QueryCriterion("email", Map.of("email", Map.of("$regex", "^[a-z]+@[a-z]+\\.com$")));
+        QueryCriterion phoneCriterion = new QueryCriterion("phone", Map.of("phone", Map.of("$regex", "^\\+1-\\d{3}-\\d{4}$")));
+        QueryCriterion nameCriterion = new QueryCriterion("name", Map.of("name", Map.of("$regex", "^[A-Z][a-z]+ [A-Z][a-z]+$")));
 
         // Evaluate all criteria
-        EvaluationResult emailResult = evaluator.evaluateCriterion(document, emailCriterion);
-        EvaluationResult phoneResult = evaluator.evaluateCriterion(document, phoneCriterion);
-        EvaluationResult nameResult = evaluator.evaluateCriterion(document, nameCriterion);
+        EvaluationResult emailResult = evaluator.evaluateQuery(document, emailCriterion);
+        EvaluationResult phoneResult = evaluator.evaluateQuery(document, phoneCriterion);
+        EvaluationResult nameResult = evaluator.evaluateQuery(document, nameCriterion);
 
         // All should match
         assertThat(emailResult.matched()).isTrue();
@@ -75,9 +75,9 @@ class RegexPatternCacheTest {
         assertThat(nameResult.matched()).isTrue();
 
         // Re-evaluate with same patterns (should use cache)
-        EvaluationResult emailResult2 = evaluator.evaluateCriterion(document, emailCriterion);
-        EvaluationResult phoneResult2 = evaluator.evaluateCriterion(document, phoneCriterion);
-        EvaluationResult nameResult2 = evaluator.evaluateCriterion(document, nameCriterion);
+        EvaluationResult emailResult2 = evaluator.evaluateQuery(document, emailCriterion);
+        EvaluationResult phoneResult2 = evaluator.evaluateQuery(document, phoneCriterion);
+        EvaluationResult nameResult2 = evaluator.evaluateQuery(document, nameCriterion);
 
         assertThat(emailResult2.matched()).isTrue();
         assertThat(phoneResult2.matched()).isTrue();
@@ -87,24 +87,24 @@ class RegexPatternCacheTest {
     @Test
     void shouldEvictOldPatternsWhenCacheIsFull() {
         // Create 105 unique patterns to exceed cache size of 100
-        List<Criterion> criteria = new ArrayList<>();
+        List<QueryCriterion> criteria = new ArrayList<>();
         for (int i = 0; i < 105; i++) {
             // Each criterion has a unique pattern
-            Criterion criterion = new Criterion("criterion" + i, Map.of("field", Map.of("$regex", "pattern" + i)));
+            QueryCriterion criterion = new QueryCriterion("criterion" + i, Map.of("field", Map.of("$regex", "pattern" + i)));
             criteria.add(criterion);
         }
 
         Map<String, Object> document = Map.of("field", "pattern50");
 
         // Evaluate all criteria (fills cache beyond limit)
-        for (Criterion criterion : criteria) {
-            evaluator.evaluateCriterion(document, criterion);
+        for (QueryCriterion criterion : criteria) {
+            evaluator.evaluateQuery(document, criterion);
         }
 
         // Cache should still work (with LRU eviction)
         // The first patterns should have been evicted
-        Criterion recentCriterion = criteria.get(104); // Last criterion added
-        EvaluationResult result = evaluator.evaluateCriterion(document, recentCriterion);
+        QueryCriterion recentCriterion = criteria.get(104); // Last criterion added
+        EvaluationResult result = evaluator.evaluateQuery(document, recentCriterion);
 
         // Should still work correctly even with eviction
         assertThat(result.state()).isIn(EvaluationState.MATCHED, EvaluationState.NOT_MATCHED);
@@ -113,11 +113,11 @@ class RegexPatternCacheTest {
     @Test
     void shouldHandleInvalidPatternsGracefully() {
         // Invalid regex pattern
-        Criterion criterion = new Criterion("invalid", Map.of("field", Map.of("$regex", "[invalid(regex")));
+        QueryCriterion criterion = new QueryCriterion("invalid", Map.of("field", Map.of("$regex", "[invalid(regex")));
 
         Map<String, Object> document = Map.of("field", "test");
 
-        EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
+        EvaluationResult result = evaluator.evaluateQuery(document, criterion);
 
         // Should be NOT_MATCHED due to invalid pattern (graceful degradation)
         assertThat(result.matched()).isFalse();
@@ -126,7 +126,7 @@ class RegexPatternCacheTest {
     @Test
     void shouldBeThreadSafe() throws InterruptedException {
         // Shared pattern across threads
-        Criterion criterion = new Criterion("shared", Map.of("text", Map.of("$regex", "^test\\d+$")));
+        QueryCriterion criterion = new QueryCriterion("shared", Map.of("text", Map.of("$regex", "^test\\d+$")));
 
         int threadCount = 10;
         int iterationsPerThread = 100;
@@ -140,7 +140,7 @@ class RegexPatternCacheTest {
                 try {
                     for (int i = 0; i < iterationsPerThread; i++) {
                         Map<String, Object> doc = Map.of("text", "test" + (threadId * 100 + i));
-                        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+                        EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
                         if (result.matched()) {
                             successCount.incrementAndGet();
                         }
@@ -162,24 +162,24 @@ class RegexPatternCacheTest {
     @Test
     void shouldCachePatternOnlyAfterFirstCompilation() {
         // First evaluation compiles and caches
-        Criterion criterion1 = new Criterion("first", Map.of("text", Map.of("$regex", "^unique_pattern_xyz$")));
+        QueryCriterion criterion1 = new QueryCriterion("first", Map.of("text", Map.of("$regex", "^unique_pattern_xyz$")));
         Map<String, Object> doc1 = Map.of("text", "unique_pattern_xyz");
 
-        EvaluationResult result1 = evaluator.evaluateCriterion(doc1, criterion1);
+        EvaluationResult result1 = evaluator.evaluateQuery(doc1, criterion1);
         assertThat(result1.matched()).isTrue();
 
         // Second evaluation with same pattern should use cache
-        Criterion criterion2 = new Criterion("second", Map.of("text", Map.of("$regex", "^unique_pattern_xyz$")));
+        QueryCriterion criterion2 = new QueryCriterion("second", Map.of("text", Map.of("$regex", "^unique_pattern_xyz$")));
         Map<String, Object> doc2 = Map.of("text", "unique_pattern_xyz");
 
-        EvaluationResult result2 = evaluator.evaluateCriterion(doc2, criterion2);
+        EvaluationResult result2 = evaluator.evaluateQuery(doc2, criterion2);
         assertThat(result2.matched()).isTrue();
 
         // Different pattern should not be cached yet
-        Criterion criterion3 = new Criterion("third", Map.of("text", Map.of("$regex", "^different_pattern$")));
+        QueryCriterion criterion3 = new QueryCriterion("third", Map.of("text", Map.of("$regex", "^different_pattern$")));
         Map<String, Object> doc3 = Map.of("text", "different_pattern");
 
-        EvaluationResult result3 = evaluator.evaluateCriterion(doc3, criterion3);
+        EvaluationResult result3 = evaluator.evaluateQuery(doc3, criterion3);
         assertThat(result3.matched()).isTrue();
     }
 
@@ -188,15 +188,15 @@ class RegexPatternCacheTest {
         // Null operand - Map.of() doesn't allow null, so use HashMap
         Map<String, Object> regexWithNull = new HashMap<>();
         regexWithNull.put("$regex", null);
-        Criterion nullCriterion = new Criterion("null", Map.of("field", regexWithNull));
+        QueryCriterion nullCriterion = new QueryCriterion("null", Map.of("field", regexWithNull));
         Map<String, Object> doc = Map.of("field", "test");
 
-        EvaluationResult nullResult = evaluator.evaluateCriterion(doc, nullCriterion);
+        EvaluationResult nullResult = evaluator.evaluateQuery(doc, nullCriterion);
         assertThat(nullResult.matched()).isFalse();
 
         // Empty string pattern
-        Criterion emptyCriterion = new Criterion("empty", Map.of("field", Map.of("$regex", "")));
-        EvaluationResult emptyResult = evaluator.evaluateCriterion(doc, emptyCriterion);
+        QueryCriterion emptyCriterion = new QueryCriterion("empty", Map.of("field", Map.of("$regex", "")));
+        EvaluationResult emptyResult = evaluator.evaluateQuery(doc, emptyCriterion);
 
         // Empty pattern matches everything (standard regex behavior)
         assertThat(emptyResult.matched()).isTrue();
@@ -208,12 +208,12 @@ class RegexPatternCacheTest {
         CriterionEvaluator evaluator1 = new CriterionEvaluator();
         CriterionEvaluator evaluator2 = new CriterionEvaluator();
 
-        Criterion criterion = new Criterion("test", Map.of("field", Map.of("$regex", "^test$")));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("field", Map.of("$regex", "^test$")));
         Map<String, Object> doc = Map.of("field", "test");
 
         // Both evaluators should work independently
-        EvaluationResult result1 = evaluator1.evaluateCriterion(doc, criterion);
-        EvaluationResult result2 = evaluator2.evaluateCriterion(doc, criterion);
+        EvaluationResult result1 = evaluator1.evaluateQuery(doc, criterion);
+        EvaluationResult result2 = evaluator2.evaluateQuery(doc, criterion);
 
         assertThat(result1.matched()).isTrue();
         assertThat(result2.matched()).isTrue();
@@ -228,30 +228,30 @@ class RegexPatternCacheTest {
         );
 
         // Complex email pattern
-        Criterion emailCriterion = new Criterion("email",
+        QueryCriterion emailCriterion = new QueryCriterion("email",
             Map.of("email", Map.of("$regex", "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")));
 
         // Complex URL pattern
-        Criterion urlCriterion = new Criterion("url",
+        QueryCriterion urlCriterion = new QueryCriterion("url",
             Map.of("url", Map.of("$regex", "^https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/.*)?$")));
 
         // Complex phone pattern
-        Criterion phoneCriterion = new Criterion("phone",
+        QueryCriterion phoneCriterion = new QueryCriterion("phone",
             Map.of("phone", Map.of("$regex", "^\\+\\d{1,3}\\s\\d{2}\\s\\d{4}\\s\\d{4}$")));
 
         // Evaluate all
-        EvaluationResult emailResult = evaluator.evaluateCriterion(document, emailCriterion);
-        EvaluationResult urlResult = evaluator.evaluateCriterion(document, urlCriterion);
-        EvaluationResult phoneResult = evaluator.evaluateCriterion(document, phoneCriterion);
+        EvaluationResult emailResult = evaluator.evaluateQuery(document, emailCriterion);
+        EvaluationResult urlResult = evaluator.evaluateQuery(document, urlCriterion);
+        EvaluationResult phoneResult = evaluator.evaluateQuery(document, phoneCriterion);
 
         assertThat(emailResult.matched()).isTrue();
         assertThat(urlResult.matched()).isTrue();
         assertThat(phoneResult.matched()).isTrue();
 
         // Re-evaluate (should use cache for performance)
-        EvaluationResult emailResult2 = evaluator.evaluateCriterion(document, emailCriterion);
-        EvaluationResult urlResult2 = evaluator.evaluateCriterion(document, urlCriterion);
-        EvaluationResult phoneResult2 = evaluator.evaluateCriterion(document, phoneCriterion);
+        EvaluationResult emailResult2 = evaluator.evaluateQuery(document, emailCriterion);
+        EvaluationResult urlResult2 = evaluator.evaluateQuery(document, urlCriterion);
+        EvaluationResult phoneResult2 = evaluator.evaluateQuery(document, phoneCriterion);
 
         assertThat(emailResult2.matched()).isTrue();
         assertThat(urlResult2.matched()).isTrue();

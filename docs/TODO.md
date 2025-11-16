@@ -60,7 +60,7 @@
 
 ### Builder Pattern ✅ **COMPLETED**
 - [x] Create `CriterionBuilder` for fluent criterion construction (uk.codery.jspec.builder.CriterionBuilder)
-- [x] Create `CriteriaGroupBuilder` for fluent group construction (uk.codery.jspec.builder.CriteriaGroupBuilder)
+- [x] Create `CriteriaGroupBuilder` for fluent group construction (uk.codery.jspec.builder.CompositeCriterionBuilder)
 - [x] Create `SpecificationBuilder` for fluent specification construction (uk.codery.jspec.builder.SpecificationBuilder)
 - [x] Add fluent API for building Criteria programmatically (all operators supported)
 

@@ -1,7 +1,7 @@
 package uk.codery.jspec.result;
 
 import org.junit.jupiter.api.Test;
-import uk.codery.jspec.model.Criterion;
+import uk.codery.jspec.model.QueryCriterion;
 
 import java.util.List;
 import java.util.Map;
@@ -121,8 +121,8 @@ class EvaluationSummaryTest {
         assertThat(hasUndetermined.fullyDetermined()).isFalse();
     }
 
-    private EvaluationResult createResult(EvaluationState state) {
-        Criterion dummyCriterion = new Criterion("test-" + state, Map.of());
-        return new EvaluationResult(dummyCriterion, state, List.of(), null);
+    private QueryResult createResult(EvaluationState state) {
+        QueryCriterion dummyCriterion = new QueryCriterion("test-" + state, Map.of());
+        return new QueryResult(dummyCriterion, state, List.of(), null);
     }
 }

@@ -6,8 +6,8 @@ import uk.codery.jspec.evaluator.SpecificationEvaluator;
 import uk.codery.jspec.model.Specification;
 import uk.codery.jspec.result.EvaluationOutcome;
 import uk.codery.jspec.result.EvaluationResult;
-import uk.codery.jspec.result.Result;
-import uk.codery.jspec.result.CriteriaGroupResult;
+import uk.codery.jspec.result.CompositeResult;
+import uk.codery.jspec.result.QueryResult;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -55,8 +55,8 @@ public class Main {
                 outputDetailed(outcome);
             }
 
-            boolean allMatched = Stream.concat(outcome.evaluationResults().stream(), outcome.criteriaGroupResults().stream())
-                    .allMatch(Result::matched);
+            boolean allMatched = outcome.results().stream()
+                    .allMatch(EvaluationResult::matched);
             System.exit(allMatched ? 0 : 1);
 
         } catch (Exception e) {
@@ -68,44 +68,43 @@ public class Main {
 
     private static void outputDetailed(EvaluationOutcome outcome) {
         System.out.println(outcome.specificationId() + " evaluation results");
-        Stream.concat(outcome.evaluationResults().stream(), outcome.criteriaGroupResults().stream())
-                .forEach(result -> System.out.println(result.toString()));
+        outcome.results().forEach(result -> System.out.println(result.toString()));
     }
 
     private static void outputSummary(EvaluationOutcome outcome) {
-        long passedCriteria = outcome.evaluationResults().stream()
-                .filter(Result::matched)
+        long passedQueries = outcome.queryResults().stream()
+                .filter(EvaluationResult::matched)
                 .count();
-        long failedCriteria = outcome.evaluationResults().stream()
-                .filter(not(Result::matched))
+        long failedQueries = outcome.queryResults().stream()
+                .filter(not(EvaluationResult::matched))
                 .count();
-        long passedSets = outcome.criteriaGroupResults().stream()
-                .filter(Result::matched)
+        long passedComposites = outcome.compositeResults().stream()
+                .filter(EvaluationResult::matched)
                 .count();
-        long failedSets = outcome.criteriaGroupResults().stream()
-                .filter(not(Result::matched))
+        long failedComposites = outcome.compositeResults().stream()
+                .filter(not(EvaluationResult::matched))
                 .count();
 
         System.out.println(outcome.specificationId() + " evaluation summary.");
-        System.out.println("Criteria: " + (passedCriteria + failedCriteria) + " total, " + passedCriteria + " passed, " + failedCriteria + " failed");
-        System.out.println("CriteriaGroups: " + (passedSets + failedSets) + " total, " + passedSets + " passed, " + failedSets + " failed");
+        System.out.println("Queries: " + (passedQueries + failedQueries) + " total, " + passedQueries + " passed, " + failedQueries + " failed");
+        System.out.println("Composites: " + (passedComposites + failedComposites) + " total, " + passedComposites + " passed, " + failedComposites + " failed");
 
-        if (failedCriteria > 0) {
-            System.out.println("\nFailed Criteria:");
-            outcome.evaluationResults().stream()
-                    .filter(not(Result::matched))
+        if (failedQueries > 0) {
+            System.out.println("\nFailed Queries:");
+            outcome.queryResults().stream()
+                    .filter(not(EvaluationResult::matched))
                     .forEach(r -> System.out.println("  " + r.id() + ": " + r.reason()));
         }
 
-        if (failedSets > 0) {
-            System.out.println("\nFailed CriteriaGroups:");
-            outcome.criteriaGroupResults().stream()
-                    .filter(not(Result::matched))
-                    .forEach(rs -> {
-                        System.out.println("  " + rs.id() + " (" + rs.junction() + ")");
-                        rs.evaluationResults().stream()
+        if (failedComposites > 0) {
+            System.out.println("\nFailed Composites:");
+            outcome.compositeResults().stream()
+                    .filter(not(EvaluationResult::matched))
+                    .forEach(composite -> {
+                        System.out.println("  " + composite.id() + " (" + composite.junction() + ")");
+                        composite.childResults().stream()
                                 .filter(not(EvaluationResult::matched))
-                                .forEach(rr -> System.out.println("    - " + rr.id() + ": " + rr.reason()));
+                                .forEach(child -> System.out.println("    - " + child.id() + ": " + child.reason()));
                     });
         }
     }
@@ -113,32 +112,32 @@ public class Main {
     private static void outputJson(EvaluationOutcome outcome) {
         System.out.println("{");
         System.out.println("  \"specification\": \"" + outcome.specificationId() + "\",");
-        System.out.println("  \"criteria\": [");
-        List<EvaluationResult> evResultList = new ArrayList<>(outcome.evaluationResults());
-        for (int i = 0; i < evResultList.size(); i++) {
-            EvaluationResult r = evResultList.get(i);
+        System.out.println("  \"queries\": [");
+        List<QueryResult> queryResultList = new ArrayList<>(outcome.queryResults());
+        for (int i = 0; i < queryResultList.size(); i++) {
+            QueryResult r = queryResultList.get(i);
             System.out.print("    {\"id\": \"" + r.id() + "\", \"matched\": " + r.matched());
-            if (r.missingPaths() != null) {
+            if (r.missingPaths() != null && !r.missingPaths().isEmpty()) {
                 System.out.print(", \"missingPaths\": [" + String.join(", ", r.missingPaths().stream().map(p -> "\"" + p + "\"").toArray(String[]::new)) + "]");
             }
             System.out.print("}");
-            if (i < evResultList.size() - 1) System.out.println(",");
+            if (i < queryResultList.size() - 1) System.out.println(",");
             else System.out.println();
         }
         System.out.println("  ],");
-        System.out.println("  \"criteriaGroups\": [");
+        System.out.println("  \"composites\": [");
 
-        for (int i = 0; i < outcome.criteriaGroupResults().size(); i++) {
-            CriteriaGroupResult rs = outcome.criteriaGroupResults().get(i);
-            System.out.print("    {\"id\": \"" + rs.id() + "\", \"junction\": \"" + rs.junction() + "\", \"matched\": " + rs.matched() + ", \"criteria\": [");
-            List<EvaluationResult> srr = new ArrayList<>(rs.evaluationResults());
-            for (int j = 0; j < srr.size(); j++) {
-                EvaluationResult r = srr.get(j);
-                System.out.print("{\"id\": \"" + r.id() + "\", \"matched\": " + r.matched() + "}");
-                if (j < srr.size() - 1) System.out.print(", ");
+        for (int i = 0; i < outcome.compositeResults().size(); i++) {
+            CompositeResult composite = outcome.compositeResults().get(i);
+            System.out.print("    {\"id\": \"" + composite.id() + "\", \"junction\": \"" + composite.junction() + "\", \"matched\": " + composite.matched() + ", \"children\": [");
+            List<EvaluationResult> children = new ArrayList<>(composite.childResults());
+            for (int j = 0; j < children.size(); j++) {
+                EvaluationResult child = children.get(j);
+                System.out.print("{\"id\": \"" + child.id() + "\", \"matched\": " + child.matched() + "}");
+                if (j < children.size() - 1) System.out.print(", ");
             }
             System.out.print("]}");
-            if (i < outcome.criteriaGroupResults().size() - 1) System.out.println(",");
+            if (i < outcome.compositeResults().size() - 1) System.out.println(",");
             else System.out.println();
         }
         System.out.println("  ]");

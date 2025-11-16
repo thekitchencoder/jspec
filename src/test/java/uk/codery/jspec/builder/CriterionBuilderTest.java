@@ -1,7 +1,7 @@
 package uk.codery.jspec.builder;
 
 import org.junit.jupiter.api.Test;
-import uk.codery.jspec.model.Criterion;
+import uk.codery.jspec.model.QueryCriterion;
 
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ class CriterionBuilderTest {
 
     @Test
     void testStaticBuilderMethod_shouldReturnBuilder() {
-        CriterionBuilder builder = Criterion.builder();
+        CriterionBuilder builder = QueryCriterion.builder();
 
         assertThat(builder).isNotNull();
         assertThat(builder).isInstanceOf(CriterionBuilder.class);
@@ -39,7 +39,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_simpleEquality() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("status-check")
                 .field("status").eq("active")
                 .build();
@@ -55,7 +55,7 @@ class CriterionBuilderTest {
     @Test
     void testBuilder_withoutId_shouldThrowException() {
         assertThatThrownBy(() -> {
-            Criterion.builder()
+            QueryCriterion.builder()
                     .field("status").eq("active")
                     .build();
         })
@@ -66,7 +66,7 @@ class CriterionBuilderTest {
     @Test
     void testBuilder_withoutFields_shouldThrowException() {
         assertThatThrownBy(() -> {
-            Criterion.builder()
+            QueryCriterion.builder()
                     .id("test")
                     .build();
         })
@@ -77,7 +77,7 @@ class CriterionBuilderTest {
     @Test
     void testBuilder_nullId_shouldThrowException() {
         assertThatThrownBy(() -> {
-            Criterion.builder().id(null);
+            QueryCriterion.builder().id(null);
         })
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Criterion ID cannot be null or empty");
@@ -86,7 +86,7 @@ class CriterionBuilderTest {
     @Test
     void testBuilder_emptyId_shouldThrowException() {
         assertThatThrownBy(() -> {
-            Criterion.builder().id("");
+            QueryCriterion.builder().id("");
         })
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Criterion ID cannot be null or empty");
@@ -95,7 +95,7 @@ class CriterionBuilderTest {
     @Test
     void testBuilder_nullFieldName_shouldThrowException() {
         assertThatThrownBy(() -> {
-            Criterion.builder().id("test").field(null);
+            QueryCriterion.builder().id("test").field(null);
         })
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Field name cannot be null or empty");
@@ -104,7 +104,7 @@ class CriterionBuilderTest {
     @Test
     void testBuilder_emptyFieldName_shouldThrowException() {
         assertThatThrownBy(() -> {
-            Criterion.builder().id("test").field("");
+            QueryCriterion.builder().id("test").field("");
         })
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Field name cannot be null or empty");
@@ -114,7 +114,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_eq_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("eq-test")
                 .field("name").eq("John")
                 .build();
@@ -126,7 +126,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_ne_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("ne-test")
                 .field("status").ne("inactive")
                 .build();
@@ -138,7 +138,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_gt_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("gt-test")
                 .field("age").gt(18).build();
 
@@ -149,7 +149,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_gte_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("gte-test")
                 .field("age").gte(18).build();
 
@@ -160,7 +160,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_lt_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("lt-test")
                 .field("price").lt(100.0).build();
 
@@ -171,7 +171,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_lte_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("lte-test")
                 .field("price").lte(100.0).build();
 
@@ -184,7 +184,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_in_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("in-test")
                 .field("status").in("active", "pending", "approved")
                 .build();
@@ -196,7 +196,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_nin_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("nin-test")
                 .field("status").nin("deleted", "archived")
                 .build();
@@ -208,7 +208,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_all_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("all-test")
                 .field("tags").all("important", "urgent")
                 .build();
@@ -220,7 +220,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_size_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("size-test")
                 .field("items").size(5)
                 .build();
@@ -234,7 +234,7 @@ class CriterionBuilderTest {
     void testBuilder_elemMatch_operator() {
         Map<String, Object> elementQuery = Map.of("status", Map.of("$eq", "active"));
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("elemMatch-test")
                 .field("users").elemMatch(elementQuery)
                 .build();
@@ -248,7 +248,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_exists_operator_true() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("exists-test")
                 .field("email").exists(true)
                 .build();
@@ -260,7 +260,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_exists_operator_false() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("not-exists-test")
                 .field("deletedAt").exists(false)
                 .build();
@@ -272,7 +272,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_type_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("type-test")
                 .field("count").type("number")
                 .build();
@@ -284,7 +284,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_regex_operator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("regex-test")
                 .field("email").regex("^[\\w.]+@[\\w.]+\\.[a-z]+$")
                 .build();
@@ -298,7 +298,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_customOperator() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("custom-test")
                 .field("username").operator("$length", 8)
                 .build();
@@ -312,7 +312,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_rangeQuery_gte_and_lte() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("age-range")
                 .field("age").gte(18).and().lte(65)
                 .build();
@@ -325,7 +325,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_rangeQuery_gt_and_lt() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("price-range")
                 .field("price").gt(10.0).and().lt(100.0)
                 .build();
@@ -340,7 +340,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_multipleFields() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("user-validation")
                 .field("age").gte(18)
                 .field("status").eq("active")
@@ -367,7 +367,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_nestedField() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("address-check")
                 .field("address.city").eq("London")
                 .build();
@@ -381,7 +381,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_multipleNestedFields() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("address-validation")
                 .field("address.city").eq("London")
                 .field("address.postalCode").regex("^[A-Z]{1,2}\\d")
@@ -396,7 +396,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_realWorldExample_employmentCheck() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("employment-check")
                 .field("employment.status").eq("EMPLOYED")
                 .field("employment.monthsEmployed").gte(12)
@@ -408,7 +408,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_realWorldExample_priceRange() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("affordable-products")
                 .field("price").gte(25.0).and().lte(100.0)
                 .field("status").eq("available")
@@ -425,7 +425,7 @@ class CriterionBuilderTest {
 
     @Test
     void testBuilder_realWorldExample_userActivity() {
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("active-user")
                 .field("lastLoginDays").lte(30)
                 .field("status").in("active", "premium")
@@ -441,11 +441,11 @@ class CriterionBuilderTest {
     @Test
     void testBuilder_equivalentToMapConstruction() {
         // Map-based construction
-        Criterion mapBased = new Criterion("age-check",
+        QueryCriterion mapBased = new QueryCriterion("age-check",
                 Map.of("age", Map.of("$gte", 18)));
 
         // Builder-based construction
-        Criterion builderBased = Criterion.builder()
+        QueryCriterion builderBased = QueryCriterion.builder()
                 .id("age-check")
                 .field("age").gte(18)
                 .build();
@@ -457,14 +457,14 @@ class CriterionBuilderTest {
     @Test
     void testBuilder_complexEquivalenceWithMapConstruction() {
         // Map-based construction
-        Criterion mapBased = new Criterion("user-check",
+        QueryCriterion mapBased = new QueryCriterion("user-check",
                 Map.of(
                         "age", Map.of("$gte", 18, "$lte", 65),
                         "status", Map.of("$eq", "active")
                 ));
 
         // Builder-based construction
-        Criterion builderBased = Criterion.builder()
+        QueryCriterion builderBased = QueryCriterion.builder()
                 .id("user-check")
                 .field("age").gte(18).and().lte(65)
                 .field("status").eq("active")

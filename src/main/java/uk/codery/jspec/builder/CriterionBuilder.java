@@ -1,13 +1,13 @@
 package uk.codery.jspec.builder;
 
-import uk.codery.jspec.model.Criterion;
+import uk.codery.jspec.model.QueryCriterion;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Fluent builder for creating {@link Criterion} instances with a readable API.
+ * Fluent builder for creating {@link QueryCriterion} instances with a readable API.
  *
  * <p>This builder provides a more intuitive alternative to manually constructing
  * Map-based queries. Instead of nested Maps, you can use a fluent API that clearly
@@ -18,11 +18,11 @@ import java.util.Map;
  * <h3>Simple Equality Check</h3>
  * <pre>{@code
  * // Before (using Map)
- * Criterion criterion = new Criterion("status-check",
+ * QueryCriterion criterion = new QueryCriterion("status-check",
  *     Map.of("status", Map.of("$eq", "active")));
  *
  * // After (using builder)
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("status-check")
  *     .field("status").eq("active")
  *     .build();
@@ -31,13 +31,13 @@ import java.util.Map;
  * <h3>Comparison Operators</h3>
  * <pre>{@code
  * // Age greater than or equal to 18
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("age-check")
  *     .field("age").gte(18)
  *     .build();
  *
  * // Price less than 100
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("price-check")
  *     .field("price").lt(100.0)
  *     .build();
@@ -46,19 +46,19 @@ import java.util.Map;
  * <h3>Collection Operators</h3>
  * <pre>{@code
  * // Status in list of values
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("status-check")
  *     .field("status").in("active", "pending", "approved")
  *     .build();
  *
  * // Tags contains all required values
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("tags-check")
  *     .field("tags").all("important", "urgent")
  *     .build();
  *
  * // Array has specific size
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("items-check")
  *     .field("items").size(5)
  *     .build();
@@ -67,19 +67,19 @@ import java.util.Map;
  * <h3>Advanced Operators</h3>
  * <pre>{@code
  * // Field exists
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("email-check")
  *     .field("email").exists(true)
  *     .build();
  *
  * // Type checking
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("count-check")
  *     .field("count").type("number")
  *     .build();
  *
  * // Regex matching
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("email-format")
  *     .field("email").regex("^[\\w.]+@[\\w.]+\\.[a-z]+$")
  *     .build();
@@ -88,13 +88,13 @@ import java.util.Map;
  * <h3>Multiple Conditions on Same Field</h3>
  * <pre>{@code
  * // Age between 18 and 65
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("age-range")
  *     .field("age").gte(18).and().lte(65)
  *     .build();
  *
  * // Price greater than 10 and less than 100
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("price-range")
  *     .field("price").gt(10).and().lt(100)
  *     .build();
@@ -103,7 +103,7 @@ import java.util.Map;
  * <h3>Multiple Fields</h3>
  * <pre>{@code
  * // Check multiple fields
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("user-validation")
  *     .field("age").gte(18)
  *     .field("status").eq("active")
@@ -114,7 +114,7 @@ import java.util.Map;
  * <h3>Nested Fields (Dot Notation)</h3>
  * <pre>{@code
  * // Check nested field
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("address-check")
  *     .field("address.city").eq("London")
  *     .field("address.postalCode").regex("^[A-Z]{1,2}\\d")
@@ -124,7 +124,7 @@ import java.util.Map;
  * <h3>Custom Operators</h3>
  * <pre>{@code
  * // Use custom operator
- * Criterion criterion = Criterion.builder()
+ * QueryCriterion criterion = QueryCriterion.builder()
  *     .id("username-length")
  *     .field("username").operator("$length", 8)
  *     .build();
@@ -134,9 +134,9 @@ import java.util.Map;
  * <p><b>Not thread-safe:</b> Builder instances should not be shared across threads.
  * Each thread should create its own builder instance.
  *
- * @see Criterion
+ * @see QueryCriterion
  * @see uk.codery.jspec.evaluator.CriterionEvaluator
- * @since 0.1.0
+ * @since 0.2.0
  */
 public class CriterionBuilder {
 
@@ -146,7 +146,7 @@ public class CriterionBuilder {
     /**
      * Creates a new CriterionBuilder instance.
      *
-     * <p>Use {@code Criterion.builder()} instead of calling this constructor directly.
+     * <p>Use {@code QueryCriterion.builder()} instead of calling this constructor directly.
      */
     public CriterionBuilder() {
         // Package-private constructor
@@ -194,19 +194,19 @@ public class CriterionBuilder {
     }
 
     /**
-     * Builds the Criterion instance.
+     * Builds the QueryCriterion instance.
      *
-     * @return the constructed Criterion
+     * @return the constructed QueryCriterion
      * @throws IllegalStateException if id is not set or no fields are defined
      */
-    public Criterion build() {
+    public QueryCriterion build() {
         if (id == null || id.isEmpty()) {
-            throw new IllegalStateException("Criterion ID must be set before building");
+            throw new IllegalStateException("QueryCriterion ID must be set before building");
         }
         if (query.isEmpty()) {
             throw new IllegalStateException("At least one field condition must be defined");
         }
-        return new Criterion(id, new HashMap<>(query));
+        return new QueryCriterion(id, new HashMap<>(query));
     }
 
     /**
@@ -457,9 +457,9 @@ public class CriterionBuilder {
          *     .build();
          * }</pre>
          *
-         * @return the constructed Criterion
+         * @return the constructed QueryCriterion
          */
-        public Criterion build() {
+        public QueryCriterion build() {
             // Finalize current field
             parent.query.put(fieldName, new HashMap<>(fieldQuery));
             // Delegate to parent

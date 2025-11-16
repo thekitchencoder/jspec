@@ -1,108 +1,166 @@
 package uk.codery.jspec.result;
 
-import uk.codery.jspec.model.Criterion;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
 /**
- * Result of evaluating a single criterion against a document.
+ * Result of evaluating a criterion against a document.
  *
- * <p>Uses a tri-state model to distinguish between:
+ * <p>This sealed interface supports three types of evaluation results:
  * <ul>
- *   <li>MATCHED - Criterion evaluated successfully and condition is true</li>
- *   <li>NOT_MATCHED - Criterion evaluated successfully and condition is false</li>
- *   <li>UNDETERMINED - Criterion could not be evaluated due to errors or missing data</li>
+ *   <li>{@link QueryResult} - Result of evaluating a QueryCriterion</li>
+ *   <li>{@link CompositeResult} - Result of evaluating a CompositeCriterion</li>
+ *   <li>{@link ReferenceResult} - Result of evaluating a CriterionReference</li>
  * </ul>
  *
- * <p>The {@code failureReason} provides details when state is UNDETERMINED,
- * helping developers debug issues with criteria or data.
+ * <h2>Tri-State Model</h2>
+ *
+ * <p>All evaluation results use a tri-state model:
+ * <ul>
+ *   <li><b>MATCHED:</b> Criterion evaluated successfully and condition is true</li>
+ *   <li><b>NOT_MATCHED:</b> Criterion evaluated successfully and condition is false</li>
+ *   <li><b>UNDETERMINED:</b> Criterion could not be evaluated (missing data, invalid operators, etc.)</li>
+ * </ul>
+ *
+ * <h2>Common Operations</h2>
+ *
+ * <pre>{@code
+ * // All results have these methods
+ * String id = result.id();                    // Criterion ID
+ * EvaluationState state = result.state();     // Tri-state result
+ * boolean matched = result.matched();         // Convenience (state == MATCHED)
+ * String reason = result.reason();            // Explanation (null if matched)
+ * }</pre>
+ *
+ * <h2>Pattern Matching</h2>
+ *
+ * <pre>{@code
+ * switch (result) {
+ *     case QueryResult query ->
+ *         System.out.println("Query: " + query.criterion().query());
+ *
+ *     case CompositeResult composite ->
+ *         System.out.println("Composite: " + composite.childResults().size() + " children");
+ *
+ *     case ReferenceResult ref ->
+ *         System.out.println("Reference: " + ref.reference().id());
+ * }
+ * }</pre>
+ *
+ * <h2>Type-Specific Access</h2>
+ *
+ * <pre>{@code
+ * if (result instanceof CompositeResult composite) {
+ *     // Access composite-specific fields
+ *     Junction junction = composite.junction();
+ *     List<EvaluationResult> children = composite.childResults();
+ *     Statistics stats = composite.statistics();
+ * }
+ *
+ * if (result instanceof ReferenceResult ref) {
+ *     // Unwrap reference to get original result
+ *     EvaluationResult original = ref.unwrap();
+ * }
+ *
+ * if (result instanceof QueryResult query) {
+ *     // Access query-specific fields
+ *     Map<String, Object> queryMap = query.criterion().query();
+ *     List<String> missing = query.missingPaths();
+ * }
+ * }</pre>
+ *
+ * <h2>Usage Examples</h2>
+ *
+ * <h3>Checking Results</h3>
+ * <pre>{@code
+ * EvaluationOutcome outcome = evaluator.evaluate(document, specification);
+ *
+ * for (EvaluationResult result : outcome.results()) {
+ *     System.out.printf("%s: %s%n", result.id(), result.state());
+ *
+ *     if (!result.matched()) {
+ *         System.out.println("  Reason: " + result.reason());
+ *     }
+ * }
+ * }</pre>
+ *
+ * <h3>Filtering by Type</h3>
+ * <pre>{@code
+ * List<QueryResult> queries = outcome.results().stream()
+ *     .filter(r -> r instanceof QueryResult)
+ *     .map(r -> (QueryResult) r)
+ *     .toList();
+ *
+ * List<CompositeResult> composites = outcome.results().stream()
+ *     .filter(r -> r instanceof CompositeResult)
+ *     .map(r -> (CompositeResult) r)
+ *     .toList();
+ * }</pre>
+ *
+ * <h3>Recursive Analysis</h3>
+ * <pre>{@code
+ * void analyzeResult(EvaluationResult result, int depth) {
+ *     String indent = "  ".repeat(depth);
+ *     System.out.println(indent + result.id() + ": " + result.state());
+ *
+ *     if (result instanceof CompositeResult composite) {
+ *         for (EvaluationResult child : composite.childResults()) {
+ *             analyzeResult(child, depth + 1);  // Recursive
+ *         }
+ *     }
+ * }
+ * }</pre>
+ *
+ * @see QueryResult
+ * @see CompositeResult
+ * @see ReferenceResult
+ * @see EvaluationState
+ * @since 0.2.0
  */
-public record EvaluationResult(
-        Criterion criterion,
-        EvaluationState state,
-        List<String> missingPaths,
-        String failureReason) implements Result {
-
-    public EvaluationResult {
-        missingPaths = Optional.ofNullable(missingPaths)
-                .map(Collections::unmodifiableList)
-                .orElseGet(Collections::emptyList);
-    }
+public sealed interface EvaluationResult
+        permits QueryResult, CompositeResult, ReferenceResult {
 
     /**
-     * Creates an UNDETERMINED result for a missing criterion definition.
-     */
-    public static EvaluationResult missing(Criterion criterion){
-        return missing(criterion.id());
-    }
-
-    /**
-     * Creates an UNDETERMINED result for a missing criterion definition.
-     */
-    public static EvaluationResult missing(String id){
-        return new EvaluationResult(
-                new Criterion(id),
-                EvaluationState.UNDETERMINED,
-                Collections.singletonList("criterion definition"),
-                "Criterion definition not found"
-        );
-    }
-
-    /**
-     * Implements the Result interface contract.
+     * Returns the unique identifier of the criterion that was evaluated.
      *
-     * @return true only if state is MATCHED, false otherwise
+     * @return the criterion ID (never null)
      */
-    @Override
-    public boolean matched() {
-        return state == EvaluationState.MATCHED;
-    }
+    String id();
 
     /**
-     * Returns true if the evaluation was deterministic (not UNDETERMINED).
+     * Returns the tri-state evaluation result.
      *
-     * @return true if state is MATCHED or NOT_MATCHED
+     * @return MATCHED, NOT_MATCHED, or UNDETERMINED
      */
-    public boolean isDetermined() {
-        return state != EvaluationState.UNDETERMINED;
-    }
+    EvaluationState state();
 
-    @Override
-    public String id(){
-        return criterion.id();
-    }
+    /**
+     * Returns whether this result represents a match.
+     *
+     * <p>This is a convenience method equivalent to {@code state() == EvaluationState.MATCHED}.
+     *
+     * @return true if state is MATCHED, false otherwise
+     */
+    boolean matched();
 
-    @Override
-    public String reason() {
-        return switch (state) {
-            case MATCHED -> null;
-            case UNDETERMINED -> failureReason != null ? failureReason :
-                    (missingPaths.isEmpty() ? "Evaluation failed" : "Missing data at: " + String.join(", ", missingPaths));
-            case NOT_MATCHED -> missingPaths.isEmpty() ?
-                    String.format("Non-matching values at %s", criterion.query()) :
-                    "Missing data at: " + String.join(", ", missingPaths);
-        };
-    }
-
-    // TODO external formatters (YAML,JSON,Text,etc) rather than YAML embedded in the toString method
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(criterion.id()).append(":\n");
-        sb.append("  match: ").append(matched()).append("\n");
-        sb.append("  query: ").append(criterion.query()).append("\n");
-        sb.append("  state: ").append(state).append("\n");
-
-        if(!missingPaths.isEmpty()) {
-            sb.append("  missing: [").append(String.join(", ", missingPaths)).append("]\n");
-        }
-
-        Optional.ofNullable(reason()).ifPresent(reason ->
-            sb.append("  reason: \"").append(reason).append("\"\n")
-        );
-        return sb.toString();
-    }
-
+    /**
+     * Returns a human-readable explanation of why this result did not match.
+     *
+     * <p>Returns null if the result matched.
+     * For non-matched results, provides details about:
+     * <ul>
+     *   <li>Missing data paths</li>
+     *   <li>Invalid operators or types</li>
+     *   <li>Composite junction failures</li>
+     *   <li>Missing referenced criteria</li>
+     * </ul>
+     *
+     * <h3>Example Output:</h3>
+     * <ul>
+     *   <li>"Missing data at: age, email"</li>
+     *   <li>"Unknown operator: $custom"</li>
+     *   <li>"AND composite failed: 2 matched, 1 not matched, 0 undetermined"</li>
+     *   <li>"Referenced criterion 'age-check' not found or not yet evaluated"</li>
+     * </ul>
+     *
+     * @return explanation of non-match, or null if matched
+     */
+    String reason();
 }

@@ -2,9 +2,10 @@ package uk.codery.jspec.evaluator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.codery.jspec.model.Criterion;
+import uk.codery.jspec.model.QueryCriterion;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationState;
+import uk.codery.jspec.result.QueryResult;
 
 import java.util.List;
 import java.util.Map;
@@ -33,12 +34,12 @@ class CriterionEvaluatorTest {
     @Test
     void navigation_withSimpleField_shouldWork() {
         Map<String, Object> doc = Map.of("age", 25);
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("test")
                 .field("age").eq(25)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -52,9 +53,9 @@ class CriterionEvaluatorTest {
                 )
             )
         );
-        Criterion criterion = new Criterion("test", Map.of("user", Map.of("profile", Map.of("age", Map.of("$eq", 25)))));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("user", Map.of("profile", Map.of("age", Map.of("$eq", 25)))));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -72,7 +73,7 @@ class CriterionEvaluatorTest {
                 )
             )
         );
-        Criterion criterion = new Criterion("test", Map.of(
+        QueryCriterion criterion = new QueryCriterion("test", Map.of(
             "level1", Map.of(
                 "level2", Map.of(
                     "level3", Map.of(
@@ -84,7 +85,7 @@ class CriterionEvaluatorTest {
             )
         ));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -92,9 +93,9 @@ class CriterionEvaluatorTest {
     @Test
     void navigation_withMissingNestedField_shouldBeUndetermined() {
         Map<String, Object> doc = Map.of("user", Map.of("name", "John"));
-        Criterion criterion = new Criterion("test", Map.of("user", Map.of("profile", Map.of("age", Map.of("$eq", 25)))));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("user", Map.of("profile", Map.of("age", Map.of("$eq", 25)))));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("user.profile");
@@ -107,14 +108,14 @@ class CriterionEvaluatorTest {
             "age", 25,
             "status", "ACTIVE"
         );
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("test")
                 .field("name").eq("John")
                 .field("age").gte(18)
                 .field("status").eq("ACTIVE")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -126,14 +127,14 @@ class CriterionEvaluatorTest {
             "age", 25,
             "status", "INACTIVE"
         );
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("test")
                 .field("name").eq("John")
                 .field("age").gte(18)
                 .field("status").eq("ACTIVE")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -143,9 +144,9 @@ class CriterionEvaluatorTest {
     @Test
     void simpleMatch_withEqualStrings_shouldMatch() {
         Map<String, Object> doc = Map.of("name", "John");
-        Criterion criterion = new Criterion("test", Map.of("name", "John"));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("name", "John"));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -153,9 +154,9 @@ class CriterionEvaluatorTest {
     @Test
     void simpleMatch_withDifferentStrings_shouldNotMatch() {
         Map<String, Object> doc = Map.of("name", "John");
-        Criterion criterion = new Criterion("test", Map.of("name", "Jane"));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("name", "Jane"));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -163,9 +164,9 @@ class CriterionEvaluatorTest {
     @Test
     void simpleMatch_withNumbers_shouldWork() {
         Map<String, Object> doc = Map.of("age", 25);
-        Criterion criterion = new Criterion("test", Map.of("age", 25));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("age", 25));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -173,9 +174,9 @@ class CriterionEvaluatorTest {
     @Test
     void simpleMatch_withBooleans_shouldWork() {
         Map<String, Object> doc = Map.of("active", true);
-        Criterion criterion = new Criterion("test", Map.of("active", true));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("active", true));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -185,9 +186,9 @@ class CriterionEvaluatorTest {
     @Test
     void listMatch_withEqualLists_shouldMatch() {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
-        Criterion criterion = new Criterion("test", Map.of("tags", List.of("admin", "user")));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("tags", List.of("admin", "user")));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -195,9 +196,9 @@ class CriterionEvaluatorTest {
     @Test
     void listMatch_withDifferentLists_shouldNotMatch() {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
-        Criterion criterion = new Criterion("test", Map.of("tags", List.of("admin", "moderator")));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("tags", List.of("admin", "moderator")));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -205,9 +206,9 @@ class CriterionEvaluatorTest {
     @Test
     void listMatch_withDifferentSizes_shouldNotMatch() {
         Map<String, Object> doc = Map.of("tags", List.of("admin", "user"));
-        Criterion criterion = new Criterion("test", Map.of("tags", List.of("admin")));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("tags", List.of("admin")));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -215,9 +216,9 @@ class CriterionEvaluatorTest {
     @Test
     void listMatch_withNonListValue_shouldNotMatch() {
         Map<String, Object> doc = Map.of("tags", "admin");
-        Criterion criterion = new Criterion("test", Map.of("tags", List.of("admin")));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("tags", List.of("admin")));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -228,12 +229,12 @@ class CriterionEvaluatorTest {
             Map.of("id", 1),
             Map.of("id", 2)
         ));
-        Criterion criterion = new Criterion("test", Map.of("items", List.of(
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("items", List.of(
             Map.of("id", 1),
             Map.of("id", 2)
         )));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -243,12 +244,12 @@ class CriterionEvaluatorTest {
     @Test
     void unknownOperator_shouldReturnUndetermined() {
         Map<String, Object> doc = Map.of("age", 25);
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("test")
                 .field("age").operator("$unknown", 18)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.failureReason()).contains("Unknown operator");
@@ -259,9 +260,9 @@ class CriterionEvaluatorTest {
     void unknownOperator_withMultipleOperators_shouldReturnUndetermined() {
         Map<String, Object> doc = Map.of("age", 25);
         // Using Map-based approach to test multiple unknown operators
-        Criterion criterion = new Criterion("test", Map.of("age", Map.of("$fake", 18, "$invalid", 20)));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("age", Map.of("$fake", 18, "$invalid", 20)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.failureReason()).containsAnyOf("$fake", "$invalid");
@@ -272,9 +273,9 @@ class CriterionEvaluatorTest {
         Map<String, Object> doc = Map.of("age", 25);
         // Has both valid ($eq) and invalid ($fake) operators
         // Using Map-based approach since builder doesn't support mixing unknown operators easily
-        Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 25, "$fake", 18)));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("age", Map.of("$eq", 25, "$fake", 18)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         // Unknown operator fails first
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
@@ -285,12 +286,12 @@ class CriterionEvaluatorTest {
     @Test
     void missingData_atTopLevel_shouldBeUndetermined() {
         Map<String, Object> doc = Map.of("name", "John");
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("test")
                 .field("age").eq(25)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("age");
@@ -300,9 +301,9 @@ class CriterionEvaluatorTest {
     @Test
     void missingData_inNestedStructure_shouldBeUndetermined() {
         Map<String, Object> doc = Map.of("user", Map.of("name", "John"));
-        Criterion criterion = new Criterion("test", Map.of("user", Map.of("profile", Map.of("age", Map.of("$eq", 25)))));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("user", Map.of("profile", Map.of("age", Map.of("$eq", 25)))));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("user.profile");
@@ -311,12 +312,12 @@ class CriterionEvaluatorTest {
     @Test
     void missingData_withMultipleMissingFields_shouldTrackAll() {
         Map<String, Object> doc = Map.of("name", "John");
-        Criterion criterion = new Criterion("test", Map.of(
+        QueryCriterion criterion = new QueryCriterion("test", Map.of(
             "age", Map.of("$eq", 25),
             "status", Map.of("$eq", "ACTIVE")
         ));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         // At least one missing path should be tracked
@@ -328,9 +329,9 @@ class CriterionEvaluatorTest {
     @Test
     void emptyDocument_withAnyQuery_shouldBeUndetermined() {
         Map<String, Object> doc = Map.of();
-        Criterion criterion = new Criterion("test", Map.of("age", Map.of("$eq", 25)));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("age");
@@ -339,9 +340,9 @@ class CriterionEvaluatorTest {
     @Test
     void emptyDocument_withEmptyQuery_shouldMatch() {
         Map<String, Object> doc = Map.of();
-        Criterion criterion = new Criterion("test", Map.of());
+        QueryCriterion criterion = new QueryCriterion("test", Map.of());
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         // Empty query matches empty document
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -356,13 +357,13 @@ class CriterionEvaluatorTest {
             "status", "ACTIVE",
             "tags", List.of("admin", "user")
         );
-        Criterion criterion = new Criterion("test", Map.of(
+        QueryCriterion criterion = new QueryCriterion("test", Map.of(
             "age", Map.of("$gte", 18, "$lt", 65),
             "status", Map.of("$in", List.of("ACTIVE", "PENDING")),
             "tags", Map.of("$all", List.of("admin"))
         ));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -377,7 +378,7 @@ class CriterionEvaluatorTest {
                 )
             )
         );
-        Criterion criterion = new Criterion("test", Map.of(
+        QueryCriterion criterion = new QueryCriterion("test", Map.of(
             "user", Map.of(
                 "profile", Map.of(
                     "age", Map.of("$gte", 18),
@@ -386,7 +387,7 @@ class CriterionEvaluatorTest {
             )
         ));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -396,9 +397,9 @@ class CriterionEvaluatorTest {
     @Test
     void edgeCase_withEmptyStringValue_shouldWork() {
         Map<String, Object> doc = Map.of("name", "");
-        Criterion criterion = new Criterion("test", Map.of("name", Map.of("$eq", "")));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("name", Map.of("$eq", "")));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -406,9 +407,9 @@ class CriterionEvaluatorTest {
     @Test
     void edgeCase_withZeroValue_shouldWork() {
         Map<String, Object> doc = Map.of("count", 0);
-        Criterion criterion = new Criterion("test", Map.of("count", Map.of("$eq", 0)));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("count", Map.of("$eq", 0)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -416,9 +417,9 @@ class CriterionEvaluatorTest {
     @Test
     void edgeCase_withNegativeNumbers_shouldWork() {
         Map<String, Object> doc = Map.of("balance", -100);
-        Criterion criterion = new Criterion("test", Map.of("balance", Map.of("$lt", 0)));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("balance", Map.of("$lt", 0)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -426,9 +427,9 @@ class CriterionEvaluatorTest {
     @Test
     void edgeCase_withEmptyList_shouldWork() {
         Map<String, Object> doc = Map.of("tags", List.of());
-        Criterion criterion = new Criterion("test", Map.of("tags", Map.of("$size", 0)));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("tags", Map.of("$size", 0)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -437,9 +438,9 @@ class CriterionEvaluatorTest {
     void edgeCase_withVeryLongString_shouldWork() {
         String longString = "a".repeat(1000);
         Map<String, Object> doc = Map.of("description", longString);
-        Criterion criterion = new Criterion("test", Map.of("description", Map.of("$eq", longString)));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("description", Map.of("$eq", longString)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -447,9 +448,9 @@ class CriterionEvaluatorTest {
     @Test
     void edgeCase_withSpecialCharacters_shouldWork() {
         Map<String, Object> doc = Map.of("text", "Hello!@#$%^&*()");
-        Criterion criterion = new Criterion("test", Map.of("text", Map.of("$eq", "Hello!@#$%^&*()")));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("text", Map.of("$eq", "Hello!@#$%^&*()")));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -457,9 +458,9 @@ class CriterionEvaluatorTest {
     @Test
     void edgeCase_withUnicodeCharacters_shouldWork() {
         Map<String, Object> doc = Map.of("name", "José");
-        Criterion criterion = new Criterion("test", Map.of("name", Map.of("$eq", "José")));
+        QueryCriterion criterion = new QueryCriterion("test", Map.of("name", Map.of("$eq", "José")));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -469,9 +470,9 @@ class CriterionEvaluatorTest {
     @Test
     void result_whenMatched_shouldHaveCorrectMetadata() {
         Map<String, Object> doc = Map.of("age", 25);
-        Criterion criterion = new Criterion("test-criterion", Map.of("age", Map.of("$eq", 25)));
+        QueryCriterion criterion = new QueryCriterion("test-criterion", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.criterion()).isEqualTo(criterion);
         assertThat(result.id()).isEqualTo("test-criterion");
@@ -485,9 +486,9 @@ class CriterionEvaluatorTest {
     @Test
     void result_whenNotMatched_shouldHaveCorrectMetadata() {
         Map<String, Object> doc = Map.of("age", 25);
-        Criterion criterion = new Criterion("test-criterion", Map.of("age", Map.of("$eq", 30)));
+        QueryCriterion criterion = new QueryCriterion("test-criterion", Map.of("age", Map.of("$eq", 30)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.criterion()).isEqualTo(criterion);
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -499,9 +500,9 @@ class CriterionEvaluatorTest {
     @Test
     void result_whenUndetermined_shouldHaveCorrectMetadata() {
         Map<String, Object> doc = Map.of("name", "John");
-        Criterion criterion = new Criterion("test-criterion", Map.of("age", Map.of("$eq", 25)));
+        QueryCriterion criterion = new QueryCriterion("test-criterion", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.criterion()).isEqualTo(criterion);
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
@@ -514,9 +515,9 @@ class CriterionEvaluatorTest {
     @Test
     void result_reason_shouldBeHumanReadable() {
         Map<String, Object> doc = Map.of("name", "John");
-        Criterion criterion = new Criterion("test-criterion", Map.of("age", Map.of("$eq", 25)));
+        QueryCriterion criterion = new QueryCriterion("test-criterion", Map.of("age", Map.of("$eq", 25)));
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         String reason = result.reason();
         assertThat(reason).isNotNull();

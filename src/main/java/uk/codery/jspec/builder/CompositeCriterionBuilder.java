@@ -1,7 +1,8 @@
 package uk.codery.jspec.builder;
 
+import lombok.NonNull;
 import uk.codery.jspec.model.Criterion;
-import uk.codery.jspec.model.CriteriaGroup;
+import uk.codery.jspec.model.CompositeCriterion;
 import uk.codery.jspec.model.Junction;
 
 import java.util.ArrayList;
@@ -9,26 +10,26 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Fluent builder for creating {@link CriteriaGroup} instances.
+ * Fluent builder for creating {@link CompositeCriterion} instances.
  *
- * <p>A CriteriaGroup combines multiple criteria using AND or OR logic (junction).
- * This builder provides a fluent API for constructing groups.
+ * <p>A CompositeCriterion combines multiple criteria using AND or OR logic (junction).
+ * This builder provides a fluent API for constructing composite criteria.
  *
  * <h2>Usage Examples</h2>
  *
  * <h3>AND Group (All Criteria Must Match)</h3>
  * <pre>{@code
- * Criterion ageCheck = Criterion.builder()
+ * QueryCriterion ageCheck = QueryCriterion.builder()
  *     .id("age-check")
  *     .field("age").gte(18)
  *     .build();
  *
- * Criterion statusCheck = Criterion.builder()
+ * QueryCriterion statusCheck = QueryCriterion.builder()
  *     .id("status-check")
  *     .field("status").eq("active")
  *     .build();
  *
- * CriteriaGroup group = CriteriaGroup.builder()
+ * CompositeCriterion group = CompositeCriterion.builder()
  *     .id("eligible-user")
  *     .and()
  *     .criteria(ageCheck, statusCheck)
@@ -37,17 +38,17 @@ import java.util.List;
  *
  * <h3>OR Group (Any Criterion Must Match)</h3>
  * <pre>{@code
- * Criterion vipCheck = Criterion.builder()
+ * QueryCriterion vipCheck = QueryCriterion.builder()
  *     .id("vip-check")
  *     .field("vip").eq(true)
  *     .build();
  *
- * Criterion premiumCheck = Criterion.builder()
+ * QueryCriterion premiumCheck = QueryCriterion.builder()
  *     .id("premium-check")
  *     .field("subscription").eq("premium")
  *     .build();
  *
- * CriteriaGroup group = CriteriaGroup.builder()
+ * CompositeCriterion group = CompositeCriterion.builder()
  *     .id("special-user")
  *     .or()
  *     .criteria(vipCheck, premiumCheck)
@@ -56,7 +57,7 @@ import java.util.List;
  *
  * <h3>Adding Criteria Individually</h3>
  * <pre>{@code
- * CriteriaGroup group = CriteriaGroup.builder()
+ * CompositeCriterion group = CompositeCriterion.builder()
  *     .id("user-checks")
  *     .and()
  *     .addCriterion(ageCheck)
@@ -65,36 +66,36 @@ import java.util.List;
  *     .build();
  * }</pre>
  *
- * @see CriteriaGroup
+ * @see CompositeCriterion
  * @see Criterion
  * @see Junction
- * @since 0.1.0
+ * @since 0.2.0
  */
-public class CriteriaGroupBuilder {
+public class CompositeCriterionBuilder {
 
     private String id;
     private Junction junction = Junction.AND; // Default to AND
     private final List<Criterion> criteria = new ArrayList<>();
 
     /**
-     * Creates a new CriteriaGroupBuilder.
+     * Creates a new CompositeCriterionBuilder.
      *
-     * <p>Use {@code CriteriaGroup.builder()} instead of calling this constructor directly.
+     * <p>Use {@code CompositeCriterion.builder()} instead of calling this constructor directly.
      */
-    public CriteriaGroupBuilder() {
+    public CompositeCriterionBuilder() {
         // Package-private constructor
     }
 
     /**
-     * Sets the group ID.
+     * Sets the composite criterion ID.
      *
-     * @param id the group identifier
+     * @param id the criterion identifier
      * @return this builder for method chaining
      * @throws IllegalArgumentException if id is null or empty
      */
-    public CriteriaGroupBuilder id(String id) {
+    public CompositeCriterionBuilder id(String id) {
         if (id == null || id.isEmpty()) {
-            throw new IllegalArgumentException("CriteriaGroup ID cannot be null or empty");
+            throw new IllegalArgumentException("CompositeCriterion ID cannot be null or empty");
         }
         this.id = id;
         return this;
@@ -107,7 +108,7 @@ public class CriteriaGroupBuilder {
      *
      * @return this builder for method chaining
      */
-    public CriteriaGroupBuilder and() {
+    public CompositeCriterionBuilder and() {
         this.junction = Junction.AND;
         return this;
     }
@@ -117,7 +118,7 @@ public class CriteriaGroupBuilder {
      *
      * @return this builder for method chaining
      */
-    public CriteriaGroupBuilder or() {
+    public CompositeCriterionBuilder or() {
         this.junction = Junction.OR;
         return this;
     }
@@ -129,7 +130,7 @@ public class CriteriaGroupBuilder {
      * @return this builder for method chaining
      * @throws IllegalArgumentException if junction is null
      */
-    public CriteriaGroupBuilder junction(Junction junction) {
+    public CompositeCriterionBuilder junction(Junction junction) {
         if (junction == null) {
             throw new IllegalArgumentException("Junction cannot be null");
         }
@@ -144,12 +145,16 @@ public class CriteriaGroupBuilder {
      * @return this builder for method chaining
      * @throws IllegalArgumentException if criterion is null
      */
-    public CriteriaGroupBuilder addCriterion(Criterion criterion) {
+    public CompositeCriterionBuilder addCriterion(Criterion criterion) {
         if (criterion == null) {
             throw new IllegalArgumentException("Criterion cannot be null");
         }
         this.criteria.add(criterion);
         return this;
+    }
+
+    public CompositeCriterionBuilder addReference(@NonNull Criterion criterion){
+        return this.addCriterion(criterion.ref());
     }
 
     /**
@@ -161,7 +166,7 @@ public class CriteriaGroupBuilder {
      * @return this builder for method chaining
      * @throws IllegalArgumentException if criteria is null or empty
      */
-    public CriteriaGroupBuilder criteria(Criterion... criteria) {
+    public CompositeCriterionBuilder criteria(Criterion... criteria) {
         if (criteria == null || criteria.length == 0) {
             throw new IllegalArgumentException("At least one criterion must be provided");
         }
@@ -179,7 +184,7 @@ public class CriteriaGroupBuilder {
      * @return this builder for method chaining
      * @throws IllegalArgumentException if criteria is null or empty
      */
-    public CriteriaGroupBuilder criteria(List<Criterion> criteria) {
+    public CompositeCriterionBuilder criteria(List<Criterion> criteria) {
         if (criteria == null || criteria.isEmpty()) {
             throw new IllegalArgumentException("At least one criterion must be provided");
         }
@@ -189,18 +194,18 @@ public class CriteriaGroupBuilder {
     }
 
     /**
-     * Builds the CriteriaGroup instance.
+     * Builds the CompositeCriterion instance.
      *
-     * @return the constructed CriteriaGroup
+     * @return the constructed CompositeCriterion
      * @throws IllegalStateException if id is not set or no criteria are defined
      */
-    public CriteriaGroup build() {
+    public CompositeCriterion build() {
         if (id == null || id.isEmpty()) {
-            throw new IllegalStateException("CriteriaGroup ID must be set before building");
+            throw new IllegalStateException("CompositeCriterion ID must be set before building");
         }
         if (criteria.isEmpty()) {
             throw new IllegalStateException("At least one criterion must be added");
         }
-        return new CriteriaGroup(id, junction, new ArrayList<>(criteria));
+        return new CompositeCriterion(id, junction, new ArrayList<>(criteria));
     }
 }

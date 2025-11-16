@@ -156,7 +156,7 @@ public CriterionEvaluator(OperatorRegistry registry) {
 **Why:** Make API more fluent and easier to configure
 
 - [x] **Create `CriterionBuilder`** - Completed at `uk.codery.jspec.builder.CriterionBuilder`
-- [x] **Create `CriteriaGroupBuilder`** - Completed at `uk.codery.jspec.builder.CriteriaGroupBuilder`
+- [x] **Create `CriteriaGroupBuilder`** - Completed at `uk.codery.jspec.builder.CompositeCriterionBuilder`
 - [x] **Create `SpecificationBuilder`** - Completed at `uk.codery.jspec.builder.SpecificationBuilder`
 
 **Result:** Full builder API package created with comprehensive fluent builders for all domain models.

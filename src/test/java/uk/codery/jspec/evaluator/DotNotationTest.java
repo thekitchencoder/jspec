@@ -2,10 +2,11 @@ package uk.codery.jspec.evaluator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.codery.jspec.model.Criterion;
+import uk.codery.jspec.model.QueryCriterion;
 import uk.codery.jspec.operator.OperatorRegistry;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationState;
+import uk.codery.jspec.result.QueryResult;
 
 import java.util.List;
 import java.util.Map;
@@ -48,12 +49,12 @@ class DotNotationTest {
                 )
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("city-check")
                 .field("address.city").eq("London")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -64,12 +65,12 @@ class DotNotationTest {
                 "address", Map.of("city", "London")
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("city-check")
                 .field("address.city").eq("Manchester")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -80,12 +81,12 @@ class DotNotationTest {
                 "address", Map.of("country", "UK")
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("city-check")
                 .field("address.city").eq("London")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
         assertThat(result.missingPaths()).contains("address.city");
@@ -105,12 +106,12 @@ class DotNotationTest {
                 )
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("deep-city-check")
                 .field("user.profile.address.city").eq("London")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -129,12 +130,12 @@ class DotNotationTest {
                 )
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("deep-value-check")
                 .field("level1.level2.level3.level4.value").eq("found")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -155,14 +156,14 @@ class DotNotationTest {
                 )
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("address-validation")
                 .field("address.city").eq("London")
                 .field("address.country").eq("UK")
                 .field("contact.email").exists(true)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -180,7 +181,7 @@ class DotNotationTest {
                 )
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("employment-check")
                 .field("employment.status").eq("EMPLOYED")
                 .field("employment.monthsEmployed").gte(12)
@@ -188,7 +189,7 @@ class DotNotationTest {
                 .field("employment.salary.currency").eq("GBP")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -205,25 +206,25 @@ class DotNotationTest {
         );
 
         // Greater than or equal
-        Criterion criterion1 = Criterion.builder()
+        QueryCriterion criterion1 = QueryCriterion.builder()
                 .id("age-check")
                 .field("user.age").gte(18)
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion1).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion1).state()).isEqualTo(EvaluationState.MATCHED);
 
         // Less than
-        Criterion criterion2 = Criterion.builder()
+        QueryCriterion criterion2 = QueryCriterion.builder()
                 .id("age-limit")
                 .field("user.age").lt(65)
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion2).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion2).state()).isEqualTo(EvaluationState.MATCHED);
 
         // Range query
-        Criterion criterion3 = Criterion.builder()
+        QueryCriterion criterion3 = QueryCriterion.builder()
                 .id("score-range")
                 .field("user.score").gte(70.0).and().lte(100.0)
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion3).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion3).state()).isEqualTo(EvaluationState.MATCHED);
     }
 
     @Test
@@ -236,25 +237,25 @@ class DotNotationTest {
         );
 
         // $in operator
-        Criterion criterion1 = Criterion.builder()
+        QueryCriterion criterion1 = QueryCriterion.builder()
                 .id("tag-check")
                 .field("profile.tags").in("verified", "trusted")
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion1).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion1).state()).isEqualTo(EvaluationState.MATCHED);
 
         // $all operator
-        Criterion criterion2 = Criterion.builder()
+        QueryCriterion criterion2 = QueryCriterion.builder()
                 .id("required-tags")
                 .field("profile.tags").all("verified", "active")
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion2).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion2).state()).isEqualTo(EvaluationState.MATCHED);
 
         // $size operator
-        Criterion criterion3 = Criterion.builder()
+        QueryCriterion criterion3 = QueryCriterion.builder()
                 .id("roles-count")
                 .field("profile.roles").size(2)
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion3).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion3).state()).isEqualTo(EvaluationState.MATCHED);
     }
 
     @Test
@@ -268,25 +269,25 @@ class DotNotationTest {
         );
 
         // $exists operator
-        Criterion criterion1 = Criterion.builder()
+        QueryCriterion criterion1 = QueryCriterion.builder()
                 .id("email-exists")
                 .field("user.email").exists(true)
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion1).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion1).state()).isEqualTo(EvaluationState.MATCHED);
 
         // $type operator
-        Criterion criterion2 = Criterion.builder()
+        QueryCriterion criterion2 = QueryCriterion.builder()
                 .id("age-type")
                 .field("user.age").type("number")
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion2).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion2).state()).isEqualTo(EvaluationState.MATCHED);
 
         // $regex operator
-        Criterion criterion3 = Criterion.builder()
+        QueryCriterion criterion3 = QueryCriterion.builder()
                 .id("email-pattern")
                 .field("user.email").regex("^admin@")
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion3).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion3).state()).isEqualTo(EvaluationState.MATCHED);
     }
 
     // ==================== Dot Notation with Custom Operators ====================
@@ -314,12 +315,12 @@ class DotNotationTest {
                 )
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("username-length")
                 .field("user.profile.username").operator("$length", 8)
                 .build();
 
-        EvaluationResult result = customEvaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = customEvaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -351,13 +352,13 @@ class DotNotationTest {
                 )
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("admin-validation")
                 .field("account.email").operator("$startswith", "admin")
                 .field("account.username").operator("$length", 5)
                 .build();
 
-        EvaluationResult result = customEvaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = customEvaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -381,13 +382,13 @@ class DotNotationTest {
                 )
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("eligibility")
                 .field("accounts.current.status").eq("active")
                 .field("accounts.current.amount").gte(500)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -413,14 +414,14 @@ class DotNotationTest {
                 )
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("employment-validation")
                 .field("applicant.employment.current.status").eq("EMPLOYED")
                 .field("applicant.employment.current.monthsEmployed").gte(12)
                 .field("applicant.employment.current.employer.address.city").in("London", "Manchester", "Birmingham")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -447,14 +448,14 @@ class DotNotationTest {
                 )
         );
 
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("loan-eligibility")
                 .field("financial.income.salary.amount").gte(30000)
                 .field("financial.income.salary.currency").eq("GBP")
                 .field("financial.credit.score").gte(650)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        QueryResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -471,14 +472,14 @@ class DotNotationTest {
         );
 
         // Using dot notation (recommended)
-        Criterion withDotNotation = Criterion.builder()
+        QueryCriterion withDotNotation = QueryCriterion.builder()
                 .id("address-check-dot")
                 .field("address.city").eq("London")
                 .field("address.postcode").regex("^SW")
                 .build();
 
         // Using nested Maps (works but verbose for testing structure)
-        Criterion withNestedMaps = new Criterion("address-check-nested",
+        QueryCriterion withNestedMaps = new QueryCriterion("address-check-nested",
                 Map.of("address", Map.of(
                         "city", Map.of("$eq", "London"),
                         "postcode", Map.of("$regex", "^SW")
@@ -486,8 +487,8 @@ class DotNotationTest {
         );
 
         // Both should produce the same result
-        EvaluationResult dotResult = evaluator.evaluateCriterion(doc, withDotNotation);
-        EvaluationResult nestedResult = evaluator.evaluateCriterion(doc, withNestedMaps);
+        EvaluationResult dotResult = evaluator.evaluateQuery(doc, withDotNotation);
+        EvaluationResult nestedResult = evaluator.evaluateQuery(doc, withNestedMaps);
 
         assertThat(dotResult.state()).isEqualTo(EvaluationState.MATCHED);
         assertThat(nestedResult.state()).isEqualTo(EvaluationState.MATCHED);

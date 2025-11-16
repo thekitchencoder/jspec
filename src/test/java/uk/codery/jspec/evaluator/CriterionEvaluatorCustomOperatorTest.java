@@ -1,7 +1,7 @@
 package uk.codery.jspec.evaluator;
 
 import org.junit.jupiter.api.Test;
-import uk.codery.jspec.model.Criterion;
+import uk.codery.jspec.model.QueryCriterion;
 import uk.codery.jspec.operator.OperatorRegistry;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationState;
@@ -28,12 +28,12 @@ class CriterionEvaluatorCustomOperatorTest {
         CriterionEvaluator evaluator = new CriterionEvaluator();
 
         Map<String, Object> doc = Map.of("age", 25);
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("age-check")
                 .field("age").gte(18)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -51,12 +51,12 @@ class CriterionEvaluatorCustomOperatorTest {
         CriterionEvaluator evaluator = new CriterionEvaluator(registry);
 
         Map<String, Object> doc = Map.of("status", "active");
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("status-check")
                 .field("status").eq("active")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -80,12 +80,12 @@ class CriterionEvaluatorCustomOperatorTest {
 
         // Test $length operator using builder with custom operator
         Map<String, Object> doc = Map.of("username", "john_doe");
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("username-length")
                 .field("username").operator("$length", 8)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -104,12 +104,12 @@ class CriterionEvaluatorCustomOperatorTest {
         CriterionEvaluator evaluator = new CriterionEvaluator(registry);
 
         Map<String, Object> doc = Map.of("username", "john_doe");
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("username-length")
                 .field("username").operator("$length", 5)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
     }
@@ -129,12 +129,12 @@ class CriterionEvaluatorCustomOperatorTest {
         CriterionEvaluator evaluator = new CriterionEvaluator(registry);
 
         Map<String, Object> doc = Map.of("email", "user@example.com");
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("email-check")
                 .field("email").operator("$startswith", "user")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }
@@ -159,27 +159,27 @@ class CriterionEvaluatorCustomOperatorTest {
 
         // Test $startswith
         Map<String, Object> doc1 = Map.of("filename", "report.pdf");
-        Criterion criterion1 = Criterion.builder()
+        QueryCriterion criterion1 = QueryCriterion.builder()
                 .id("starts-check")
                 .field("filename").operator("$startswith", "report")
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc1, criterion1).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc1, criterion1).state()).isEqualTo(EvaluationState.MATCHED);
 
         // Test $endswith
         Map<String, Object> doc2 = Map.of("filename", "report.pdf");
-        Criterion criterion2 = Criterion.builder()
+        QueryCriterion criterion2 = QueryCriterion.builder()
                 .id("ends-check")
                 .field("filename").operator("$endswith", ".pdf")
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc2, criterion2).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc2, criterion2).state()).isEqualTo(EvaluationState.MATCHED);
 
         // Test $length
         Map<String, Object> doc3 = Map.of("code", "ABC123");
-        Criterion criterion3 = Criterion.builder()
+        QueryCriterion criterion3 = QueryCriterion.builder()
                 .id("length-check")
                 .field("code").operator("$length", 6)
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc3, criterion3).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc3, criterion3).state()).isEqualTo(EvaluationState.MATCHED);
     }
 
     @Test
@@ -198,12 +198,12 @@ class CriterionEvaluatorCustomOperatorTest {
 
         // Test case-insensitive equality
         Map<String, Object> doc = Map.of("status", "ACTIVE");
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("status-check")
                 .field("status").eq("active")
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         // Should MATCH because $eq is not an internal operator, so the custom version is used
         // Comparison operators ($eq, $ne, $gt, etc.) can be overridden via registry
@@ -225,12 +225,12 @@ class CriterionEvaluatorCustomOperatorTest {
 
         // Try to use $length on non-string value
         Map<String, Object> doc = Map.of("count", 42);
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("invalid-length")
                 .field("count").operator("$length", 5)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         // Should be NOT_MATCHED due to type mismatch
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
@@ -246,12 +246,12 @@ class CriterionEvaluatorCustomOperatorTest {
         // Internal operators ($in, $nin, $exists, $type, $regex, $size, $elemMatch, $all)
         // are always registered even with empty registry
         Map<String, Object> doc = Map.of("status", "active");
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("status-check")
                 .field("status").exists(true)
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         // Should match because $exists is an internal operator that's always registered
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
@@ -274,25 +274,25 @@ class CriterionEvaluatorCustomOperatorTest {
         );
 
         // Test $eq
-        Criterion criterion1 = Criterion.builder()
+        QueryCriterion criterion1 = QueryCriterion.builder()
                 .id("status-check")
                 .field("status").eq("active")
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion1).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion1).state()).isEqualTo(EvaluationState.MATCHED);
 
         // Test $gte
-        Criterion criterion2 = Criterion.builder()
+        QueryCriterion criterion2 = QueryCriterion.builder()
                 .id("age-check")
                 .field("age").gte(18)
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion2).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion2).state()).isEqualTo(EvaluationState.MATCHED);
 
         // Test $in
-        Criterion criterion3 = Criterion.builder()
+        QueryCriterion criterion3 = QueryCriterion.builder()
                 .id("tag-check")
                 .field("tags").in("important", "normal")
                 .build();
-        assertThat(evaluator.evaluateCriterion(doc, criterion3).state()).isEqualTo(EvaluationState.MATCHED);
+        assertThat(evaluator.evaluateQuery(doc, criterion3).state()).isEqualTo(EvaluationState.MATCHED);
     }
 
     @Test
@@ -317,12 +317,12 @@ class CriterionEvaluatorCustomOperatorTest {
         CriterionEvaluator evaluator = new CriterionEvaluator(registry);
 
         Map<String, Object> doc = Map.of("price", 49.99);
-        Criterion criterion = Criterion.builder()
+        QueryCriterion criterion = QueryCriterion.builder()
                 .id("price-check")
                 .field("price").operator("$priceRange", Map.of("min", 25.0, "max", 100.0))
                 .build();
 
-        EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
+        EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
     }

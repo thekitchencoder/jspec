@@ -22,8 +22,8 @@
  *     .build();
  * }</pre>
  *
- * <h3>{@link uk.codery.jspec.builder.CriteriaGroupBuilder}</h3>
- * <p>Fluent builder for creating {@link uk.codery.jspec.model.CriteriaGroup} instances.
+ * <h3>{@link uk.codery.jspec.builder.CompositeCriterionBuilder}</h3>
+ * <p>Fluent builder for creating {@link uk.codery.jspec.model.CompositeCriterion} instances.
  *
  * <pre>{@code
  * CriteriaGroup group = CriteriaGroup.builder()
@@ -176,10 +176,10 @@
  * by builders are immutable and thread-safe.
  *
  * @see uk.codery.jspec.builder.CriterionBuilder
- * @see uk.codery.jspec.builder.CriteriaGroupBuilder
+ * @see uk.codery.jspec.builder.CompositeCriterionBuilder
  * @see uk.codery.jspec.builder.SpecificationBuilder
  * @see uk.codery.jspec.model.Criterion
- * @see uk.codery.jspec.model.CriteriaGroup
+ * @see uk.codery.jspec.model.CompositeCriterion
  * @see uk.codery.jspec.model.Specification
  * @since 0.1.0
  */

@@ -9,7 +9,8 @@ import uk.codery.jspec.model.Specification;
 import uk.codery.jspec.result.EvaluationOutcome;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationState;
-import uk.codery.jspec.result.CriteriaGroupResult;
+import uk.codery.jspec.result.CompositeResult;
+import uk.codery.jspec.result.QueryResult;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,11 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 2. Load test documents from YAML files
  * 3. Evaluate specifications against documents
  * 4. Verify results
- *
  * This test exercises:
  * - All operator types (comparison, collection, advanced)
  * - Dot notation for nested fields
- * - CriteriaGroups with AND/OR junctions
+ * - Composite criteria with AND/OR junctions
  * - Tri-state evaluation (MATCHED/NOT_MATCHED/UNDETERMINED)
  * - Real-world loan eligibility scenario
  */
@@ -59,7 +59,7 @@ class EndToEndYamlTest {
         EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
 
         // Then: Summary shows high match rate
-        assertThat(outcome.summary().total()).isEqualTo(17);
+        assertThat(outcome.summary().total()).isEqualTo(22);
         assertThat(outcome.summary().matched()).isGreaterThan(13);
         assertThat(outcome.summary().undetermined()).isEqualTo(0);
 
@@ -100,22 +100,22 @@ class EndToEndYamlTest {
         EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
 
         // Then: All criteria groups match
-        assertThat(outcome.criteriaGroupResults()).hasSize(5);
+        assertThat(outcome.compositeResults()).hasSize(5);
 
         // Basic eligibility (AND) - all must match
-        assertCriteriaGroupMatched(outcome, "basic-eligibility");
+        assertCompositeMatched(outcome, "basic-eligibility");
 
         // Financial strength (OR) - at least one matches
-        assertCriteriaGroupMatched(outcome, "financial-strength");
+        assertCompositeMatched(outcome, "financial-strength");
 
         // Location and industry checks (AND)
-        assertCriteriaGroupMatched(outcome, "location-industry-checks");
+        assertCompositeMatched(outcome, "location-industry-checks");
 
         // Contact validation (AND)
-        assertCriteriaGroupMatched(outcome, "contact-validation");
+        assertCompositeMatched(outcome, "contact-validation");
 
         // Premium indicators (OR)
-        assertCriteriaGroupMatched(outcome, "premium-indicators");
+        assertCompositeMatched(outcome, "premium-indicators");
     }
 
     // ==================== Rejected Applicant Tests ====================
@@ -153,9 +153,9 @@ class EndToEndYamlTest {
         EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
 
         // Then: Critical criteria groups fail
-        assertCriteriaGroupNotMatched(outcome, "basic-eligibility");  // Fails age, employment, bankruptcy
-        assertCriteriaGroupNotMatched(outcome, "location-industry-checks");  // Fails state and industry
-        assertCriteriaGroupNotMatched(outcome, "contact-validation");  // Fails email format
+        assertCompositeNotMatched(outcome, "basic-eligibility");  // Fails age, employment, bankruptcy
+        assertCompositeNotMatched(outcome, "location-industry-checks");  // Fails state and industry
+        assertCompositeNotMatched(outcome, "contact-validation");  // Fails email format
     }
 
     // ==================== Partial Data Tests ====================
@@ -196,13 +196,13 @@ class EndToEndYamlTest {
         EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
 
         // Then: Missing paths are tracked for debugging
-        EvaluationResult phoneCheck = findCriterionResult(outcome, "phone-type-check");
+        QueryResult phoneCheck = (QueryResult) findCriterionResult(outcome, "phone-type-check");
         assertThat(phoneCheck.missingPaths()).contains("applicant.contact.phone");
 
-        EvaluationResult referencesCheck = findCriterionResult(outcome, "references-count");
+        QueryResult referencesCheck = (QueryResult) findCriterionResult(outcome, "references-count");
         assertThat(referencesCheck.missingPaths()).contains("applicant.references");
 
-        EvaluationResult bankruptcyCheck = findCriterionResult(outcome, "not-bankrupt");
+        QueryResult bankruptcyCheck = (QueryResult) findCriterionResult(outcome, "not-bankrupt");
         assertThat(bankruptcyCheck.missingPaths()).contains("financial.bankruptcy_flag");
     }
 
@@ -211,7 +211,7 @@ class EndToEndYamlTest {
     @Test
     void specification_shouldLoadAllCriteria() {
         // Then: All criteria are loaded
-        assertThat(specification.criteria()).hasSize(17);
+        assertThat(specification.criteria()).hasSize(22);
 
         // And: Criteria have correct IDs
         assertThat(specification.criteria())
@@ -230,12 +230,17 @@ class EndToEndYamlTest {
     }
 
     @Test
-    void specification_shouldLoadAllCriteriaGroups() {
-        // Then: All criteria groups are loaded
-        assertThat(specification.criteriaGroups()).hasSize(5);
+    void specification_shouldLoadAllComposites() {
+        // Then: All composites are loaded (filter criteria to get only CompositeCriterion instances)
+        long compositeCount = specification.criteria().stream()
+                .filter(c -> c instanceof uk.codery.jspec.model.CompositeCriterion)
+                .count();
+        assertThat(compositeCount).isEqualTo(5);
 
-        // And: Criteria groups have correct structure
-        assertThat(specification.criteriaGroups())
+        // And: Composites have correct structure
+        assertThat(specification.criteria().stream()
+                .filter(c -> c instanceof uk.codery.jspec.model.CompositeCriterion)
+                .toList())
                 .extracting("id")
                 .contains(
                         "basic-eligibility",
@@ -282,37 +287,37 @@ class EndToEndYamlTest {
     }
 
     private void assertCriterionUndetermined(EvaluationOutcome outcome, String criterionId) {
-        EvaluationResult result = findCriterionResult(outcome, criterionId);
+        QueryResult result = (QueryResult) findCriterionResult(outcome, criterionId);
         assertThat(result.state())
                 .as("Criterion '%s' should be UNDETERMINED (reason: %s)", criterionId, result.failureReason())
                 .isEqualTo(EvaluationState.UNDETERMINED);
     }
 
-    private void assertCriteriaGroupMatched(EvaluationOutcome outcome, String groupId) {
-        CriteriaGroupResult result = findCriteriaGroupResult(outcome, groupId);
+    private void assertCompositeMatched(EvaluationOutcome outcome, String compositeId) {
+        CompositeResult result = findCompositeResult(outcome, compositeId);
         assertThat(result.matched())
-                .as("CriteriaGroup '%s' should be matched", groupId)
+                .as("Composite '%s' should be matched", compositeId)
                 .isTrue();
     }
 
-    private void assertCriteriaGroupNotMatched(EvaluationOutcome outcome, String groupId) {
-        CriteriaGroupResult result = findCriteriaGroupResult(outcome, groupId);
+    private void assertCompositeNotMatched(EvaluationOutcome outcome, String compositeId) {
+        CompositeResult result = findCompositeResult(outcome, compositeId);
         assertThat(result.matched())
-                .as("CriteriaGroup '%s' should not be matched", groupId)
+                .as("Composite '%s' should not be matched", compositeId)
                 .isFalse();
     }
 
     private EvaluationResult findCriterionResult(EvaluationOutcome outcome, String criterionId) {
-        return outcome.evaluationResults().stream()
-                .filter(r -> r.criterion().id().equals(criterionId))
+        return outcome.queryResults().stream()
+                .filter(r -> r.id().equals(criterionId))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Criterion not found: " + criterionId));
     }
 
-    private CriteriaGroupResult findCriteriaGroupResult(EvaluationOutcome outcome, String groupId) {
-        return outcome.criteriaGroupResults().stream()
-                .filter(r -> r.id().equals(groupId))
+    private CompositeResult findCompositeResult(EvaluationOutcome outcome, String compositeId) {
+        return outcome.compositeResults().stream()
+                .filter(r -> r.id().equals(compositeId))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("CriteriaGroup not found: " + groupId));
+                .orElseThrow(() -> new AssertionError("Composite not found: " + compositeId));
     }
 }
