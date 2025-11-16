@@ -65,7 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <h3>CriterionReference (Reference)</h3>
  * <pre>{@code
  * public EvaluationResult evaluate(Object document, EvaluationContext context) {
- *     EvaluationResult cached = context.getCached(referencedId);  // Direct cache lookup
+ *     EvaluationResult cached = context.getCached(refId);  // Direct cache lookup
  *     return cached != null ? new ReferenceResult(this, cached)
  *                           : ReferenceResult.missing(this);
  * }

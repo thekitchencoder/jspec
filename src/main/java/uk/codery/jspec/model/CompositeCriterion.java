@@ -1,5 +1,6 @@
 package uk.codery.jspec.model;
 
+import uk.codery.jspec.builder.CompositeCriterionBuilder;
 import uk.codery.jspec.evaluator.EvaluationContext;
 import uk.codery.jspec.result.CompositeResult;
 import uk.codery.jspec.result.EvaluationResult;
@@ -185,10 +186,6 @@ public record CompositeCriterion(
                 .filter(r -> r.state() == EvaluationState.NOT_MATCHED)
                 .count();
 
-        long undeterminedCount = childResults.stream()
-                .filter(r -> r.state() == EvaluationState.UNDETERMINED)
-                .count();
-
         return switch (junction) {
             case AND -> {
                 // All must match for AND
@@ -229,10 +226,10 @@ public record CompositeCriterion(
      *     .build();
      * }</pre>
      *
-     * @return a new CriteriaGroupBuilder instance
-     * @see uk.codery.jspec.builder.CriteriaGroupBuilder
+     * @return a new CompositeCriterionBuilder instance
+     * @see CompositeCriterionBuilder
      */
-    public static uk.codery.jspec.builder.CriteriaGroupBuilder builder() {
-        return new uk.codery.jspec.builder.CriteriaGroupBuilder();
+    public static CompositeCriterionBuilder builder() {
+        return new CompositeCriterionBuilder();
     }
 }

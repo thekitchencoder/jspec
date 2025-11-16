@@ -6,86 +6,26 @@ import uk.codery.jspec.evaluator.EvaluationContext;
 import uk.codery.jspec.result.EvaluationResult;
 
 /**
- * A criterion defines a condition that can be evaluated against a document.
+ * Represents a logical criterion used for evaluating documents.
  *
- * <p>This sealed interface supports three types of criteria:
- * <ul>
- *   <li>{@link QueryCriterion} - Evaluates MongoDB-style query operators against document fields</li>
- *   <li>{@link CompositeCriterion} - Combines multiple criteria with AND/OR logic (enables nesting)</li>
- *   <li>{@link CriterionReference} - References another criterion by ID for result reuse</li>
- * </ul>
+ * <p>Criteria are the building blocks of queries and specifications, and can
+ * be composed, queried directly, or referenced. This interface is sealed and
+ * permits three specific implementations: {@link QueryCriterion},
+ * {@link CompositeCriterion}, and {@link CriterionReference}.
  *
- * <h2>Design Benefits</h2>
- * <ul>
- *   <li><b>Unified Model:</b> No artificial distinction between criteria and groups</li>
- *   <li><b>Composable:</b> Criteria can nest arbitrarily deep via CompositeCriterion</li>
- *   <li><b>Reusable:</b> Evaluate once, reference many times via CriterionReference</li>
- *   <li><b>Type-Safe:</b> Sealed interface enables exhaustive pattern matching</li>
- * </ul>
+ * <p>{@link QueryCriterion} represents single, query-like conditions.
+ * {@link CompositeCriterion} allows logical composition of multiple criteria
+ * with AND/OR junctions.
+ * {@link CriterionReference} provides a way to reference other criteria by ID.
  *
- * <h2>Usage Examples</h2>
+ * <h3>Serialization:</h3>
+ * Criteria are serialized/deserialized as JSON objects with a "type" property
+ * that distinguishes between the allowed implementations.
  *
- * <h3>Simple Query Criterion</h3>
- * <pre>{@code
- * Criterion ageCriterion = new QueryCriterion(
- *     "age-check",
- *     Map.of("age", Map.of("$gte", 18))
- * );
- * }</pre>
- *
- * <h3>Composite Criterion (AND/OR Logic)</h3>
- * <pre>{@code
- * Criterion eligibility = new CompositeCriterion(
- *     "eligibility",
- *     Junction.AND,
- *     List.of(
- *         new QueryCriterion("age-check", Map.of("age", Map.of("$gte", 18))),
- *         new QueryCriterion("status-check", Map.of("status", Map.of("$eq", "active")))
- *     )
- * );
- * }</pre>
- *
- * <h3>Reference-Based Reuse</h3>
- * <pre>{@code
- * // Define once
- * Criterion ageCheck = new QueryCriterion("age-check", Map.of("age", Map.of("$gte", 18)));
- *
- * // Reference multiple times (result reused from cache)
- * Criterion group1 = new CompositeCriterion("group1", Junction.AND, List.of(
- *     new CriterionReference("age-check"),  // References cached result
- *     new QueryCriterion("other", Map.of(...))
- * ));
- *
- * Criterion group2 = new CompositeCriterion("group2", Junction.OR, List.of(
- *     new CriterionReference("age-check"),  // Reuses same cached result
- *     new QueryCriterion("another", Map.of(...))
- * ));
- * }</pre>
- *
- * <h3>Arbitrary Nesting</h3>
- * <pre>{@code
- * Criterion nested = new CompositeCriterion(
- *     "complex",
- *     Junction.AND,
- *     List.of(
- *         new QueryCriterion("base", Map.of(...)),
- *         new CompositeCriterion(  // Nest composite inside composite!
- *             "inner",
- *             Junction.OR,
- *             List.of(
- *                 new QueryCriterion("opt1", Map.of(...)),
- *                 new QueryCriterion("opt2", Map.of(...))
- *             )
- *         )
- *     )
- * );
- * }</pre>
- *
- * @see QueryCriterion
- * @see CompositeCriterion
- * @see CriterionReference
- * @see Junction
- * @since 0.2.0
+ * <h3>Evaluation:</h3>
+ * All criteria must provide an implementation of the {@code evaluate} method
+ * to define how they are assessed against a given document in a specific
+ * evaluation context.
  */
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -106,6 +46,15 @@ public sealed interface Criterion
      * @return the criterion ID (never null)
      */
     String id();
+
+    /**
+     * Returns a new CriterionReference for this criterion.
+     *
+     * @return the CriterionReference (never null)
+     */
+    default Criterion ref() {
+        return new CriterionReference(id());
+    }
 
     /**
      * Evaluates this criterion against a document.

@@ -115,16 +115,12 @@ criteria:
     criteria:
       - type: reference
         id: age-minimum
-        referencedId: age-minimum
       - type: reference
         id: age-maximum
-        referencedId: age-maximum
       - type: reference
         id: employment-status
-        referencedId: employment-status
       - type: reference
         id: not-bankrupt
-        referencedId: not-bankrupt
 
   # Either good credit OR diverse income sources
   - type: composite
@@ -133,10 +129,8 @@ criteria:
     criteria:
       - type: reference
         id: credit-score-good
-        referencedId: credit-score-good
       - type: reference
         id: income-sources-diverse
-        referencedId: income-sources-diverse
 
   # All location and industry checks
   - type: composite
@@ -145,10 +139,8 @@ criteria:
     criteria:
       - type: reference
         id: residence-in-approved-states
-        referencedId: residence-in-approved-states
       - type: reference
         id: no-excluded-industries
-        referencedId: no-excluded-industries
 
   # Contact validation
   - type: composite
@@ -157,13 +149,10 @@ criteria:
     criteria:
       - type: reference
         id: email-exists
-        referencedId: email-exists
       - type: reference
         id: email-format-valid
-        referencedId: email-format-valid
       - type: reference
         id: phone-type-check
-        referencedId: phone-type-check
 
   # Premium customer indicators (at least one)
   - type: composite
@@ -172,10 +161,7 @@ criteria:
     criteria:
       - type: reference
         id: has-previous-loans
-        referencedId: has-previous-loans
       - type: reference
         id: employer-name
-        referencedId: employer-name
       - type: reference
         id: income-range
-        referencedId: income-range

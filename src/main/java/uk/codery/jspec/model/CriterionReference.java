@@ -5,9 +5,6 @@ import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationState;
 import uk.codery.jspec.result.ReferenceResult;
 
-import java.util.Collections;
-import java.util.Map;
-
 /**
  * A reference to another criterion by ID, enabling result reuse.
  *
@@ -100,10 +97,10 @@ import java.util.Map;
  * <h3>Convenience Constructor</h3>
  * <pre>{@code
  * // Reference uses same ID as target
- * new CriterionReference("age-check")  // id = "age-check", referencedId = "age-check"
+ * new CriterionReference("age-check")  // id = "age-check", refId = "age-check"
  *
  * // Or use different ID for the reference
- * new CriterionReference("my-ref-id", "age-check")  // id = "my-ref-id", referencedId = "age-check"
+ * new CriterionReference("my-ref-id", "age-check")  // id = "my-ref-id", refId = "age-check"
  * }</pre>
  *
  * <h2>Error Handling</h2>
@@ -115,33 +112,14 @@ import java.util.Map;
  *   <li>Never throws exceptions (graceful degradation)</li>
  * </ul>
  *
- * @param id the unique identifier for this reference
- * @param referencedId the ID of the criterion being referenced
+ * @param id the unique identifier of the referenced criteria
  * @see CompositeCriterion
  * @see QueryCriterion
  * @see EvaluationContext
  * @see ReferenceResult
  * @since 0.2.0
  */
-public record CriterionReference(String id, String referencedId) implements Criterion {
-
-    /**
-     * Convenience constructor: reference uses same ID as target.
-     *
-     * <p>This is the most common case - you want to reference a criterion
-     * using its own ID.
-     *
-     * <h3>Example:</h3>
-     * <pre>{@code
-     * new CriterionReference("age-check")
-     * // Equivalent to: new CriterionReference("age-check", "age-check")
-     * }</pre>
-     *
-     * @param referencedId the ID of the criterion to reference
-     */
-    public CriterionReference(String referencedId) {
-        this(referencedId, referencedId);
-    }
+public record CriterionReference(String id) implements Criterion {
 
     /**
      * Evaluates this reference by looking up the cached result.
@@ -167,7 +145,7 @@ public record CriterionReference(String id, String referencedId) implements Crit
     @Override
     public EvaluationResult evaluate(Object document, EvaluationContext context) {
         // Look up in cache - if not found, this is an error
-        EvaluationResult referencedResult = context.getCached(referencedId);
+        EvaluationResult referencedResult = context.getCached(id);
 
         if (referencedResult == null) {
             // Referenced criterion not found or not yet evaluated
@@ -176,16 +154,5 @@ public record CriterionReference(String id, String referencedId) implements Crit
 
         // Return reference result wrapping the cached result
         return new ReferenceResult(this, referencedResult);
-    }
-
-    /**
-     * Creates a placeholder QueryCriterion for missing references.
-     *
-     * <p>Used internally when creating UNDETERMINED results for missing references.
-     *
-     * @return a placeholder QueryCriterion with empty query
-     */
-    QueryCriterion toPlaceholderQuery() {
-        return new QueryCriterion(referencedId, Collections.emptyMap());
     }
 }

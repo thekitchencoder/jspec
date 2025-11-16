@@ -40,7 +40,7 @@ package uk.codery.jspec.result;
  *         System.out.println("Composite: " + composite.childResults().size() + " children");
  *
  *     case ReferenceResult ref ->
- *         System.out.println("Reference: " + ref.reference().referencedId());
+ *         System.out.println("Reference: " + ref.reference().id());
  * }
  * }</pre>
  *

@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 2. Load test documents from YAML files
  * 3. Evaluate specifications against documents
  * 4. Verify results
- *
  * This test exercises:
  * - All operator types (comparison, collection, advanced)
  * - Dot notation for nested fields
@@ -60,7 +59,7 @@ class EndToEndYamlTest {
         EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
 
         // Then: Summary shows high match rate
-        assertThat(outcome.summary().total()).isEqualTo(17);
+        assertThat(outcome.summary().total()).isEqualTo(22);
         assertThat(outcome.summary().matched()).isGreaterThan(13);
         assertThat(outcome.summary().undetermined()).isEqualTo(0);
 
@@ -212,7 +211,7 @@ class EndToEndYamlTest {
     @Test
     void specification_shouldLoadAllCriteria() {
         // Then: All criteria are loaded
-        assertThat(specification.criteria()).hasSize(17);
+        assertThat(specification.criteria()).hasSize(22);
 
         // And: Criteria have correct IDs
         assertThat(specification.criteria())

@@ -81,7 +81,7 @@ import java.util.Collections;
  * void traceResult(EvaluationResult result) {
  *     if (result instanceof ReferenceResult ref) {
  *         System.out.println("Reference: " + ref.reference().id() +
- *                          " -> " + ref.reference().referencedId());
+ *                          " -> " + ref.reference().id());
  *         traceResult(ref.referencedResult());  // Follow the chain
  *     } else {
  *         System.out.println("Original: " + result.id() + " = " + result.state());
@@ -105,8 +105,8 @@ public record ReferenceResult(
      */
     public static ReferenceResult missing(CriterionReference reference) {
         QueryResult missingResult = QueryResult.undetermined(
-                new QueryCriterion(reference.referencedId()),
-                "Referenced criterion '" + reference.referencedId() + "' not found or not yet evaluated",
+                new QueryCriterion(reference.id()),
+                "Referenced criterion '" + reference.id() + "' not found or not yet evaluated",
                 Collections.singletonList("criterion-reference")
         );
         return new ReferenceResult(reference, missingResult);
@@ -169,7 +169,7 @@ public record ReferenceResult(
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(reference.id()).append(" (reference):\n");
-        sb.append("  references: ").append(reference.referencedId()).append("\n");
+        sb.append("  references: ").append(reference.id()).append("\n");
         sb.append("  match: ").append(matched()).append("\n");
         sb.append("  state: ").append(state()).append("\n");
 

@@ -1,5 +1,7 @@
 package uk.codery.jspec.result;
 
+import lombok.NonNull;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -72,7 +74,7 @@ import java.util.List;
  *                              " with " + composite.childResults().size() + " children");
  *
  *         case ReferenceResult ref ->
- *             System.out.println("Reference: " + ref.reference().referencedId());
+ *             System.out.println("Reference: " + ref.reference().id());
  *     }
  * }
  * }</pre>
@@ -188,5 +190,9 @@ public record EvaluationOutcome(
         return results.stream()
                 .filter(r -> r.state() == EvaluationState.UNDETERMINED)
                 .toList();
+    }
+
+    public EvaluationResult get(@NonNull String id) {
+        return results.stream().filter(r -> id.equals(r.id())).findFirst().orElse(null);
     }
 }

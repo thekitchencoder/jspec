@@ -1,5 +1,6 @@
 package uk.codery.jspec.builder;
 
+import lombok.NonNull;
 import uk.codery.jspec.model.Criterion;
 import uk.codery.jspec.model.CompositeCriterion;
 import uk.codery.jspec.model.Junction;
@@ -70,18 +71,18 @@ import java.util.List;
  * @see Junction
  * @since 0.2.0
  */
-public class CriteriaGroupBuilder {
+public class CompositeCriterionBuilder {
 
     private String id;
     private Junction junction = Junction.AND; // Default to AND
     private final List<Criterion> criteria = new ArrayList<>();
 
     /**
-     * Creates a new CriteriaGroupBuilder.
+     * Creates a new CompositeCriterionBuilder.
      *
      * <p>Use {@code CompositeCriterion.builder()} instead of calling this constructor directly.
      */
-    public CriteriaGroupBuilder() {
+    public CompositeCriterionBuilder() {
         // Package-private constructor
     }
 
@@ -92,7 +93,7 @@ public class CriteriaGroupBuilder {
      * @return this builder for method chaining
      * @throws IllegalArgumentException if id is null or empty
      */
-    public CriteriaGroupBuilder id(String id) {
+    public CompositeCriterionBuilder id(String id) {
         if (id == null || id.isEmpty()) {
             throw new IllegalArgumentException("CompositeCriterion ID cannot be null or empty");
         }
@@ -107,7 +108,7 @@ public class CriteriaGroupBuilder {
      *
      * @return this builder for method chaining
      */
-    public CriteriaGroupBuilder and() {
+    public CompositeCriterionBuilder and() {
         this.junction = Junction.AND;
         return this;
     }
@@ -117,7 +118,7 @@ public class CriteriaGroupBuilder {
      *
      * @return this builder for method chaining
      */
-    public CriteriaGroupBuilder or() {
+    public CompositeCriterionBuilder or() {
         this.junction = Junction.OR;
         return this;
     }
@@ -129,7 +130,7 @@ public class CriteriaGroupBuilder {
      * @return this builder for method chaining
      * @throws IllegalArgumentException if junction is null
      */
-    public CriteriaGroupBuilder junction(Junction junction) {
+    public CompositeCriterionBuilder junction(Junction junction) {
         if (junction == null) {
             throw new IllegalArgumentException("Junction cannot be null");
         }
@@ -144,12 +145,16 @@ public class CriteriaGroupBuilder {
      * @return this builder for method chaining
      * @throws IllegalArgumentException if criterion is null
      */
-    public CriteriaGroupBuilder addCriterion(Criterion criterion) {
+    public CompositeCriterionBuilder addCriterion(Criterion criterion) {
         if (criterion == null) {
             throw new IllegalArgumentException("Criterion cannot be null");
         }
         this.criteria.add(criterion);
         return this;
+    }
+
+    public CompositeCriterionBuilder addReference(@NonNull Criterion criterion){
+        return this.addCriterion(criterion.ref());
     }
 
     /**
@@ -161,7 +166,7 @@ public class CriteriaGroupBuilder {
      * @return this builder for method chaining
      * @throws IllegalArgumentException if criteria is null or empty
      */
-    public CriteriaGroupBuilder criteria(Criterion... criteria) {
+    public CompositeCriterionBuilder criteria(Criterion... criteria) {
         if (criteria == null || criteria.length == 0) {
             throw new IllegalArgumentException("At least one criterion must be provided");
         }
@@ -179,7 +184,7 @@ public class CriteriaGroupBuilder {
      * @return this builder for method chaining
      * @throws IllegalArgumentException if criteria is null or empty
      */
-    public CriteriaGroupBuilder criteria(List<Criterion> criteria) {
+    public CompositeCriterionBuilder criteria(List<Criterion> criteria) {
         if (criteria == null || criteria.isEmpty()) {
             throw new IllegalArgumentException("At least one criterion must be provided");
         }

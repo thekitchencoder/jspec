@@ -1,12 +1,15 @@
 package uk.codery.jspec.evaluator;
 
 import lombok.extern.slf4j.Slf4j;
+import uk.codery.jspec.model.QueryCriterion;
 import uk.codery.jspec.model.Specification;
 import uk.codery.jspec.result.EvaluationOutcome;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationSummary;
 
 import java.util.List;
+
+import static java.util.function.Predicate.not;
 
 /**
  * Orchestrates the evaluation of {@link Specification}s against documents.
@@ -186,7 +189,12 @@ public record SpecificationEvaluator(CriterionEvaluator criterionEvaluator) {
 
         // Evaluate all criteria in parallel
         // The context handles caching and reference resolution
-        specification.criteria().parallelStream()
+
+        // Simple QueryCriterion first
+        specification.criteria().parallelStream().filter(QueryCriterion.class::isInstance)
+                .forEach(criterion -> context.getOrEvaluate(criterion, document));
+        // Now composite and reference types
+        specification.criteria().parallelStream().filter(not(QueryCriterion.class::isInstance))
                 .forEach(criterion -> context.getOrEvaluate(criterion, document));
 
         log.debug("Evaluated {} criteria for specification '{}'",

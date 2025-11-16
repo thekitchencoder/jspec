@@ -25,15 +25,12 @@ criteria:
       # Reference existing criteria (type: reference)
       - type: reference
         id: minimum-order-value
-        referencedId: minimum-order-value
 
       - type: reference
         id: customer-verified
-        referencedId: customer-verified
 
       - type: reference
         id: shipping-eligible
-        referencedId: shipping-eligible
 
       # Inline query criterion
       - type: query
