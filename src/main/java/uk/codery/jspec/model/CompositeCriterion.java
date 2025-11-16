@@ -216,4 +216,23 @@ public record CompositeCriterion(
             }
         };
     }
+
+    /**
+     * Creates a new fluent builder for constructing composite criteria.
+     *
+     * <h3>Example:</h3>
+     * <pre>{@code
+     * CompositeCriterion composite = CompositeCriterion.builder()
+     *     .id("user-checks")
+     *     .and()
+     *     .criteria(ageCheck, statusCheck)
+     *     .build();
+     * }</pre>
+     *
+     * @return a new CriteriaGroupBuilder instance
+     * @see uk.codery.jspec.builder.CriteriaGroupBuilder
+     */
+    public static uk.codery.jspec.builder.CriteriaGroupBuilder builder() {
+        return new uk.codery.jspec.builder.CriteriaGroupBuilder();
+    }
 }
