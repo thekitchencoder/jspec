@@ -73,8 +73,8 @@ class EndToEndTest {
         EvaluationOutcome outcome = evaluator.evaluate(order);
 
         assertThat(outcome.summary().matched()).isEqualTo(5);
-        assertThat(outcome.summary().fullyDetermined()).isTrue();
-        assertThat(outcome.get("express-shipping-eligible").state().matched()).isTrue();
+        assertThat(outcome.isFullyDetermined()).isTrue();
+        assertThat(outcome.matched("express-shipping-eligible")).isTrue();
     }
 
     @Test
@@ -135,11 +135,8 @@ class EndToEndTest {
 
         assertThat(outcome.summary().matched()).isEqualTo(3);
         assertThat(outcome.summary().notMatched()).isEqualTo(2);
-        assertThat(outcome.compositeResults().getFirst().state().matched()).isFalse();
-        assertThat(outcome.get("eligible-country"))
-                .isNotNull()
-                .extracting(r -> r.state().matched())
-                .isEqualTo(true);
+        assertThat(outcome.firstComposite().orElseThrow().state().matched()).isFalse();
+        assertThat(outcome.matched("eligible-country")).isTrue();
     }
 
     @Test
@@ -176,7 +173,7 @@ class EndToEndTest {
 
         assertThat(outcome.summary().matched()).isEqualTo(1);
         assertThat(outcome.summary().undetermined()).isEqualTo(2);
-        assertThat(outcome.summary().fullyDetermined()).isFalse();
+        assertThat(outcome.isFullyDetermined()).isFalse();
     }
 
     // ========== User Access Control Scenario ==========
@@ -211,7 +208,7 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(user);
 
-        assertThat(outcome.compositeResults().getFirst().state().matched()).isTrue();
+        assertThat(outcome.firstComposite().orElseThrow().state().matched()).isTrue();
     }
 
     @Test
@@ -253,8 +250,8 @@ class EndToEndTest {
 
         // Admin access should fail, user access should succeed
         assertThat(outcome.compositeResults()).hasSize(2);
-        assertThat(outcome.get("admin-access").state().matched()).isFalse(); // admin-access
-        assertThat(outcome.get("user-access").state().matched()).isTrue();  // user-access
+        assertThat(outcome.matched("admin-access")).isFalse(); // admin-access
+        assertThat(outcome.matched("user-access")).isTrue();  // user-access
     }
 
     // ========== E-commerce Discount Scenario ==========
@@ -301,7 +298,7 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(order);
 
-        assertThat(outcome.compositeResults().getFirst().state().matched()).isTrue();
+        assertThat(outcome.firstComposite().orElseThrow().state().matched()).isTrue();
     }
 
     // ========== Content Moderation Scenario ==========
@@ -352,7 +349,7 @@ class EndToEndTest {
         EvaluationOutcome outcome = evaluator.evaluate(post);
 
         // Should match because multiple flags are triggered
-        assertThat(outcome.compositeResults().getFirst().state().matched()).isTrue();
+        assertThat(outcome.firstComposite().orElseThrow().state().matched()).isTrue();
         assertThat(outcome.summary().matched()).isGreaterThan(1);
     }
 
@@ -424,8 +421,8 @@ class EndToEndTest {
         EvaluationOutcome outcome = evaluator.evaluate(application);
 
         assertThat(outcome.summary().matched()).isEqualTo(7);
-        assertThat(outcome.summary().fullyDetermined()).isTrue();
-        assertThat(outcome.get("loan-approval").state().matched()).isTrue();
+        assertThat(outcome.isFullyDetermined()).isTrue();
+        assertThat(outcome.matched("loan-approval")).isTrue();
     }
 
     // ========== Mixed Success/Failure Scenario ==========
@@ -456,7 +453,7 @@ class EndToEndTest {
         assertThat(outcome.summary().matched()).isEqualTo(3);
         assertThat(outcome.summary().notMatched()).isEqualTo(1);
         assertThat(outcome.summary().undetermined()).isEqualTo(1);
-        assertThat(outcome.summary().fullyDetermined()).isFalse();
+        assertThat(outcome.isFullyDetermined()).isFalse();
     }
 
     // ========== Performance Test with Many Criteria ==========
@@ -500,7 +497,7 @@ class EndToEndTest {
         EvaluationOutcome outcome = evaluator.evaluate(doc);
 
         assertThat(outcome.queryResults()).hasSize(20);
-        assertThat(outcome.summary().fullyDetermined()).isTrue();
+        assertThat(outcome.isFullyDetermined()).isTrue();
         // Most should match given the document structure
         assertThat(outcome.summary().matched()).isGreaterThan(15);
     }

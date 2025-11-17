@@ -19,7 +19,7 @@
  * }
  *
  * // Access criteria group results
- * for (CriteriaGroupResult group : outcome.criteriaGroupResults()) {
+ * for (CompositeResult group : outcome.CompositeResults()) {
  *     System.out.println(group.id() + ": " + group.matched());
  * }
  *
@@ -45,11 +45,11 @@
  * }
  * }</pre>
  *
- * <h3>{@link uk.codery.jspec.result.CriteriaGroupResult}</h3>
+ * <h3>{@link uk.codery.jspec.result.CompositeResult}</h3>
  * <p>Result from evaluating a criteria group (multiple criteria with AND/OR logic).
  *
  * <pre>{@code
- * CriteriaGroupResult groupResult = // from outcome
+ * CompositeResult groupResult = // from outcome
  *
  * System.out.println("Group: " + groupResult.id());
  * System.out.println("Junction: " + groupResult.junction());
@@ -83,11 +83,11 @@
  * System.out.println("Fully Determined: " + summary.fullyDetermined());
  * }</pre>
  *
- * <h3>{@link uk.codery.jspec.result.Result}</h3>
+ * <h3>{@link uk.codery.jspec.result.EvaluationResult}</h3>
  * <p>Common interface for all result types, enabling polymorphic handling.
  *
  * <pre>{@code
- * Result result = // EvaluationResult or CriteriaGroupResult
+ * Result result = // EvaluationResult or CompositeResult
  *
  * if (!result.matched()) {
  *     System.out.println(result.id() + " failed: " + result.reason());
@@ -121,7 +121,7 @@
  *
  * @see uk.codery.jspec.result.EvaluationOutcome
  * @see uk.codery.jspec.result.EvaluationResult
- * @see uk.codery.jspec.result.CriteriaGroupResult
+ * @see uk.codery.jspec.result.CompositeResult
  * @see uk.codery.jspec.result.EvaluationState
  * @see uk.codery.jspec.result.EvaluationSummary
  * @since 0.1.0

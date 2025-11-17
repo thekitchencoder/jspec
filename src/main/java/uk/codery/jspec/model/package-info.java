@@ -17,11 +17,11 @@
  *     .build();
  * }</pre>
  *
- * <h3>{@link uk.codery.jspec.model.CriteriaGroup}</h3>
+ * <h3>{@link uk.codery.jspec.model.CompositeCriterion}</h3>
  * <p>Combines multiple criteria using AND/OR logic (junction).
  *
  * <pre>{@code
- * CriteriaGroup group = CriteriaGroup.builder()
+ * CompositeCriterion group = CompositeCriterion.builder()
  *     .id("employment")
  *     .and()  // All must match
  *     .criteria(employmentCheck, incomeCheck)
@@ -64,7 +64,7 @@
  * </ul>
  *
  * @see uk.codery.jspec.model.Criterion
- * @see uk.codery.jspec.model.CriteriaGroup
+ * @see uk.codery.jspec.model.CompositeCriterion
  * @see uk.codery.jspec.model.Specification
  * @see uk.codery.jspec.model.Junction
  * @since 0.1.0

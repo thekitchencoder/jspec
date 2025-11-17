@@ -1,7 +1,7 @@
 package uk.codery.jspec.model;
 
 /**
- * Boolean logic operators for combining multiple criteria in a {@link CriteriaGroup}.
+ * Boolean logic operators for combining multiple criteria in a {@link uk.codery.jspec.result.CompositeResult}.
  *
  * <p>Junctions define how multiple criteria within a group are evaluated together:
  * <ul>
@@ -32,7 +32,7 @@ package uk.codery.jspec.model;
  *     .build();
  *
  * // Both criteria must match
- * CriteriaGroup group = new CriteriaGroup(
+ * CompositeResult group = new CompositeResult(
  *     "eligible-user",
  *     Junction.AND,
  *     List.of(ageCheck, statusCheck)
@@ -52,7 +52,7 @@ package uk.codery.jspec.model;
  *     .build();
  *
  * // Either criterion can match
- * CriteriaGroup group = new CriteriaGroup(
+ * CompositeResult group = new CompositeResult(
  *     "special-user",
  *     Junction.OR,
  *     List.of(vipCheck, premiumCheck)
@@ -62,14 +62,14 @@ package uk.codery.jspec.model;
  * <h3>Using Builder API</h3>
  * <pre>{@code
  * // AND group
- * CriteriaGroup andGroup = CriteriaGroup.builder()
+ * CompositeResult andGroup = CompositeResult.builder()
  *     .id("employment-checks")
  *     .and()  // Sets junction to AND
  *     .criteria(employmentCheck, incomeCheck)
  *     .build();
  *
  * // OR group
- * CriteriaGroup orGroup = CriteriaGroup.builder()
+ * CompositeResult orGroup = CompositeResult.builder()
  *     .id("special-access")
  *     .or()  // Sets junction to OR
  *     .criteria(adminCheck, managerCheck)
@@ -97,16 +97,16 @@ package uk.codery.jspec.model;
  * logic (XOR, NAND, NOR) is not planned, as it can be expressed through combinations
  * of AND/OR groups.
  *
- * @see CriteriaGroup
+ * @see uk.codery.jspec.result.CompositeResult
  * @see Criterion
- * @see uk.codery.jspec.result.CriteriaGroupResult
+ * @see uk.codery.jspec.result.CompositeResult
  * @since 0.1.0
  */
 public enum Junction {
     /**
      * Logical AND - all criteria in the group must match.
      *
-     * <p>When used in a {@link CriteriaGroup}, this junction requires that
+     * <p>When used in a {@link uk.codery.jspec.result.CompositeResult}, this junction requires that
      * every criterion in the group evaluates to MATCHED for the group to match.
      *
      * <p>This is the default junction if none is specified.
@@ -116,7 +116,7 @@ public enum Junction {
     /**
      * Logical OR - at least one criterion in the group must match.
      *
-     * <p>When used in a {@link CriteriaGroup}, this junction requires that
+     * <p>When used in a {@link uk.codery.jspec.result.CompositeResult}, this junction requires that
      * at least one criterion in the group evaluates to MATCHED for the group to match.
      */
     OR
