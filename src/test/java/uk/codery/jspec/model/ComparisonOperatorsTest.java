@@ -34,7 +34,7 @@ class ComparisonOperatorsTest {
         EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
-        assertThat(result.matched()).isTrue();
+        assertThat(result.state().matched()).isTrue();
     }
 
     @Test
@@ -45,7 +45,7 @@ class ComparisonOperatorsTest {
         EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
     }
 
     @Test

@@ -109,11 +109,6 @@ public record CompositeResult(
         return criterion.junction();
     }
 
-    @Override
-    public boolean matched() {
-        return state == EvaluationState.MATCHED;
-    }
-
     /**
      * Returns a combined reason string from all child results.
      *
@@ -171,7 +166,7 @@ public record CompositeResult(
      * @return true if state is MATCHED or NOT_MATCHED
      */
     public boolean isDetermined() {
-        return state != EvaluationState.UNDETERMINED;
+        return state.determined();
     }
 
     /**
@@ -213,7 +208,7 @@ public record CompositeResult(
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(criterion.id()).append(" (composite):\n");
-        sb.append("  match: ").append(matched()).append("\n");
+        sb.append("  match: ").append(state.matched()).append("\n");
         sb.append("  junction: ").append(junction()).append("\n");
         sb.append("  state: ").append(state).append("\n");
         sb.append("  children: ").append(childResults.size()).append("\n");
@@ -223,7 +218,7 @@ public record CompositeResult(
                 .append(", not_matched=").append(stats.notMatched())
                 .append(", undetermined=").append(stats.undetermined()).append("\n");
 
-        if (state != EvaluationState.MATCHED) {
+        if (!state.matched()) {
             sb.append("  reason: \"").append(reason()).append("\"\n");
         }
 

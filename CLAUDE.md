@@ -99,7 +99,7 @@ Documentation:
 
 ## Core Concepts
 
-### 1. Tri-State Evaluation Model
+### 1. Tri-State Evaluation Model with Kleene Logic
 
 Every criterion evaluation produces one of three states:
 
@@ -108,6 +108,47 @@ Every criterion evaluation produces one of three states:
 - **UNDETERMINED** - Could not evaluate (missing data, invalid criterion, type mismatch)
 
 This is the core innovation that enables graceful degradation.
+
+**Kleene Three-Valued Logic (K3):**
+
+The `EvaluationState` enum implements Strong Kleene Logic for combining states:
+- **`.and(other)`** - Logical AND with K3 semantics
+  - `NOT_MATCHED AND anything = NOT_MATCHED` (short-circuit!)
+  - `MATCHED AND MATCHED = MATCHED`
+  - `MATCHED AND UNDETERMINED = UNDETERMINED`
+- **`.or(other)`** - Logical OR with K3 semantics
+  - `MATCHED OR anything = MATCHED` (short-circuit!)
+  - `NOT_MATCHED OR NOT_MATCHED = NOT_MATCHED`
+  - `NOT_MATCHED OR UNDETERMINED = UNDETERMINED`
+
+**Helper Methods:**
+- `state.matched()` - Returns `true` if state is MATCHED
+- `state.notMatched()` - Returns `true` if state is NOT_MATCHED
+- `state.undetermined()` - Returns `true` if state is UNDETERMINED
+- `state.determined()` - Returns `true` if state is MATCHED or NOT_MATCHED
+
+**Usage Example:**
+```java
+EvaluationResult result = evaluator.evaluateQuery(document, criterion);
+
+// Use state helper methods
+if (result.state().matched()) {
+    System.out.println("Criterion matched!");
+}
+
+if (result.state().undetermined()) {
+    System.out.println("Could not evaluate: " + result.reason());
+}
+
+// Combine states using Kleene logic
+EvaluationState combined = result1.state().and(result2.state());
+```
+
+**Why Kleene Logic?**
+- More powerful than conservative logic (which taints everything with UNDETERMINED)
+- Makes definitive conclusions when possible, even with some UNDETERMINED values
+- Mathematically sound (used in SQL NULL handling)
+- Enables short-circuiting: `false AND unknown = false`, `true OR unknown = true`
 
 ### 2. Graceful Degradation
 
@@ -309,26 +350,38 @@ For a complete audit of the terminology refactoring, see:
 
 **Purpose**: Represents individual criterion evaluation outcome
 
-**Key Fields**:
+**Sealed Interface Hierarchy**:
 ```java
-record EvaluationResult(
-    Criterion criterion,
+// Sealed interface with three implementations
+public sealed interface EvaluationResult
+        permits QueryResult, CompositeResult, ReferenceResult {
+    String id();
+    EvaluationState state();
+    String reason();
+}
+
+// Query criterion result
+public record QueryResult(
+    QueryCriterion criterion,
     EvaluationState state,      // MATCHED/NOT_MATCHED/UNDETERMINED
     List<String> missingPaths,  // Tracks missing document fields
     String failureReason        // Explains UNDETERMINED state
-)
+) implements EvaluationResult
 ```
 
-**Factory Methods**:
+**Factory Methods** (on QueryResult):
 - `matched(criterion)` - Successful match
-- `notMatched(criterion)` - Evaluated but didn't match
+- `notMatched(criterion, paths)` - Evaluated but didn't match
 - `undetermined(criterion, reason, paths)` - Couldn't evaluate
 - `missing(criterion)` - Criterion not found in specification
 
 **Important Methods**:
-- `matched()` - Returns true only if state == MATCHED
-- `isDetermined()` - Returns false if state == UNDETERMINED
+- `state()` - Returns the EvaluationState (MATCHED/NOT_MATCHED/UNDETERMINED)
+- `state().matched()` - Returns true only if state == MATCHED
+- `state().determined()` - Returns false if state == UNDETERMINED
 - `reason()` - Human-readable explanation (for logging/debugging)
+
+**Note:** The `matched()` method was removed from `EvaluationResult` interface in favor of using `state().matched()` for clarity. This makes it explicit that you're checking the state.
 
 ### Data Model Records
 
@@ -580,22 +633,27 @@ c676814 - test: add RegexPatternCacheTest for regex caching and thread safety
 ### What Changed in Tri-State Implementation
 
 **Before**: Binary matched/not-matched (ambiguous)
-**After**: Three states (MATCHED/NOT_MATCHED/UNDETERMINED)
+**After**: Three states (MATCHED/NOT_MATCHED/UNDETERMINED) with Kleene logic
 
-**Added**:
-- `EvaluationState` enum
-- `failureReason` field in `EvaluationResult`
+**Added (v0.2.0+)**:
+- `EvaluationState` enum with helper methods (`matched()`, `notMatched()`, `undetermined()`, `determined()`)
+- Kleene logic operators (`and()`, `or()`) on `EvaluationState` for combining states
+- `failureReason` field in result types
 - `EvaluationSummary` with `undeterminedCriteria` count
 - Comprehensive error tracking
 - Regex pattern caching infrastructure
 - Modern Java 21 features throughout
+- Sealed interface hierarchy (QueryResult, CompositeResult, ReferenceResult)
 
 **Changed**:
-- All operators now check types before casting
+- Removed `matched()` method from `EvaluationResult` interface (use `state().matched()` instead)
+- `CompositeCriterion.calculateCompositeState()` now uses `.and()` and `.or()` operators (much cleaner!)
+- All operators check types before casting
 - Unknown operators log warnings instead of printing to stderr
 - Invalid regex patterns handled gracefully
 - $all operator uses optimized HashSet algorithm
 - Type checking uses modern pattern matching
+- `isDetermined()` methods now use `state.determined()` for consistency
 
 ## Known Limitations
 

@@ -74,7 +74,7 @@ class EndToEndTest {
 
         assertThat(outcome.summary().matched()).isEqualTo(5);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
-        assertThat(outcome.get("express-shipping-eligible").matched()).isTrue();
+        assertThat(outcome.get("express-shipping-eligible").state().matched()).isTrue();
     }
 
     @Test
@@ -135,10 +135,10 @@ class EndToEndTest {
 
         assertThat(outcome.summary().matched()).isEqualTo(3);
         assertThat(outcome.summary().notMatched()).isEqualTo(2);
-        assertThat(outcome.compositeResults().getFirst().matched()).isFalse();
+        assertThat(outcome.compositeResults().getFirst().state().matched()).isFalse();
         assertThat(outcome.get("eligible-country"))
                 .isNotNull()
-                .extracting(EvaluationResult::matched)
+                .extracting(r -> r.state().matched())
                 .isEqualTo(true);
     }
 
@@ -211,7 +211,7 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(user);
 
-        assertThat(outcome.compositeResults().getFirst().matched()).isTrue();
+        assertThat(outcome.compositeResults().getFirst().state().matched()).isTrue();
     }
 
     @Test
@@ -253,8 +253,8 @@ class EndToEndTest {
 
         // Admin access should fail, user access should succeed
         assertThat(outcome.compositeResults()).hasSize(2);
-        assertThat(outcome.get("admin-access").matched()).isFalse(); // admin-access
-        assertThat(outcome.get("user-access").matched()).isTrue();  // user-access
+        assertThat(outcome.get("admin-access").state().matched()).isFalse(); // admin-access
+        assertThat(outcome.get("user-access").state().matched()).isTrue();  // user-access
     }
 
     // ========== E-commerce Discount Scenario ==========
@@ -301,7 +301,7 @@ class EndToEndTest {
 
         EvaluationOutcome outcome = evaluator.evaluate(order);
 
-        assertThat(outcome.compositeResults().getFirst().matched()).isTrue();
+        assertThat(outcome.compositeResults().getFirst().state().matched()).isTrue();
     }
 
     // ========== Content Moderation Scenario ==========
@@ -352,7 +352,7 @@ class EndToEndTest {
         EvaluationOutcome outcome = evaluator.evaluate(post);
 
         // Should match because multiple flags are triggered
-        assertThat(outcome.compositeResults().getFirst().matched()).isTrue();
+        assertThat(outcome.compositeResults().getFirst().state().matched()).isTrue();
         assertThat(outcome.summary().matched()).isGreaterThan(1);
     }
 
@@ -425,7 +425,7 @@ class EndToEndTest {
 
         assertThat(outcome.summary().matched()).isEqualTo(7);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
-        assertThat(outcome.get("loan-approval").matched()).isTrue();
+        assertThat(outcome.get("loan-approval").state().matched()).isTrue();
     }
 
     // ========== Mixed Success/Failure Scenario ==========

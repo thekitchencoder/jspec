@@ -120,10 +120,10 @@ class SpecificationEvaluatorTest {
         assertThat(outcome.compositeResults()).hasSize(1);
         CompositeResult result = outcome.compositeResults().getFirst();
         assertThat(result.id()).isEqualTo("and-set");
-        assertThat(result.matched()).isTrue();
+        assertThat(result.state().matched()).isTrue();
         assertThat(result.junction()).isEqualTo(Junction.AND);
         assertThat(result.childResults()).hasSize(2);
-        assertThat(result.childResults()).allMatch(EvaluationResult::matched);
+        assertThat(result.childResults()).allMatch(r -> r.state().matched());
     }
 
     @Test
@@ -140,7 +140,7 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
     }
 
     @Test
@@ -157,7 +157,7 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
     }
 
     // ========== CriteriaGroup Tests with OR Junction ==========
@@ -185,7 +185,7 @@ class SpecificationEvaluatorTest {
 
         CompositeResult result = outcome.compositeResults().getFirst();
         assertThat(result.id()).isEqualTo("or-set");
-        assertThat(result.matched()).isTrue();
+        assertThat(result.state().matched()).isTrue();
         assertThat(result.junction()).isEqualTo(Junction.OR);
     }
 
@@ -203,7 +203,7 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
-        assertThat(result.matched()).isTrue();
+        assertThat(result.state().matched()).isTrue();
     }
 
     @Test
@@ -220,7 +220,7 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
     }
 
     // ========== Multiple CriteriaGroups ==========
@@ -243,7 +243,7 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         assertThat(outcome.compositeResults()).hasSize(2);
-        assertThat(outcome.compositeResults()).allMatch(EvaluationResult::matched);
+        assertThat(outcome.compositeResults()).allMatch(r -> r.state().matched());
     }
 
     @Test
@@ -289,7 +289,7 @@ class SpecificationEvaluatorTest {
         assertThat(outcome.compositeResults()).hasSize(1);
         CompositeResult result = outcome.compositeResults().getFirst();
         // AND requires all to match - undetermined criterion doesn't match
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
         assertThat(result.childResults()).hasSize(2);
     }
 
@@ -309,7 +309,7 @@ class SpecificationEvaluatorTest {
         assertThat(outcome.compositeResults()).hasSize(1);
         CompositeResult result = outcome.compositeResults().getFirst();
         // OR requires at least one to match - "good" matches
-        assertThat(result.matched()).isTrue();
+        assertThat(result.state().matched()).isTrue();
     }
 
     // ========== Summary Verification ==========
@@ -409,7 +409,7 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
-        assertThat(result.matched()).isTrue();
+        assertThat(result.state().matched()).isTrue();
         assertThat(result.childResults()).hasSize(1);
     }
 
@@ -431,7 +431,7 @@ class SpecificationEvaluatorTest {
         EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
-        assertThat(result.matched()).isTrue();
+        assertThat(result.state().matched()).isTrue();
         assertThat(result.childResults()).hasSize(5);
     }
 

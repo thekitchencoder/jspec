@@ -25,7 +25,7 @@ package uk.codery.jspec.result;
  * // All results have these methods
  * String id = result.id();                    // Criterion ID
  * EvaluationState state = result.state();     // Tri-state result
- * boolean matched = result.matched();         // Convenience (state == MATCHED)
+ * boolean matched = result.state().matched(); // Check if matched
  * String reason = result.reason();            // Explanation (null if matched)
  * }</pre>
  *
@@ -75,7 +75,7 @@ package uk.codery.jspec.result;
  * for (EvaluationResult result : outcome.results()) {
  *     System.out.printf("%s: %s%n", result.id(), result.state());
  *
- *     if (!result.matched()) {
+ *     if (!result.state().matched()) {
  *         System.out.println("  Reason: " + result.reason());
  *     }
  * }
@@ -127,18 +127,26 @@ public sealed interface EvaluationResult
     /**
      * Returns the tri-state evaluation result.
      *
+     * <p>Use {@link EvaluationState#matched()}, {@link EvaluationState#notMatched()},
+     * or {@link EvaluationState#undetermined()} methods to check the state:
+     *
+     * <pre>{@code
+     * if (result.state().matched()) {
+     *     // Handle matched case
+     * }
+     *
+     * if (result.state().undetermined()) {
+     *     // Handle undetermined case
+     *     System.out.println("Reason: " + result.reason());
+     * }
+     * }</pre>
+     *
      * @return MATCHED, NOT_MATCHED, or UNDETERMINED
+     * @see EvaluationState#matched()
+     * @see EvaluationState#notMatched()
+     * @see EvaluationState#undetermined()
      */
     EvaluationState state();
-
-    /**
-     * Returns whether this result represents a match.
-     *
-     * <p>This is a convenience method equivalent to {@code state() == EvaluationState.MATCHED}.
-     *
-     * @return true if state is MATCHED, false otherwise
-     */
-    boolean matched();
 
     /**
      * Returns a human-readable explanation of why this result did not match.

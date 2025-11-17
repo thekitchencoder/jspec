@@ -297,14 +297,14 @@ class EndToEndYamlTest {
 
     private void assertCompositeMatched(EvaluationOutcome outcome, String compositeId) {
         CompositeResult result = findCompositeResult(outcome, compositeId);
-        assertThat(result.matched())
+        assertThat(result.state().matched())
                 .as("Composite '%s' should be matched", compositeId)
                 .isTrue();
     }
 
     private void assertCompositeNotMatched(EvaluationOutcome outcome, String compositeId) {
         CompositeResult result = findCompositeResult(outcome, compositeId);
-        assertThat(result.matched())
+        assertThat(result.state().matched())
                 .as("Composite '%s' should not be matched", compositeId)
                 .isFalse();
     }

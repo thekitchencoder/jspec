@@ -123,11 +123,6 @@ public record ReferenceResult(
     }
 
     @Override
-    public boolean matched() {
-        return referencedResult.matched();
-    }
-
-    @Override
     public String reason() {
         return referencedResult.reason();
     }
@@ -138,7 +133,7 @@ public record ReferenceResult(
      * @return true if state is MATCHED or NOT_MATCHED
      */
     public boolean isDetermined() {
-        return state() != EvaluationState.UNDETERMINED;
+        return state().determined();
     }
 
     /**
@@ -170,7 +165,7 @@ public record ReferenceResult(
         StringBuilder sb = new StringBuilder();
         sb.append(reference.id()).append(" (reference):\n");
         sb.append("  references: ").append(reference.id()).append("\n");
-        sb.append("  match: ").append(matched()).append("\n");
+        sb.append("  match: ").append(state().matched()).append("\n");
         sb.append("  state: ").append(state()).append("\n");
 
         if (reason() != null) {

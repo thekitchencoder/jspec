@@ -159,58 +159,52 @@ public record CompositeCriterion(
     /**
      * Calculates the composite state based on junction logic and child states.
      *
-     * <h3>AND Logic:</h3>
+     * <p>Uses <b>Kleene three-valued logic</b> to combine child states:
+     * <ul>
+     *   <li><b>AND junction:</b> Reduces child states using {@link EvaluationState#and(EvaluationState)}</li>
+     *   <li><b>OR junction:</b> Reduces child states using {@link EvaluationState#or(EvaluationState)}</li>
+     * </ul>
+     *
+     * <h3>AND Logic (Conjunction):</h3>
      * <ul>
      *   <li>MATCHED - All children MATCHED</li>
-     *   <li>NOT_MATCHED - Any child NOT_MATCHED</li>
+     *   <li>NOT_MATCHED - Any child NOT_MATCHED (short-circuits)</li>
      *   <li>UNDETERMINED - No NOT_MATCHED, but at least one UNDETERMINED</li>
      * </ul>
      *
-     * <h3>OR Logic:</h3>
+     * <h3>OR Logic (Disjunction):</h3>
      * <ul>
-     *   <li>MATCHED - Any child MATCHED</li>
+     *   <li>MATCHED - Any child MATCHED (short-circuits)</li>
      *   <li>NOT_MATCHED - All children NOT_MATCHED</li>
      *   <li>UNDETERMINED - No MATCHED, but at least one UNDETERMINED</li>
      * </ul>
+     *
+     * <h3>Example:</h3>
+     * <pre>{@code
+     * // AND: [MATCHED, UNDETERMINED, MATCHED] → UNDETERMINED
+     * // OR:  [NOT_MATCHED, UNDETERMINED, NOT_MATCHED] → UNDETERMINED
+     * // AND: [MATCHED, NOT_MATCHED, UNDETERMINED] → NOT_MATCHED (short-circuit!)
+     * // OR:  [NOT_MATCHED, MATCHED, UNDETERMINED] → MATCHED (short-circuit!)
+     * }</pre>
+     *
+     * @param childResults the child evaluation results
+     * @return the combined state using junction logic
+     * @see EvaluationState#and(EvaluationState)
+     * @see EvaluationState#or(EvaluationState)
      */
     private EvaluationState calculateCompositeState(List<EvaluationResult> childResults) {
         if (childResults.isEmpty()) {
             return EvaluationState.UNDETERMINED;
         }
 
-        long matchedCount = childResults.stream()
-                .filter(r -> r.state() == EvaluationState.MATCHED)
-                .count();
-
-        long notMatchedCount = childResults.stream()
-                .filter(r -> r.state() == EvaluationState.NOT_MATCHED)
-                .count();
-
         return switch (junction) {
-            case AND -> {
-                // All must match for AND
-                if (matchedCount == childResults.size()) {
-                    yield EvaluationState.MATCHED;
-                } else if (notMatchedCount > 0) {
-                    // Any not-matched fails the AND
-                    yield EvaluationState.NOT_MATCHED;
-                } else {
-                    // Must have undetermined children (no not-matched, but not all matched)
-                    yield EvaluationState.UNDETERMINED;
-                }
-            }
-            case OR -> {
-                // Any match succeeds for OR
-                if (matchedCount > 0) {
-                    yield EvaluationState.MATCHED;
-                } else if (notMatchedCount == childResults.size()) {
-                    // All not-matched fails the OR
-                    yield EvaluationState.NOT_MATCHED;
-                } else {
-                    // Must have undetermined children (no matches, but not all not-matched)
-                    yield EvaluationState.UNDETERMINED;
-                }
-            }
+            case AND -> childResults.stream()
+                    .map(EvaluationResult::state)
+                    .reduce(EvaluationState.MATCHED, EvaluationState::and);
+
+            case OR -> childResults.stream()
+                    .map(EvaluationResult::state)
+                    .reduce(EvaluationState.NOT_MATCHED, EvaluationState::or);
         };
     }
 

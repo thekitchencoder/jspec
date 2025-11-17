@@ -30,48 +30,149 @@ Every criterion evaluation produces one of three states:
 
 ---
 
-## Current Implementation Analysis
+## Implementation Status ✅
 
-### What's Already Working ✅
+### Tri-State Model (Implemented in v0.2.0)
 
-The current `EvaluationResult` has the foundation:
+The tri-state model has been fully implemented with **Strong Kleene Logic (K3)**:
 
 ```java
-public record EvaluationResult(
-    Criterion criterion,
-    boolean matched,           // true/false
-    List<String> missingPaths  // tracks missing data
-) implements Result
+// Enum with helper methods and logic operators
+public enum EvaluationState {
+    MATCHED,
+    NOT_MATCHED,
+    UNDETERMINED;
+
+    // Helper methods
+    public boolean matched() { return this == MATCHED; }
+    public boolean notMatched() { return this == NOT_MATCHED; }
+    public boolean undetermined() { return this == UNDETERMINED; }
+    public boolean determined() { return this != UNDETERMINED; }
+
+    // Kleene logic operators
+    public EvaluationState and(EvaluationState other) { ... }
+    public EvaluationState or(EvaluationState other) { ... }
+}
+
+// Sealed interface for polymorphic results
+public sealed interface EvaluationResult
+        permits QueryResult, CompositeResult, ReferenceResult {
+    String id();
+    EvaluationState state();
+    String reason();
+}
+
+// Query result implementation
+public record QueryResult(
+    QueryCriterion criterion,
+    EvaluationState state,
+    List<String> missingPaths,
+    String failureReason
+) implements EvaluationResult { ... }
 ```
 
-**Good patterns:**
-- `missingPaths` tracks where data is missing
-- `reason()` method explains failures
-- Static factory `missing(criterion)` for undefined criteria
-- Graceful handling of null values
-
-**Current behavior:**
-- Missing data → `matched=false`, `missingPaths=["path.to.field"]`
-- Invalid criterion → `matched=false`, `missingPaths=["criterion definition"]`
-- Not matched → `matched=false`, `missingPaths=[]`
-
-### What Needs Improvement ⚠️
-
-**Problem:** `matched=false` is ambiguous
-- Does it mean "evaluated to false" (NOT_MATCHED)?
-- Or "couldn't evaluate" (UNDETERMINED)?
-
-**Current issues:**
-1. **Unknown operators** → Prints to stderr, continues silently (CriterionEvaluator.java:194)
-2. **Type mismatches** → May throw ClassCastException
-3. **No distinction** between false and undetermined
-4. **Partial results** → No way to know if evaluation was complete
+**Implemented features:**
+- ✅ Explicit tri-state model with `EvaluationState` enum
+- ✅ Helper methods on state (`matched()`, `notMatched()`, `undetermined()`, `determined()`)
+- ✅ Kleene three-valued logic for combining states (`.and()`, `.or()`)
+- ✅ Sealed interface hierarchy (QueryResult, CompositeResult, ReferenceResult)
+- ✅ `reason()` method explains failures
+- ✅ Static factories for common cases
+- ✅ Graceful handling of all error cases
+- ✅ SLF4J logging throughout
 
 ---
 
-## Proposed Enhancement: Tri-State Model
+## Kleene Three-Valued Logic
 
-### Option 1: Add Explicit State Enum (Recommended)
+### What is Kleene Logic?
+
+The implementation uses **Strong Kleene Logic (K3)** for combining evaluation states. This is more powerful than conservative logic because it can still make definitive conclusions even when some values are UNDETERMINED.
+
+### Truth Tables
+
+**AND Logic (Conjunction):**
+```
+            | MATCHED | NOT_MATCHED | UNDETERMINED
+------------|---------|-------------|-------------
+MATCHED     | MATCHED | NOT_MATCHED | UNDETERMINED
+NOT_MATCHED | NOT_MATCHED | NOT_MATCHED | NOT_MATCHED
+UNDETERMINED| UNDETERMINED | NOT_MATCHED | UNDETERMINED
+```
+
+**Key Insight:** `NOT_MATCHED AND anything = NOT_MATCHED` because one false value makes the entire AND expression false.
+
+**OR Logic (Disjunction):**
+```
+            | MATCHED | NOT_MATCHED | UNDETERMINED
+------------|---------|-------------|-------------
+MATCHED     | MATCHED | MATCHED     | MATCHED
+NOT_MATCHED | MATCHED | NOT_MATCHED | UNDETERMINED
+UNDETERMINED| MATCHED | UNDETERMINED | UNDETERMINED
+```
+
+**Key Insight:** `MATCHED OR anything = MATCHED` because one true value makes the entire OR expression true.
+
+### Usage in Composite Criteria
+
+```java
+// CompositeCriterion.calculateCompositeState()
+private EvaluationState calculateCompositeState(List<EvaluationResult> childResults) {
+    if (childResults.isEmpty()) {
+        return EvaluationState.UNDETERMINED;
+    }
+
+    return switch (junction) {
+        case AND -> childResults.stream()
+                .map(EvaluationResult::state)
+                .reduce(EvaluationState.MATCHED, EvaluationState::and);
+
+        case OR -> childResults.stream()
+                .map(EvaluationResult::state)
+                .reduce(EvaluationState.NOT_MATCHED, EvaluationState::or);
+    };
+}
+```
+
+**Example scenarios:**
+
+```java
+// AND composite with UNDETERMINED child
+// [MATCHED, MATCHED, UNDETERMINED] → UNDETERMINED
+// We can't say the AND succeeded because one child is unknown
+
+// AND composite with NOT_MATCHED child
+// [MATCHED, NOT_MATCHED, UNDETERMINED] → NOT_MATCHED
+// We KNOW the AND failed because one child is false (short-circuit!)
+
+// OR composite with MATCHED child
+// [NOT_MATCHED, MATCHED, UNDETERMINED] → MATCHED
+// We KNOW the OR succeeded because one child is true (short-circuit!)
+
+// OR composite with all UNDETERMINED
+// [UNDETERMINED, UNDETERMINED] → UNDETERMINED
+// We can't determine the result
+```
+
+### Benefits of Kleene Logic
+
+1. **Short-circuiting with unknown values:**
+   - `false AND unknown = false` (we know it's false!)
+   - `true OR unknown = true` (we know it's true!)
+
+2. **More useful than conservative logic:**
+   - Conservative logic: any UNDETERMINED taints everything → UNDETERMINED
+   - Kleene logic: makes conclusions when possible, even with UNDETERMINED values
+
+3. **Mathematically sound:**
+   - Well-established in formal logic and database theory
+   - Widely used in SQL NULL handling (SQL uses Kleene K3 logic)
+
+---
+
+## Original Design Proposal (Archived)
+
+### Option 1: Add Explicit State Enum ✅ IMPLEMENTED
 
 ```java
 public enum EvaluationState {
@@ -98,13 +199,19 @@ public record EvaluationResult(
 }
 ```
 
-**Benefits:**
-- Explicit tri-state model
-- Easy to detect partial evaluation
-- Backward compatible (`matched()` still works)
-- Clear semantics
+**Status:** ✅ Fully implemented with enhancements (Kleene logic operators)
 
-### Option 2: Use Optional + Reason (Alternative)
+**Benefits realized:**
+- ✅ Explicit tri-state model
+- ✅ Easy to detect partial evaluation
+- ✅ Clear semantics
+- ✅ Helper methods on EvaluationState for cleaner code
+- ✅ Kleene logic operators for combining states
+- ✅ API simplified - clients use `state().matched()` instead of `result.matched()`
+
+**Note:** The API evolved to remove the `matched()` method from `EvaluationResult` interface in favor of using `state().matched()` for clarity.
+
+### Option 2: Use Optional + Reason (Not Chosen)
 
 ```java
 public record EvaluationResult(

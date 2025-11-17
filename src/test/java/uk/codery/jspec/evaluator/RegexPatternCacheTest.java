@@ -46,9 +46,9 @@ class RegexPatternCacheTest {
         EvaluationResult result3 = evaluator.evaluateQuery(doc3, criterion);
 
         // Verify results are correct
-        assertThat(result1.matched()).isTrue();
-        assertThat(result2.matched()).isTrue();
-        assertThat(result3.matched()).isFalse();
+        assertThat(result1.state().matched()).isTrue();
+        assertThat(result2.state().matched()).isTrue();
+        assertThat(result3.state().matched()).isFalse();
     }
 
     @Test
@@ -70,18 +70,18 @@ class RegexPatternCacheTest {
         EvaluationResult nameResult = evaluator.evaluateQuery(document, nameCriterion);
 
         // All should match
-        assertThat(emailResult.matched()).isTrue();
-        assertThat(phoneResult.matched()).isTrue();
-        assertThat(nameResult.matched()).isTrue();
+        assertThat(emailResult.state().matched()).isTrue();
+        assertThat(phoneResult.state().matched()).isTrue();
+        assertThat(nameResult.state().matched()).isTrue();
 
         // Re-evaluate with same patterns (should use cache)
         EvaluationResult emailResult2 = evaluator.evaluateQuery(document, emailCriterion);
         EvaluationResult phoneResult2 = evaluator.evaluateQuery(document, phoneCriterion);
         EvaluationResult nameResult2 = evaluator.evaluateQuery(document, nameCriterion);
 
-        assertThat(emailResult2.matched()).isTrue();
-        assertThat(phoneResult2.matched()).isTrue();
-        assertThat(nameResult2.matched()).isTrue();
+        assertThat(emailResult2.state().matched()).isTrue();
+        assertThat(phoneResult2.state().matched()).isTrue();
+        assertThat(nameResult2.state().matched()).isTrue();
     }
 
     @Test
@@ -120,7 +120,7 @@ class RegexPatternCacheTest {
         EvaluationResult result = evaluator.evaluateQuery(document, criterion);
 
         // Should be NOT_MATCHED due to invalid pattern (graceful degradation)
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
     }
 
     @Test
@@ -141,7 +141,7 @@ class RegexPatternCacheTest {
                     for (int i = 0; i < iterationsPerThread; i++) {
                         Map<String, Object> doc = Map.of("text", "test" + (threadId * 100 + i));
                         EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
-                        if (result.matched()) {
+                        if (result.state().matched()) {
                             successCount.incrementAndGet();
                         }
                     }
@@ -166,21 +166,21 @@ class RegexPatternCacheTest {
         Map<String, Object> doc1 = Map.of("text", "unique_pattern_xyz");
 
         EvaluationResult result1 = evaluator.evaluateQuery(doc1, criterion1);
-        assertThat(result1.matched()).isTrue();
+        assertThat(result1.state().matched()).isTrue();
 
         // Second evaluation with same pattern should use cache
         QueryCriterion criterion2 = new QueryCriterion("second", Map.of("text", Map.of("$regex", "^unique_pattern_xyz$")));
         Map<String, Object> doc2 = Map.of("text", "unique_pattern_xyz");
 
         EvaluationResult result2 = evaluator.evaluateQuery(doc2, criterion2);
-        assertThat(result2.matched()).isTrue();
+        assertThat(result2.state().matched()).isTrue();
 
         // Different pattern should not be cached yet
         QueryCriterion criterion3 = new QueryCriterion("third", Map.of("text", Map.of("$regex", "^different_pattern$")));
         Map<String, Object> doc3 = Map.of("text", "different_pattern");
 
         EvaluationResult result3 = evaluator.evaluateQuery(doc3, criterion3);
-        assertThat(result3.matched()).isTrue();
+        assertThat(result3.state().matched()).isTrue();
     }
 
     @Test
@@ -192,14 +192,14 @@ class RegexPatternCacheTest {
         Map<String, Object> doc = Map.of("field", "test");
 
         EvaluationResult nullResult = evaluator.evaluateQuery(doc, nullCriterion);
-        assertThat(nullResult.matched()).isFalse();
+        assertThat(nullResult.state().matched()).isFalse();
 
         // Empty string pattern
         QueryCriterion emptyCriterion = new QueryCriterion("empty", Map.of("field", Map.of("$regex", "")));
         EvaluationResult emptyResult = evaluator.evaluateQuery(doc, emptyCriterion);
 
         // Empty pattern matches everything (standard regex behavior)
-        assertThat(emptyResult.matched()).isTrue();
+        assertThat(emptyResult.state().matched()).isTrue();
     }
 
     @Test
@@ -215,8 +215,8 @@ class RegexPatternCacheTest {
         EvaluationResult result1 = evaluator1.evaluateQuery(doc, criterion);
         EvaluationResult result2 = evaluator2.evaluateQuery(doc, criterion);
 
-        assertThat(result1.matched()).isTrue();
-        assertThat(result2.matched()).isTrue();
+        assertThat(result1.state().matched()).isTrue();
+        assertThat(result2.state().matched()).isTrue();
     }
 
     @Test
@@ -244,17 +244,17 @@ class RegexPatternCacheTest {
         EvaluationResult urlResult = evaluator.evaluateQuery(document, urlCriterion);
         EvaluationResult phoneResult = evaluator.evaluateQuery(document, phoneCriterion);
 
-        assertThat(emailResult.matched()).isTrue();
-        assertThat(urlResult.matched()).isTrue();
-        assertThat(phoneResult.matched()).isTrue();
+        assertThat(emailResult.state().matched()).isTrue();
+        assertThat(urlResult.state().matched()).isTrue();
+        assertThat(phoneResult.state().matched()).isTrue();
 
         // Re-evaluate (should use cache for performance)
         EvaluationResult emailResult2 = evaluator.evaluateQuery(document, emailCriterion);
         EvaluationResult urlResult2 = evaluator.evaluateQuery(document, urlCriterion);
         EvaluationResult phoneResult2 = evaluator.evaluateQuery(document, phoneCriterion);
 
-        assertThat(emailResult2.matched()).isTrue();
-        assertThat(urlResult2.matched()).isTrue();
-        assertThat(phoneResult2.matched()).isTrue();
+        assertThat(emailResult2.state().matched()).isTrue();
+        assertThat(urlResult2.state().matched()).isTrue();
+        assertThat(phoneResult2.state().matched()).isTrue();
     }
 }

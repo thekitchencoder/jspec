@@ -477,7 +477,7 @@ class CriterionEvaluatorTest {
         assertThat(result.criterion()).isEqualTo(criterion);
         assertThat(result.id()).isEqualTo("test-criterion");
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
-        assertThat(result.matched()).isTrue();
+        assertThat(result.state().matched()).isTrue();
         assertThat(result.isDetermined()).isTrue();
         assertThat(result.missingPaths()).isEmpty();
         assertThat(result.failureReason()).isNull();
@@ -492,7 +492,7 @@ class CriterionEvaluatorTest {
 
         assertThat(result.criterion()).isEqualTo(criterion);
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
         assertThat(result.isDetermined()).isTrue();
         assertThat(result.missingPaths()).isEmpty();
     }
@@ -506,7 +506,7 @@ class CriterionEvaluatorTest {
 
         assertThat(result.criterion()).isEqualTo(criterion);
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
         assertThat(result.isDetermined()).isFalse();
         assertThat(result.missingPaths()).isNotEmpty();
         assertThat(result.failureReason()).isNotNull();

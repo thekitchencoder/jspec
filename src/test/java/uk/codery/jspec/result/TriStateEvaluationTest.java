@@ -39,7 +39,7 @@ class TriStateEvaluationTest {
         QueryResult result = evaluator.evaluateQuery(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
-        assertThat(result.matched()).isTrue();
+        assertThat(result.state().matched()).isTrue();
         assertThat(result.isDetermined()).isTrue();
         assertThat(result.missingPaths()).isEmpty();
         assertThat(result.failureReason()).isNull();
@@ -51,7 +51,7 @@ class TriStateEvaluationTest {
         QueryResult result = evaluator.evaluateQuery(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.MATCHED);
-        assertThat(result.matched()).isTrue();
+        assertThat(result.state().matched()).isTrue();
     }
 
     @Test
@@ -71,7 +71,7 @@ class TriStateEvaluationTest {
         QueryResult result = evaluator.evaluateQuery(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
         assertThat(result.isDetermined()).isTrue();
         assertThat(result.missingPaths()).isEmpty();
     }
@@ -82,7 +82,7 @@ class TriStateEvaluationTest {
         QueryResult result = evaluator.evaluateQuery(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
     }
 
     // ========== UNDETERMINED State - Missing Data ==========
@@ -93,7 +93,7 @@ class TriStateEvaluationTest {
         QueryResult result = evaluator.evaluateQuery(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
         assertThat(result.isDetermined()).isFalse();
         assertThat(result.missingPaths()).contains("salary");
         assertThat(result.failureReason()).contains("Missing data");
@@ -117,7 +117,7 @@ class TriStateEvaluationTest {
         QueryResult result = evaluator.evaluateQuery(validDocument, criterion);
 
         assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
         assertThat(result.isDetermined()).isFalse();
         assertThat(result.failureReason()).contains("Unknown operator");
         assertThat(result.failureReason()).contains("$unknown");
@@ -142,7 +142,7 @@ class TriStateEvaluationTest {
         // Type mismatch is logged but treated as NOT_MATCHED, not UNDETERMINED
         // This is by design - the operator returns false gracefully
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
     }
 
     @Test
@@ -163,7 +163,7 @@ class TriStateEvaluationTest {
 
         // Invalid regex is logged but treated as NOT_MATCHED
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
-        assertThat(result.matched()).isFalse();
+        assertThat(result.state().matched()).isFalse();
     }
 
     @Test

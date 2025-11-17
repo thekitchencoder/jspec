@@ -84,18 +84,13 @@ public record QueryResult(
         return criterion.id();
     }
 
-    @Override
-    public boolean matched() {
-        return state == EvaluationState.MATCHED;
-    }
-
     /**
      * Returns true if the evaluation was deterministic (not UNDETERMINED).
      *
      * @return true if state is MATCHED or NOT_MATCHED
      */
     public boolean isDetermined() {
-        return state != EvaluationState.UNDETERMINED;
+        return state.determined();
     }
 
     @Override
@@ -115,7 +110,7 @@ public record QueryResult(
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(criterion.id()).append(":\n");
-        sb.append("  match: ").append(matched()).append("\n");
+        sb.append("  match: ").append(state.matched()).append("\n");
         sb.append("  query: ").append(criterion.query()).append("\n");
         sb.append("  state: ").append(state).append("\n");
 
