@@ -56,12 +56,12 @@ import uk.codery.jspec.result.EvaluationOutcome;
  * String yaml = formatter.format(outcome);
  * }</pre>
  *
+ * @param objectMapper -- GETTER --
+ *                     Returns the underlying ObjectMapper.
  * @since 0.2.0
  */
 @Slf4j
-public class YamlResultFormatter implements ResultFormatter {
-
-    private final ObjectMapper objectMapper;
+public record YamlResultFormatter(ObjectMapper objectMapper) implements ResultFormatter {
 
     /**
      * Creates a YAML formatter with default configuration.
@@ -74,22 +74,10 @@ public class YamlResultFormatter implements ResultFormatter {
      * </ul>
      */
     public YamlResultFormatter() {
-        YAMLFactory yamlFactory = new YAMLFactory()
+        this(new ObjectMapper(new YAMLFactory()
                 .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
                 .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
-                .enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE);
-        this.objectMapper = new ObjectMapper(yamlFactory);
-    }
-
-    /**
-     * Creates a YAML formatter with a custom ObjectMapper.
-     *
-     * <p>Allows full control over Jackson YAML configuration.
-     *
-     * @param objectMapper the ObjectMapper to use for serialization (must use YAMLFactory)
-     */
-    public YamlResultFormatter(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+                .enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)));
     }
 
     @Override
@@ -108,12 +96,4 @@ public class YamlResultFormatter implements ResultFormatter {
         return "yaml";
     }
 
-    /**
-     * Returns the underlying ObjectMapper.
-     *
-     * @return the ObjectMapper instance
-     */
-    public ObjectMapper getObjectMapper() {
-        return objectMapper;
-    }
 }

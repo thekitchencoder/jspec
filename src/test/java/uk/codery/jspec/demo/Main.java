@@ -3,18 +3,13 @@ package uk.codery.jspec.demo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import uk.codery.jspec.evaluator.SpecificationEvaluator;
-import uk.codery.jspec.formatter.JsonResultFormatter;
-import uk.codery.jspec.formatter.TextResultFormatter;
-import uk.codery.jspec.formatter.YamlResultFormatter;
+import uk.codery.jspec.formatter.*;
 import uk.codery.jspec.model.Specification;
-import uk.codery.jspec.result.CompositeResult;
 import uk.codery.jspec.result.EvaluationOutcome;
 import uk.codery.jspec.result.EvaluationResult;
 
 import java.io.File;
 import java.util.Arrays;
-
-import static java.util.function.Predicate.not;
 
 /**
  * Demo CLI application for JSON Specification Evaluator.
@@ -32,7 +27,7 @@ import static java.util.function.Predicate.not;
  * <ul>
  *   <li>--json     Output results in JSON format (pretty-printed)</li>
  *   <li>--yaml     Output results in YAML format</li>
- *   <li>--text     Output results in formatted text (verbose mode)</li>
+ *   <li>--text     Output results in formatted text (showFailures mode)</li>
  *   <li>--summary  Only show summary of results (legacy format)</li>
  * </ul>
  *
@@ -44,7 +39,7 @@ import static java.util.function.Predicate.not;
  * # YAML output
  * java Main specification.yaml document.yaml --yaml
  *
- * # Text output (verbose)
+ * # Text output (showFailures)
  * java Main specification.yaml document.yaml --text
  *
  * # Summary only
@@ -58,9 +53,10 @@ public class Main {
             System.err.println("\nOptions:");
             System.err.println("  --json     Output results in JSON format (pretty-printed)");
             System.err.println("  --yaml     Output results in YAML format");
-            System.err.println("  --text     Output results in formatted text (verbose mode)");
-            System.err.println("  --summary  Only show summary of results (legacy format)");
-            System.err.println("\nDefault: Formatted text output (non-verbose)");
+            System.err.println("  --text     Output results in formatted text (showFailures mode)");
+            System.err.println("  --custom   Output results using custom formatter");
+            System.err.println("  --summary  Only show summary of results ");
+            System.err.println("\nDefault: Formatted text output (non-showFailures)");
             System.exit(1);
         }
 
@@ -69,6 +65,7 @@ public class Main {
         boolean jsonOutput = Arrays.asList(args).contains("--json");
         boolean yamlOutput = Arrays.asList(args).contains("--yaml");
         boolean textOutput = Arrays.asList(args).contains("--text");
+        boolean customOutput = Arrays.asList(args).contains("--custom");
         boolean summaryOnly = Arrays.asList(args).contains("--summary");
 
         try {
@@ -79,19 +76,23 @@ public class Main {
 
             SpecificationEvaluator evaluator = new SpecificationEvaluator();
             EvaluationOutcome outcome = evaluator.evaluate(doc, specification);
-
+            ResultFormatter formatter;
             if (jsonOutput) {
-                outputJson(outcome);
+                formatter = new JsonResultFormatter();
             } else if (yamlOutput) {
-                outputYaml(outcome);
+                formatter = new YamlResultFormatter();
             } else if (textOutput) {
-                outputText(outcome, true);  // Verbose mode
+                formatter = new TextResultFormatter(true);
             } else if (summaryOnly) {
-                outputSummary(outcome);
+                formatter = new SummaryResultFormatter(true);
+            } else if (customOutput) {
+                formatter = new CustomResultFormatter(true);
             } else {
-                // Default: formatted text (non-verbose)
-                outputText(outcome, false);
+                // Default: formatted text (non-showFailures)
+               formatter = new TextResultFormatter(false);
             }
+
+            System.out.println(formatter.format(outcome));
 
             boolean allMatched = outcome.results().stream()
                     .allMatch(EvaluationResult::matched);
@@ -101,82 +102,6 @@ public class Main {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
-        }
-    }
-
-    /**
-     * Outputs results in JSON format using JsonResultFormatter.
-     *
-     * @param outcome the evaluation outcome to format
-     */
-    private static void outputJson(EvaluationOutcome outcome) {
-        JsonResultFormatter formatter = new JsonResultFormatter(true);  // Pretty-print
-        System.out.println(formatter.format(outcome));
-    }
-
-    /**
-     * Outputs results in YAML format using YamlResultFormatter.
-     *
-     * @param outcome the evaluation outcome to format
-     */
-    private static void outputYaml(EvaluationOutcome outcome) {
-        YamlResultFormatter formatter = new YamlResultFormatter();
-        System.out.println(formatter.format(outcome));
-    }
-
-    /**
-     * Outputs results in formatted text using TextResultFormatter.
-     *
-     * @param outcome the evaluation outcome to format
-     * @param verbose true to include verbose details (child results, missing paths, etc.)
-     */
-    private static void outputText(EvaluationOutcome outcome, boolean verbose) {
-        TextResultFormatter formatter = new TextResultFormatter(verbose);
-        System.out.print(formatter.format(outcome));
-    }
-
-    /**
-     * Outputs a legacy summary format.
-     *
-     * @param outcome the evaluation outcome to summarize
-     * @deprecated Use {@link #outputText(EvaluationOutcome, boolean)} instead
-     */
-    @Deprecated
-    private static void outputSummary(EvaluationOutcome outcome) {
-        long passedQueries = outcome.queryResults().stream()
-                .filter(EvaluationResult::matched)
-                .count();
-        long failedQueries = outcome.queryResults().stream()
-                .filter(not(EvaluationResult::matched))
-                .count();
-        long passedComposites = outcome.compositeResults().stream()
-                .filter(EvaluationResult::matched)
-                .count();
-        long failedComposites = outcome.compositeResults().stream()
-                .filter(not(EvaluationResult::matched))
-                .count();
-
-        System.out.println(outcome.specificationId() + " evaluation summary.");
-        System.out.println("Queries: " + (passedQueries + failedQueries) + " total, " + passedQueries + " passed, " + failedQueries + " failed");
-        System.out.println("Composites: " + (passedComposites + failedComposites) + " total, " + passedComposites + " passed, " + failedComposites + " failed");
-
-        if (failedQueries > 0) {
-            System.out.println("\nFailed Queries:");
-            outcome.queryResults().stream()
-                    .filter(not(EvaluationResult::matched))
-                    .forEach(r -> System.out.println("  " + r.id() + ": " + r.reason()));
-        }
-
-        if (failedComposites > 0) {
-            System.out.println("\nFailed Composites:");
-            outcome.compositeResults().stream()
-                    .filter(not(EvaluationResult::matched))
-                    .forEach(composite -> {
-                        System.out.println("  " + composite.id() + " (" + composite.junction() + ")");
-                        composite.childResults().stream()
-                                .filter(not(EvaluationResult::matched))
-                                .forEach(child -> System.out.println("    - " + child.id() + ": " + child.reason()));
-                    });
         }
     }
 }

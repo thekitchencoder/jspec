@@ -478,7 +478,7 @@ class DotNotationTest {
                 .field("address.postcode").regex("^SW")
                 .build();
 
-        // Using nested Maps (works but verbose for testing structure)
+        // Using nested Maps (works but showFailures for testing structure)
         QueryCriterion withNestedMaps = new QueryCriterion("address-check-nested",
                 Map.of("address", Map.of(
                         "city", Map.of("$eq", "London"),

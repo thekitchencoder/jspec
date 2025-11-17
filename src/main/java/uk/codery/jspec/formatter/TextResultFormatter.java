@@ -61,19 +61,19 @@ import uk.codery.jspec.result.*;
  * // Includes additional details like missing paths
  * }</pre>
  *
+ * @param verbose -- GETTER --
+ *                Returns whether showFailures mode is enabled.
  * @since 0.2.0
  */
 @Slf4j
-public class TextResultFormatter implements ResultFormatter {
+public record TextResultFormatter(boolean verbose) implements ResultFormatter {
 
     private static final String SEPARATOR = "─".repeat(80);
     private static final String HEADER_SEPARATOR = "=".repeat(80);
     private static final String INDENT = "    ";
 
-    private final boolean verbose;
-
     /**
-     * Creates a text formatter with default verbosity (non-verbose).
+     * Creates a text formatter with default verbosity (non-showFailures).
      */
     public TextResultFormatter() {
         this(false);
@@ -84,13 +84,12 @@ public class TextResultFormatter implements ResultFormatter {
      *
      * @param verbose true to include additional details (missing paths, etc.)
      */
-    public TextResultFormatter(boolean verbose) {
-        this.verbose = verbose;
+    public TextResultFormatter {
     }
 
     @Override
     public String format(EvaluationOutcome outcome) {
-        log.debug("Formatting evaluation outcome as text (verbose={})", verbose);
+        log.debug("Formatting evaluation outcome as text (showFailures={})", verbose);
 
         StringBuilder sb = new StringBuilder();
 
@@ -217,12 +216,4 @@ public class TextResultFormatter implements ResultFormatter {
         return "text";
     }
 
-    /**
-     * Returns whether verbose mode is enabled.
-     *
-     * @return true if verbose mode is enabled
-     */
-    public boolean isVerbose() {
-        return verbose;
-    }
 }
