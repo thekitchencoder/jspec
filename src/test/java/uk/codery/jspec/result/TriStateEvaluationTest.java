@@ -185,8 +185,8 @@ class TriStateEvaluationTest {
         );
 
         Specification spec = new Specification("test-spec", criteria);
-        SpecificationEvaluator specEvaluator = new SpecificationEvaluator();
-        EvaluationOutcome outcome = specEvaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator specEvaluator = new SpecificationEvaluator(spec);
+        EvaluationOutcome outcome = specEvaluator.evaluate(validDocument);
 
         // All 3 criteria should have results
         assertThat(outcome.queryResults()).hasSize(3);
@@ -219,8 +219,8 @@ class TriStateEvaluationTest {
         );
 
         Specification spec = new Specification("test-spec", criteria);
-        SpecificationEvaluator specEvaluator = new SpecificationEvaluator();
-        EvaluationOutcome outcome = specEvaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator specEvaluator = new SpecificationEvaluator(spec);
+        EvaluationOutcome outcome = specEvaluator.evaluate(validDocument);
 
         assertThat(outcome.summary().total()).isEqualTo(2);
         assertThat(outcome.summary().matched()).isEqualTo(1);
@@ -244,8 +244,8 @@ class TriStateEvaluationTest {
     @Test
     void edgeCase_emptySpecification() {
         Specification spec = new Specification("empty", List.of());
-        SpecificationEvaluator specEvaluator = new SpecificationEvaluator();
-        EvaluationOutcome outcome = specEvaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator specEvaluator = new SpecificationEvaluator(spec);
+        EvaluationOutcome outcome = specEvaluator.evaluate(validDocument);
 
         assertThat(outcome.summary().total()).isEqualTo(0);
         assertThat(outcome.summary().fullyDetermined()).isTrue();

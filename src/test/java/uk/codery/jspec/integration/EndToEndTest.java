@@ -22,13 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class EndToEndTest {
 
-    private SpecificationEvaluator evaluator;
-
-    @BeforeEach
-    void setUp() {
-        evaluator = new SpecificationEvaluator();
-    }
-
     // ========== Order Validation Scenario ==========
 
     @Test
@@ -75,8 +68,9 @@ class EndToEndTest {
         List<uk.codery.jspec.model.Criterion> allCriteria = new ArrayList<>(criteria);
         allCriteria.add(eligibilityComposite);
         Specification spec = new Specification("express-shipping-eligibility", allCriteria);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
 
-        EvaluationOutcome outcome = evaluator.evaluate(order, spec);
+        EvaluationOutcome outcome = evaluator.evaluate(order);
 
         assertThat(outcome.summary().matched()).isEqualTo(5);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
@@ -133,8 +127,9 @@ class EndToEndTest {
         List<uk.codery.jspec.model.Criterion> allCriteria = new ArrayList<>(criteria);
         allCriteria.add(eligibilityComposite);
         Specification spec = new Specification("express-shipping-eligibility", allCriteria);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
 
-        EvaluationOutcome outcome = evaluator.evaluate(order, spec);
+        EvaluationOutcome outcome = evaluator.evaluate(order);
 
         outcome.results().stream().map(r -> r.id() + ":" + r.state() + ":" + r.reason()).forEach(System.out::println);
 
@@ -175,7 +170,9 @@ class EndToEndTest {
 
         Specification spec = new Specification("express-shipping-eligibility", criteria);
 
-        EvaluationOutcome outcome = evaluator.evaluate(order, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(order);
 
         assertThat(outcome.summary().matched()).isEqualTo(1);
         assertThat(outcome.summary().undetermined()).isEqualTo(2);
@@ -210,7 +207,9 @@ class EndToEndTest {
                 "admin-access-control",
                 combine(criteria, adminAccessSet));
 
-        EvaluationOutcome outcome = evaluator.evaluate(user, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(user);
 
         assertThat(outcome.compositeResults().getFirst().matched()).isTrue();
     }
@@ -248,7 +247,9 @@ class EndToEndTest {
                 "access-control",
                 combineAll(criteria, List.of(adminAccessSet, userAccessSet)));
 
-        EvaluationOutcome outcome = evaluator.evaluate(user, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(user);
 
         // Admin access should fail, user access should succeed
         assertThat(outcome.compositeResults()).hasSize(2);
@@ -296,7 +297,9 @@ class EndToEndTest {
                 "discount-eligibility",
                 combine(criteria, discountSet));
 
-        EvaluationOutcome outcome = evaluator.evaluate(order, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(order);
 
         assertThat(outcome.compositeResults().getFirst().matched()).isTrue();
     }
@@ -344,7 +347,9 @@ class EndToEndTest {
                 "content-moderation",
                 combine(criteria, moderationSet));
 
-        EvaluationOutcome outcome = evaluator.evaluate(post, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(post);
 
         // Should match because multiple flags are triggered
         assertThat(outcome.compositeResults().getFirst().matched()).isTrue();
@@ -414,7 +419,9 @@ class EndToEndTest {
                 "loan-application-review",
                 combine(criteria, approvalSet));
 
-        EvaluationOutcome outcome = evaluator.evaluate(application, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(application);
 
         assertThat(outcome.summary().matched()).isEqualTo(7);
         assertThat(outcome.summary().fullyDetermined()).isTrue();
@@ -441,7 +448,9 @@ class EndToEndTest {
 
         Specification spec = new Specification("mixed-spec", criteria);
 
-        EvaluationOutcome outcome = evaluator.evaluate(data, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(data);
 
         assertThat(outcome.summary().total()).isEqualTo(5);
         assertThat(outcome.summary().matched()).isEqualTo(3);
@@ -486,7 +495,9 @@ class EndToEndTest {
 
         Specification spec = new Specification("performance-spec", criteria);
 
-        EvaluationOutcome outcome = evaluator.evaluate(doc, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(doc);
 
         assertThat(outcome.queryResults()).hasSize(20);
         assertThat(outcome.summary().fullyDetermined()).isTrue();

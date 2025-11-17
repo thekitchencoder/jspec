@@ -5,6 +5,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.codery.jspec.model.CompositeCriterion;
+import uk.codery.jspec.model.CriterionReference;
 import uk.codery.jspec.model.QueryCriterion;
 import uk.codery.jspec.result.*;
 

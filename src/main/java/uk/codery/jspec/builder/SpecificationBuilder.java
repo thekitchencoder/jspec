@@ -1,5 +1,6 @@
 package uk.codery.jspec.builder;
 
+import uk.codery.jspec.evaluator.SpecificationEvaluator;
 import uk.codery.jspec.model.Criterion;
 import uk.codery.jspec.model.Specification;
 
@@ -184,5 +185,37 @@ public class SpecificationBuilder {
             throw new IllegalStateException("Specification ID must be set before building");
         }
         return new Specification(id, new ArrayList<>(criteria));
+    }
+
+    /**
+     * Builds a {@link SpecificationEvaluator} directly from this builder.
+     *
+     * <p>This is a convenience method that builds the specification and immediately
+     * creates an evaluator for it. Equivalent to:
+     * <pre>{@code
+     * Specification spec = builder.build();
+     * SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+     * }</pre>
+     *
+     * <h3>Example:</h3>
+     * <pre>{@code
+     * SpecificationEvaluator evaluator = Specification.builder()
+     *     .id("user-validation")
+     *     .addCriterion(ageCheck)
+     *     .addCriterion(statusCheck)
+     *     .buildEvaluator();
+     *
+     * // Now ready to evaluate documents
+     * EvaluationOutcome outcome = evaluator.evaluate(document);
+     * }</pre>
+     *
+     * @return a new SpecificationEvaluator bound to the built specification
+     * @throws IllegalStateException if id is not set
+     * @see #build()
+     * @see SpecificationEvaluator
+     * @since 0.3.0
+     */
+    public SpecificationEvaluator buildEvaluator() {
+        return new SpecificationEvaluator(build());
     }
 }

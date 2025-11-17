@@ -21,12 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class SpecificationEvaluatorTest {
 
-    private SpecificationEvaluator evaluator;
     private Map<String, Object> validDocument;
 
     @BeforeEach
     void setUp() {
-        evaluator = new SpecificationEvaluator();
         validDocument = Map.of(
                 "age", 25,
                 "name", "John Doe",
@@ -41,8 +39,9 @@ class SpecificationEvaluatorTest {
     void evaluate_withSingleCriterion_shouldReturnCorrectOutcome() {
         QueryCriterion criterion = new QueryCriterion("age-check", Map.of("age", Map.of("$gte", 18)));
         Specification spec = new Specification("simple-spec", List.of(criterion));
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         assertThat(outcome.specificationId()).isEqualTo("simple-spec");
         assertThat(outcome.results()).hasSize(1);
@@ -59,8 +58,9 @@ class SpecificationEvaluatorTest {
                 new QueryCriterion("status-check", Map.of("status", Map.of("$eq", "ACTIVE")))
         );
         Specification spec = new Specification("multi-criterion-spec", criteria);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         assertThat(outcome.results()).hasSize(3);
         assertThat(outcome.results()).allMatch(r -> r.state() == EvaluationState.MATCHED);
@@ -77,7 +77,9 @@ class SpecificationEvaluatorTest {
         );
         Specification spec = new Specification("mixed-spec", criteria);
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         assertThat(outcome.results()).hasSize(3);
         assertThat(outcome.summary().matched()).isEqualTo(1);
@@ -90,7 +92,9 @@ class SpecificationEvaluatorTest {
     void evaluate_withEmptySpecification_shouldReturnEmptyOutcome() {
         Specification spec = new Specification("empty-spec", List.of());
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         assertThat(outcome.queryResults()).isEmpty();
         assertThat(outcome.compositeResults()).isEmpty();
@@ -109,7 +113,9 @@ class SpecificationEvaluatorTest {
         CompositeCriterion composite = new CompositeCriterion("and-set", Junction.AND, List.of(new CriterionReference("age-check"), new CriterionReference("status-check")));
         Specification spec = new Specification("and-spec", combine(criteria, composite));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         assertThat(outcome.compositeResults()).hasSize(1);
         CompositeResult result = outcome.compositeResults().getFirst();
@@ -129,7 +135,9 @@ class SpecificationEvaluatorTest {
         CompositeCriterion composite = new CompositeCriterion("and-set", Junction.AND, List.of(new CriterionReference("age-check"), new CriterionReference("status-check")));
         Specification spec = new Specification("and-spec", combine(criteria, composite));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
         assertThat(result.matched()).isFalse();
@@ -144,7 +152,9 @@ class SpecificationEvaluatorTest {
         CompositeCriterion composite = new CompositeCriterion("and-set", Junction.AND, List.of(new CriterionReference("age-check"), new CriterionReference("status-check")));
         Specification spec = new Specification("and-spec", combine(criteria, composite));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
         assertThat(result.matched()).isFalse();
@@ -169,7 +179,9 @@ class SpecificationEvaluatorTest {
 
         Specification spec = new Specification("or-spec", List.of(ageCheck, statusCheck, orSet));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
         assertThat(result.id()).isEqualTo("or-set");
@@ -186,7 +198,9 @@ class SpecificationEvaluatorTest {
         CompositeCriterion composite = new CompositeCriterion("or-set", Junction.OR, List.of(new CriterionReference("age-check"), new CriterionReference("status-check")));
         Specification spec = new Specification("or-spec", combine(criteria, composite));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
         assertThat(result.matched()).isTrue();
@@ -201,7 +215,9 @@ class SpecificationEvaluatorTest {
         CompositeCriterion composite = new CompositeCriterion("or-set", Junction.OR, List.of(new CriterionReference("age-check"), new CriterionReference("status-check")));
         Specification spec = new Specification("or-spec", combine(criteria, composite));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
         assertThat(result.matched()).isFalse();
@@ -222,7 +238,9 @@ class SpecificationEvaluatorTest {
         );
         Specification spec = new Specification("multi-criteria-spec", combineAll(criteria, composites));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         assertThat(outcome.compositeResults()).hasSize(2);
         assertThat(outcome.compositeResults()).allMatch(EvaluationResult::matched);
@@ -240,7 +258,9 @@ class SpecificationEvaluatorTest {
         );
         Specification spec = new Specification("reuse-spec", combineAll(criteria, composites));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         // Both criteriaGroups should evaluate the same criteria
         assertThat(outcome.compositeResults()).hasSize(2);
@@ -262,7 +282,9 @@ class SpecificationEvaluatorTest {
         CompositeCriterion composite = new CompositeCriterion("mixed-set", Junction.AND, List.of(new QueryCriterion("determined", Map.of()), new QueryCriterion("undetermined", Map.of())));
         Specification spec = new Specification("mixed-spec", combine(criteria, composite));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         assertThat(outcome.compositeResults()).hasSize(1);
         CompositeResult result = outcome.compositeResults().getFirst();
@@ -280,7 +302,9 @@ class SpecificationEvaluatorTest {
         CompositeCriterion composite = new CompositeCriterion("graceful-set", Junction.OR, List.of(new QueryCriterion("good", Map.of()), new QueryCriterion("bad", Map.of())));
         Specification spec = new Specification("graceful-spec", combine(criteria, composite));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         assertThat(outcome.compositeResults()).hasSize(1);
         CompositeResult result = outcome.compositeResults().getFirst();
@@ -298,7 +322,9 @@ class SpecificationEvaluatorTest {
         );
         Specification spec = new Specification("all-matched", criteria);
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         EvaluationSummary summary = outcome.summary();
         assertThat(summary.total()).isEqualTo(2);
@@ -317,7 +343,9 @@ class SpecificationEvaluatorTest {
         );
         Specification spec = new Specification("mixed", criteria);
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         EvaluationSummary summary = outcome.summary();
         assertThat(summary.total()).isEqualTo(3);
@@ -341,7 +369,9 @@ class SpecificationEvaluatorTest {
         );
         Specification spec = new Specification("parallel-spec", criteria);
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         // All should evaluate successfully
         assertThat(outcome.results()).hasSize(5);
@@ -357,8 +387,9 @@ class SpecificationEvaluatorTest {
                 new QueryCriterion("r1", Map.of("age", Map.of("$eq", 25)))
         );
         Specification spec = new Specification("empty-doc-spec", criteria);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
 
-        EvaluationOutcome outcome = evaluator.evaluate(emptyDoc, spec);
+        EvaluationOutcome outcome = evaluator.evaluate(emptyDoc);
 
         assertThat(outcome.results()).hasSize(1);
         assertThat(outcome.queryResults().getFirst().state()).isEqualTo(EvaluationState.UNDETERMINED);
@@ -373,7 +404,9 @@ class SpecificationEvaluatorTest {
         CompositeCriterion composite = new CompositeCriterion("single-criterion-set", Junction.AND, List.of(new QueryCriterion("only-criterion", Map.of())));
         Specification spec = new Specification("single-spec", combine(criteria, composite));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
         assertThat(result.matched()).isTrue();
@@ -393,7 +426,9 @@ class SpecificationEvaluatorTest {
                 List.of(new CriterionReference("r1"), new CriterionReference("r2"), new CriterionReference("r3"), new QueryCriterion("r4", Map.of()), new QueryCriterion("r5", Map.of())));
         Specification spec = new Specification("many-criteria-spec", combine(criteria, composite));
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         CompositeResult result = outcome.compositeResults().getFirst();
         assertThat(result.matched()).isTrue();
@@ -409,7 +444,9 @@ class SpecificationEvaluatorTest {
         );
         Specification spec = new Specification("ordered-spec", criteria);
 
-        EvaluationOutcome outcome = evaluator.evaluate(validDocument, spec);
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        EvaluationOutcome outcome = evaluator.evaluate(validDocument);
 
         // Results should be present (order not guaranteed due to parallel streams)
         assertThat(outcome.queryResults()).hasSize(3);

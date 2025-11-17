@@ -47,14 +47,16 @@ Criterion ageCheck = new Criterion("age-check",
                 List.of()
         );
 
+        // Create evaluator bound to specification
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
         // Evaluate against document
         Map<String, Object> document = Map.of(
                 "age", 25,
                 "status", "ACTIVE"
         );
 
-        SpecificationEvaluator evaluator = new SpecificationEvaluator();
-        EvaluationOutcome outcome = evaluator.evaluate(document, spec);
+        EvaluationOutcome outcome = evaluator.evaluate(document);
 
 // Check results
 for(
@@ -252,7 +254,8 @@ Criterion criterion = new Criterion("city-check",
 Get statistics about evaluation outcomes:
 
 ```java
-EvaluationOutcome outcome = evaluator.evaluate(document, spec);
+SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+EvaluationOutcome outcome = evaluator.evaluate(document);
 EvaluationSummary summary = outcome.summary();
 
 System.out.println("Total criteria: " + summary.total());
@@ -267,17 +270,32 @@ System.out.println("Fully determined: " + summary.fullyDetermined());
 The engine is thread-safe and uses parallel evaluation by default:
 
 ```java
-// Criteria are evaluated in parallel using parallel streams
-SpecificationEvaluator evaluator = new SpecificationEvaluator();
+// Create evaluator bound to specification
+SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
 
 // Safe to use from multiple threads
+// Criteria are evaluated in parallel using parallel streams
 ExecutorService executor = Executors.newFixedThreadPool(10);
 for (int i = 0; i < 100; i++) {
     executor.submit(() -> {
-        EvaluationOutcome outcome = evaluator.evaluate(document, spec);
+        EvaluationOutcome outcome = evaluator.evaluate(document);
         // Process outcome
     });
 }
+```
+
+You can also evaluate multiple specifications in parallel:
+
+```java
+// Create evaluators for different specifications
+List<SpecificationEvaluator> evaluators = specifications.stream()
+    .map(SpecificationEvaluator::new)
+    .toList();
+
+// Evaluate same document against all specifications in parallel
+List<EvaluationOutcome> outcomes = evaluators.parallelStream()
+    .map(evaluator -> evaluator.evaluate(document))
+    .toList();
 ```
 
 ## Error Handling Philosophy

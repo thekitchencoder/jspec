@@ -12,15 +12,15 @@ import java.util.List;
 import static java.util.function.Predicate.not;
 
 /**
- * Orchestrates the evaluation of {@link Specification}s against documents.
+ * Orchestrates the evaluation of a {@link Specification} against documents.
  *
- * <p>The {@code SpecificationEvaluator} is the main entry point for evaluating
- * specifications. It coordinates the evaluation of all criteria in a specification,
- * using an {@link EvaluationContext} to manage result caching and enable
- * reference-based reuse.
+ * <p>The {@code SpecificationEvaluator} is bound to a specific specification at construction
+ * time, making it an immutable, thread-safe evaluator for that specification. Multiple
+ * evaluator instances can be created for different specifications and used in parallel.
  *
  * <h2>Key Features</h2>
  * <ul>
+ *   <li><b>Specification Binding:</b> Each evaluator is bound to a single specification</li>
  *   <li><b>Parallel Evaluation:</b> Criteria are evaluated concurrently using parallel streams</li>
  *   <li><b>Result Caching:</b> Individual criterion results are cached for efficient reference reuse</li>
  *   <li><b>Graceful Degradation:</b> One failed criterion never stops the overall evaluation</li>
@@ -31,6 +31,7 @@ import static java.util.function.Predicate.not;
  * <h2>How It Works</h2>
  *
  * <ol>
+ *   <li><b>Bind Specification:</b> Specification is provided at construction time</li>
  *   <li><b>Create Context:</b> Initializes an {@link EvaluationContext} with result cache</li>
  *   <li><b>Evaluate Criteria:</b> All criteria are evaluated (uses cache for references)</li>
  *   <li><b>Cache Results:</b> Each criterion's result is stored by ID</li>
@@ -42,8 +43,14 @@ import static java.util.function.Predicate.not;
  *
  * <h3>Basic Evaluation</h3>
  * <pre>{@code
- * // Create evaluator
- * SpecificationEvaluator evaluator = new SpecificationEvaluator();
+ * // Define specification
+ * Specification spec = new Specification("user-validation", List.of(
+ *     new QueryCriterion("age-check", Map.of("age", Map.of("$gte", 18))),
+ *     new QueryCriterion("status-check", Map.of("status", Map.of("$eq", "active")))
+ * ));
+ *
+ * // Create evaluator bound to specification
+ * SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
  *
  * // Define document
  * Map<String, Object> document = Map.of(
@@ -52,17 +59,24 @@ import static java.util.function.Predicate.not;
  *     "email", "user@example.com"
  * );
  *
- * // Define specification
- * Specification spec = new Specification("user-validation", List.of(
- *     new QueryCriterion("age-check", Map.of("age", Map.of("$gte", 18))),
- *     new QueryCriterion("status-check", Map.of("status", Map.of("$eq", "active")))
- * ));
- *
- * // Evaluate
- * EvaluationOutcome outcome = evaluator.evaluate(document, spec);
+ * // Evaluate document against specification
+ * EvaluationOutcome outcome = evaluator.evaluate(document);
  *
  * System.out.println("Matched: " + outcome.summary().matched());
  * System.out.println("Total: " + outcome.summary().total());
+ * }</pre>
+ *
+ * <h3>Parallel Evaluation of Multiple Specifications</h3>
+ * <pre>{@code
+ * // Create evaluators for different specifications
+ * List<SpecificationEvaluator> evaluators = specifications.stream()
+ *     .map(SpecificationEvaluator::new)
+ *     .toList();
+ *
+ * // Evaluate same document against all specifications in parallel
+ * List<EvaluationOutcome> outcomes = evaluators.parallelStream()
+ *     .map(evaluator -> evaluator.evaluate(document))
+ *     .toList();
  * }</pre>
  *
  * <h3>With Composition and References</h3>
@@ -79,7 +93,8 @@ import static java.util.function.Predicate.not;
  *     ))
  * ));
  *
- * EvaluationOutcome outcome = evaluator.evaluate(document, spec);
+ * SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+ * EvaluationOutcome outcome = evaluator.evaluate(document);
  *
  * // Base criteria evaluated once, composite reused results
  * }</pre>
@@ -93,13 +108,17 @@ import static java.util.function.Predicate.not;
  *            ((String) value).length() == ((Number) operand).intValue();
  * });
  *
- * // Create evaluator with custom registry
+ * // Define specification
+ * Specification spec = new Specification("name-validation", List.of(
+ *     new QueryCriterion("name-length", Map.of("name", Map.of("$length", 5)))
+ * ));
+ *
+ * // Create evaluator with custom registry and specification
  * CriterionEvaluator criterionEvaluator = new CriterionEvaluator(registry);
- * SpecificationEvaluator evaluator = new SpecificationEvaluator(criterionEvaluator);
+ * SpecificationEvaluator evaluator = new SpecificationEvaluator(spec, criterionEvaluator);
  *
  * // Now $length operator is available in queries
- * QueryCriterion nameLength = new QueryCriterion("name-length",
- *     Map.of("name", Map.of("$length", 5)));
+ * EvaluationOutcome outcome = evaluator.evaluate(document);
  * }</pre>
  *
  * <h2>Thread Safety</h2>
@@ -107,21 +126,23 @@ import static java.util.function.Predicate.not;
  * <p>This class is thread-safe and immutable:
  * <ul>
  *   <li>Record class with final fields</li>
+ *   <li>Specification is immutable and bound at construction</li>
  *   <li>Uses parallel streams (thread-safe operations)</li>
  *   <li>EvaluationContext uses ConcurrentHashMap</li>
  *   <li>No mutable shared state</li>
- *   <li>Safe to share across threads</li>
+ *   <li>Safe to share across threads and evaluate multiple documents concurrently</li>
  * </ul>
  *
+ * @param specification the specification to evaluate documents against
  * @param criterionEvaluator the criterion evaluator to use for query evaluation
  * @see Specification
  * @see CriterionEvaluator
  * @see EvaluationContext
  * @see EvaluationOutcome
- * @since 0.2.0
+ * @since 0.3.0
  */
 @Slf4j
-public record SpecificationEvaluator(CriterionEvaluator criterionEvaluator) {
+public record SpecificationEvaluator(Specification specification, CriterionEvaluator criterionEvaluator) {
 
     /**
      * Creates a SpecificationEvaluator with default built-in operators.
@@ -130,14 +151,15 @@ public record SpecificationEvaluator(CriterionEvaluator criterionEvaluator) {
      * It creates an internal {@link CriterionEvaluator} with all 13 built-in
      * MongoDB-style operators.
      *
-     * @see #SpecificationEvaluator(CriterionEvaluator)
+     * @param specification the specification to evaluate documents against
+     * @see #SpecificationEvaluator(Specification, CriterionEvaluator)
      */
-    public SpecificationEvaluator() {
-        this(new CriterionEvaluator());
+    public SpecificationEvaluator(Specification specification) {
+        this(specification, new CriterionEvaluator());
     }
 
     /**
-     * Evaluates a specification against a document.
+     * Evaluates the bound specification against a document.
      *
      * <p>This method:
      * <ol>
@@ -158,10 +180,11 @@ public record SpecificationEvaluator(CriterionEvaluator criterionEvaluator) {
      *
      * <h3>Example:</h3>
      * <pre>{@code
-     * Map<String, Object> document = Map.of("age", 25, "status", "active");
      * Specification spec = loadSpecification();
+     * SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
      *
-     * EvaluationOutcome outcome = evaluator.evaluate(document, spec);
+     * Map<String, Object> document = Map.of("age", 25, "status", "active");
+     * EvaluationOutcome outcome = evaluator.evaluate(document);
      *
      * System.out.println("Total: " + outcome.summary().total());
      * System.out.println("Matched: " + outcome.summary().matched());
@@ -173,15 +196,17 @@ public record SpecificationEvaluator(CriterionEvaluator criterionEvaluator) {
      * }
      * }</pre>
      *
+     * <h3>Thread Safety:</h3>
+     * <p>This method is thread-safe and can be called concurrently from multiple threads
+     * to evaluate different documents against the same specification.
+     *
      * @param document the document to evaluate (typically a Map, but can be any Object)
-     * @param specification the specification containing criteria
      * @return evaluation outcome with results and summary
-     * @throws NullPointerException if specification is null
      * @see EvaluationOutcome
      * @see EvaluationResult
      * @see EvaluationContext
      */
-    public EvaluationOutcome evaluate(Object document, Specification specification) {
+    public EvaluationOutcome evaluate(Object document) {
         log.info("Starting evaluation of specification '{}'", specification.id());
 
         // Create evaluation context with result cache

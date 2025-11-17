@@ -693,11 +693,6 @@ While Spring-independent, the library works well with Spring:
 public class CriteriaConfig {
 
     @Bean
-    public SpecificationEvaluator specificationEvaluator() {
-        return new SpecificationEvaluator();
-    }
-
-    @Bean
     public ObjectMapper yamlMapper() {
         return new ObjectMapper(new YAMLFactory());
     }
@@ -706,13 +701,25 @@ public class CriteriaConfig {
 @Service
 public class EligibilityService {
 
-    @Autowired
-    private SpecificationEvaluator evaluator;
-
+    // Evaluators are lightweight - create them as needed for each specification
     public boolean checkEligibility(Map<String, Object> citizen,
                                    Specification spec) {
-        EvaluationOutcome outcome = evaluator.evaluate(citizen, spec);
-        return outcome.summary().matchedCriteria() > 0;
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+        EvaluationOutcome outcome = evaluator.evaluate(citizen);
+        return outcome.summary().matched() > 0;
+    }
+
+    // Or cache evaluators for frequently used specifications
+    private final Map<String, SpecificationEvaluator> evaluatorCache = new ConcurrentHashMap<>();
+
+    public boolean checkEligibilityCached(Map<String, Object> citizen,
+                                         Specification spec) {
+        SpecificationEvaluator evaluator = evaluatorCache.computeIfAbsent(
+            spec.id(),
+            id -> new SpecificationEvaluator(spec)
+        );
+        EvaluationOutcome outcome = evaluator.evaluate(citizen);
+        return outcome.summary().matched() > 0;
     }
 }
 ```
@@ -781,8 +788,8 @@ For questions about this codebase:
 
 ---
 
-**Last Updated**: 2025-11-17 (Added formatter package with 5 formatters: JSON, YAML, Text, Summary, Custom)
-**Version**: 0.2.0-SNAPSHOT
+**Last Updated**: 2025-11-17 (v0.3.0: SpecificationEvaluator now binds to specification at construction time)
+**Version**: 0.3.0
 **Java Version**: 21
 **Total Lines of Code**: ~1500 (main source)
 **Test Files**: 15 test files with comprehensive coverage

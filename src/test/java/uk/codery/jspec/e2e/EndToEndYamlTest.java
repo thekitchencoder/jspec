@@ -40,12 +40,14 @@ class EndToEndYamlTest {
     @BeforeEach
     void setUp() throws IOException {
         yamlMapper = new ObjectMapper(new YAMLFactory());
-        evaluator = new SpecificationEvaluator();
 
         // Load specification from YAML
         specification = loadSpecification("/e2e/loan-eligibility-spec.yaml");
         assertThat(specification).isNotNull();
         assertThat(specification.id()).isEqualTo("loan-eligibility-specification");
+
+        // Create evaluator bound to specification
+        evaluator = new SpecificationEvaluator(specification);
     }
 
     // ==================== Qualified Applicant Tests ====================
@@ -56,7 +58,7 @@ class EndToEndYamlTest {
         Map<String, Object> applicant = loadDocument("/e2e/applicant-qualified.yaml");
 
         // When: Evaluating against loan eligibility specification
-        EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
+        EvaluationOutcome outcome = evaluator.evaluate(applicant);
 
         // Then: Summary shows high match rate
         assertThat(outcome.summary().total()).isEqualTo(22);
@@ -97,7 +99,7 @@ class EndToEndYamlTest {
         Map<String, Object> applicant = loadDocument("/e2e/applicant-qualified.yaml");
 
         // When: Evaluating against loan eligibility specification
-        EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
+        EvaluationOutcome outcome = evaluator.evaluate(applicant);
 
         // Then: All criteria groups match
         assertThat(outcome.compositeResults()).hasSize(5);
@@ -126,7 +128,7 @@ class EndToEndYamlTest {
         Map<String, Object> applicant = loadDocument("/e2e/applicant-rejected.yaml");
 
         // When: Evaluating against loan eligibility specification
-        EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
+        EvaluationOutcome outcome = evaluator.evaluate(applicant);
 
         // Then: Multiple criteria fail
         assertCriterionNotMatched(outcome, "age-minimum");  // Too young
@@ -150,7 +152,7 @@ class EndToEndYamlTest {
         Map<String, Object> applicant = loadDocument("/e2e/applicant-rejected.yaml");
 
         // When: Evaluating against loan eligibility specification
-        EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
+        EvaluationOutcome outcome = evaluator.evaluate(applicant);
 
         // Then: Critical criteria groups fail
         assertCompositeNotMatched(outcome, "basic-eligibility");  // Fails age, employment, bankruptcy
@@ -166,7 +168,7 @@ class EndToEndYamlTest {
         Map<String, Object> applicant = loadDocument("/e2e/applicant-partial.yaml");
 
         // When: Evaluating against loan eligibility specification
-        EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
+        EvaluationOutcome outcome = evaluator.evaluate(applicant);
 
         // Then: Some criteria are undetermined due to missing data
         assertThat(outcome.summary().undetermined()).isGreaterThan(0);
@@ -193,7 +195,7 @@ class EndToEndYamlTest {
         Map<String, Object> applicant = loadDocument("/e2e/applicant-partial.yaml");
 
         // When: Evaluating against loan eligibility specification
-        EvaluationOutcome outcome = evaluator.evaluate(applicant, specification);
+        EvaluationOutcome outcome = evaluator.evaluate(applicant);
 
         // Then: Missing paths are tracked for debugging
         QueryResult phoneCheck = (QueryResult) findCriterionResult(outcome, "phone-type-check");

@@ -74,8 +74,8 @@ public class Main {
             Object doc = yamlMapper.readValue(new File(docFile), Object.class);
             Specification specification = yamlMapper.readValue(new File(specFile), Specification.class);
 
-            SpecificationEvaluator evaluator = new SpecificationEvaluator();
-            EvaluationOutcome outcome = evaluator.evaluate(doc, specification);
+            SpecificationEvaluator evaluator = new SpecificationEvaluator(specification);
+            EvaluationOutcome outcome = evaluator.evaluate(doc);
             ResultFormatter formatter;
             if (jsonOutput) {
                 formatter = new JsonResultFormatter();
