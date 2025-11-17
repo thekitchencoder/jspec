@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-11-17
+
+### Added
+- **Null-Safe Lookup Methods**:
+  - `find(String id)` - Returns `Optional<EvaluationResult>` instead of null
+  - `findQuery(String id)` - Type-safe Optional-based query lookup
+  - `findComposite(String id)` - Type-safe Optional-based composite lookup
+  - `findReference(String id)` - Type-safe Optional-based reference lookup
+
+- **Convenience State Checks**:
+  - `matched(String id)` - Null-safe check if criterion matched
+  - `notMatched(String id)` - Null-safe check if criterion did not match
+  - `undetermined(String id)` - Null-safe check if criterion was undetermined
+
+- **Business Logic Helpers**:
+  - `hasMatches()` - Check if at least one criterion matched
+  - `allMatched()` - Check if all criteria matched
+  - `noneMatched()` - Check if no criteria matched
+  - `anyFailed()` - Check if any criteria failed or were undetermined
+  - `isFullyDetermined()` - Convenience wrapper for `summary.fullyDetermined()`
+
+- **Stream API**:
+  - `stream()` - Direct stream access for functional-style processing
+
+- **Performance Optimization**:
+  - `asMap()` - Convert results to immutable Map for O(1) lookups
+
+- **Safe Accessors**:
+  - `firstQuery()` - Optional-based first query result
+  - `firstComposite()` - Optional-based first composite result
+  - `firstReference()` - Optional-based first reference result
+
+- **Kleene Logic Methods**:
+  - `overallState()` - AND-based overall state computation
+  - `anyMatchState()` - OR-based overall state computation
+
+- **Diagnostic Helpers**:
+  - `getFailureReasons()` - Map of criterion IDs to failure reasons
+  - `getUndeterminedIds()` - Set of undetermined criterion IDs
+
+### Changed
+- **BREAKING**: Removed `get(String id)` method (replaced with Optional-based `find()`)
+- Updated all test code to use new Optional-based API
+- Improved JavaDoc with comprehensive usage examples for all new methods
+
+### Improved
+- Developer experience with null-safe, type-safe, and functional API
+- Code expressiveness with concise convenience methods
+- Performance for frequent lookups via `asMap()` method
+
+## [0.3.0] - 2025-11-17
+
 ### Added
 - Standard project documentation files (README.md, CLAUDE.md, LICENSE, CONTRIBUTING.md, CHANGELOG.md)
 

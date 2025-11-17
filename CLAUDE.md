@@ -846,8 +846,8 @@ For questions about this codebase:
 
 ---
 
-**Last Updated**: 2025-11-17 (v0.3.0: SpecificationEvaluator now binds to specification at construction time)
-**Version**: 0.3.0
+**Last Updated**: 2025-11-17 (v0.4.0: Enhanced EvaluationOutcome API with Optional-based lookups and convenience methods)
+**Version**: 0.4.0
 **Java Version**: 21
 **Total Lines of Code**: ~1500 (main source)
 **Test Files**: 15 test files with comprehensive coverage

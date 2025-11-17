@@ -208,7 +208,7 @@ class TriStateEvaluationTest {
         assertThat(outcome.summary().total()).isEqualTo(3);
         assertThat(outcome.summary().matched()).isEqualTo(2);
         assertThat(outcome.summary().undetermined()).isEqualTo(1);
-        assertThat(outcome.summary().fullyDetermined()).isFalse();
+        assertThat(outcome.isFullyDetermined()).isFalse();
     }
 
     @Test
@@ -226,7 +226,7 @@ class TriStateEvaluationTest {
         assertThat(outcome.summary().matched()).isEqualTo(1);
         assertThat(outcome.summary().notMatched()).isEqualTo(1);
         assertThat(outcome.summary().undetermined()).isEqualTo(0);
-        assertThat(outcome.summary().fullyDetermined()).isTrue();
+        assertThat(outcome.isFullyDetermined()).isTrue();
     }
 
     // ========== Edge Cases ==========
@@ -248,7 +248,7 @@ class TriStateEvaluationTest {
         EvaluationOutcome outcome = specEvaluator.evaluate(validDocument);
 
         assertThat(outcome.summary().total()).isEqualTo(0);
-        assertThat(outcome.summary().fullyDetermined()).isTrue();
+        assertThat(outcome.isFullyDetermined()).isTrue();
     }
 
     @Test
