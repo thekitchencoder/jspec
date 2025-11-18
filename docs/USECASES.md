@@ -9,7 +9,7 @@ JSPEC's flexible and robust evaluation engine is well-suited for a variety of us
     In public-sector or insurance workflows, encode complex policy clauses. For example, determine if a citizen is eligible for a program by checking `claimant.age >= 65 AND claimant.residency_years >= 10`. The tri-state model gracefully handles cases where data is missing from a citizen's record.
 
 -   **Financial Compliance & Risk Controls**
-    Define rules for Anti-Money Laundering (AML), Know Your Customer (KYC), or other regulatory checks. A specification can navigate deeply nested transaction documents to flag suspicious activity, such as `transaction.amount > 10000 AND counterparty.risk_level == 'HIGH'`.
+    Model AML, KYC, or broader regulatory criteria. Specifications can traverse deeply nested transaction documents to flag suspicious activity such as `transaction.amount > 10000 AND counterparty.risk_level == 'HIGH'`.
 
 -   **Dynamic API Filtering & Personalization**
     Power user-facing filters, saved searches, or content personalization. A web application can store a user's preferences as a JSON specification and use it to filter a stream of results, ensuring only relevant content is shown.

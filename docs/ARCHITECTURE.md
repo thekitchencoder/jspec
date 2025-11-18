@@ -12,7 +12,7 @@ The engine has a clean, layered architecture designed for simplicity, immutabili
 
 2.  **Evaluation Layer:** This is the logic engine of the library.
     *   `SpecificationEvaluator`: The main entry point. It is bound to a specific `Specification` and orchestrates the evaluation of all its criteria and groups against a document. It performs evaluation in parallel by default.
-    *   `CriterionEvaluator`: The workhorse that evaluates a single `Criterion`. It contains the logic for all 13 supported operators and implements the tri-state evaluation model.
+    *   `CriterionEvaluator`: The workhorse that evaluates a single `Criterion`. It contains the logic for all 14 built-in operators and implements the tri-state evaluation model.
 
 3.  **Result Layer:** This layer consists of immutable records that capture the outcome of an evaluation.
     *   `EvaluationOutcome`: The final result of a `SpecificationEvaluator` run, containing results for all criteria and groups.
@@ -24,7 +24,7 @@ The engine has a clean, layered architecture designed for simplicity, immutabili
 - **Immutability:** All data and result objects are immutable Java records, which is key to ensuring thread safety.
 - **No Mutable State:** Evaluator classes have no mutable state, allowing a single instance to be safely shared across threads.
 - **Thread-Safety by Default:** See the section below.
-- **Fail Gracefully:** The engine is designed to never throw exceptions during evaluation, instead reporting failures through the tri-state result model.
+- **Fail Gracefully:** The engine is designed to never throw exceptions during evaluation, instead reporting failures through the tri-state result model (see [Error Handling Design](ERROR_HANDLING.md)).
 
 ## Thread Safety
 

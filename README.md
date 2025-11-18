@@ -1,4 +1,4 @@
-# JSON Specification Evaluator
+# JSPEC
 
 [![Maven Central](https://img.shields.io/maven-central/v/uk.codery/jspec.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22uk.codery%22%20AND%20a:%22jspec%22)
 [![CI](https://github.com/thekitchencoder/jspec/workflows/CI/badge.svg)](https://github.com/thekitchencoder/jspec/actions)
@@ -9,17 +9,17 @@
 [![Java](https://img.shields.io/badge/Java-21+-blue.svg)](https://openjdk.org/projects/jdk/21/)
 [![Javadoc](https://javadoc.io/badge2/uk.codery/jspec/javadoc.svg)](https://javadoc.io/doc/uk.codery/jspec)
 
-A lightweight, Spring-independent Java library for evaluating business criteria against JSON/YAML documents using MongoDB-style query operators.
+JSPEC (JSON Specification Evaluator) is a lightweight, Spring-independent Java library for evaluating business criteria against JSON/YAML documents with MongoDB-style operators.
 
 ## Features
 
-- **13 MongoDB-style operators** - Familiar query syntax for developers.
-- **Tri-state evaluation model** - Distinguishes between `MATCHED`, `NOT_MATCHED`, and `UNDETERMINED` states.
-- **Graceful error handling** - One failed criterion never stops the evaluation of others.
-- **Zero framework dependencies** - Works with or without Spring.
-- **Thread-safe parallel evaluation** - Efficiently process multiple criteria.
-- **Deep document navigation** - Query nested structures with dot notation.
-- **Java 21** - Built with modern language features and an immutable, record-based design.
+- **14 MongoDB-style operators** – Reuse familiar query syntax for comparison, collection, and advanced checks.
+- **Tri-state evaluation** – Every criterion reports `MATCHED`, `NOT_MATCHED`, or `UNDETERMINED` for precise diagnostics.
+- **Graceful error handling** – Bad data, unknown operators, or type mismatches never halt the evaluation pipeline.
+- **Thread-safe by design** – Immutable records and parallel execution make large specifications fast and safe.
+- **Deep document navigation** – Dot notation walks arbitrarily nested JSON/YAML payloads.
+- **Zero framework dependencies** – Works in plain Java applications or alongside Spring.
+- **Java 21 foundation** – Modern records, switch expressions, and immutable collections throughout.
 
 ## Quick Start
 
@@ -37,7 +37,7 @@ Add the dependency to your `pom.xml`:
 
 ### Basic Usage
 
-1.  **Define a `Specification`** containing your criteria. This can be done in YAML or programmatically.
+1. **Define a `Specification`** containing your criteria. You can write it as YAML/JSON or construct it programmatically.
 
     ```yaml
     # specification.yaml
@@ -56,47 +56,43 @@ Add the dependency to your `pom.xml`:
         criteria: [minimum-order, customer-verified]
     ```
 
-2.  **Create an evaluator** and evaluate a document against the specification.
+2. **Instantiate the evaluator** and inspect the tri-state results.
 
     ```java
+    import com.fasterxml.jackson.databind.ObjectMapper;
+    import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
     import uk.codery.jspec.evaluator.SpecificationEvaluator;
     import uk.codery.jspec.model.Specification;
     import uk.codery.jspec.result.EvaluationOutcome;
-    import com.fasterxml.jackson.databind.ObjectMapper;
-    import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-    // Load specification from YAML
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     Specification spec = mapper.readValue(new File("specification.yaml"), Specification.class);
 
-    // Create an evaluator bound to the specification
     SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
 
-    // Create a sample document to evaluate
     Map<String, Object> document = Map.of(
         "order", Map.of("total", 50.00),
         "customer", Map.of("verified", true)
     );
 
-    // Evaluate the document
     EvaluationOutcome outcome = evaluator.evaluate(document);
 
-    // Check the results
-    System.out.println("Evaluation Summary: " + outcome.summary());
-    outcome.criterionResults().forEach(result ->
-        System.out.println(" - " + result.criterion().id() + ": " + result.state())
+    System.out.println("Summary: " + outcome.summary());
+    outcome.results().forEach(result ->
+        System.out.printf(" - %s -> %s%n", result.id(), result.state())
     );
     ```
 
 ## Documentation
 
-For more detailed information, please refer to the documentation in the `docs/` folder:
+For deeper dives, read the docs in `docs/`:
 
--   **[Supported Operators](docs/OPERATORS.md)**: A full list of the 13 supported MongoDB-style operators.
--   **[Evaluation Model](docs/EVALUATION_MODEL.md)**: An in-depth explanation of the tri-state evaluation model and the graceful error handling philosophy.
--   **[Architecture](docs/ARCHITECTURE.md)**: A guide to the core design principles, layers, and thread-safety model.
--   **[Use Cases](docs/usecases.md)**: Examples of how JSPEC can be used in different scenarios.
--   **[JavaDoc](https://javadoc.io/doc/uk.codery/jspec)**: Full API documentation.
+- **[Supported Operators](docs/OPERATORS.md)** – Reference for all 14 MongoDB-style operators.
+- **[Evaluation Model](docs/EVALUATION_MODEL.md)** – How the tri-state pipeline surfaces errors without throwing.
+- **[Architecture](docs/ARCHITECTURE.md)** – Core records, evaluators, and thread-safety guidance.
+- **[General Use Cases](docs/usecases.md)** – Practical scenarios for embedding JSPEC.
+- **[AI Use Cases](docs/AI_USECASES.md)** – Synthesized guidance for guardrails, hybrid-symbolic patterns, and agent routing.
+- **[JavaDoc](https://javadoc.io/doc/uk.codery/jspec)** – Full API reference.
 
 ## Building from Source
 
@@ -107,10 +103,10 @@ To build the project locally:
 git clone https://github.com/thekitchencoder/jspec.git
 cd jspec
 
-# Build with Maven
-mvn clean install
+# Compile and run the full suite
+mvn clean verify
 
-# Run tests
+# Fast feedback while iterating
 mvn test
 ```
 
@@ -119,9 +115,9 @@ mvn test
 - Maven 3.6+
 
 ### Dependencies
-- **Jackson DataFormat YAML**: For JSON/YAML parsing.
-- **Lombok**: To reduce boilerplate code.
-- **SLF4J API**: For logging.
+- **Jackson DataFormat YAML** – JSON/YAML parsing for specifications and documents.
+- **Lombok** – Annotation-driven boilerplate reduction during compilation.
+- **SLF4J API** – Logging abstraction; bring your own binding.
 
 ## Demo
 
@@ -138,4 +134,3 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-

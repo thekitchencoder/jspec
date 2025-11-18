@@ -21,22 +21,32 @@ A criterion's state becomes `UNDETERMINED` in any of the following situations:
 
 ### Example: Handling Outcomes
 
-You can inspect the `EvaluationResult` to understand the outcome for each criterion.
+Use `SpecificationEvaluator` to evaluate a document and then inspect the returned `EvaluationOutcome`.
 
 ```java
-EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
+SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+EvaluationOutcome outcome = evaluator.evaluate(document);
 
-switch (result.state()) {
-    case MATCHED -> System.out.println("Criterion passed");
-    case NOT_MATCHED -> System.out.println("Criterion failed");
-    case UNDETERMINED -> {
-        System.out.println("Could not evaluate: " + result.reason());
-        // Check for missing data paths, if any
-        if (!result.missingPaths().isEmpty()) {
-            System.out.println("Missing data at: " + result.missingPaths());
+outcome.results().forEach(result -> {
+    switch (result.state()) {
+        case MATCHED -> System.out.println(result.id() + " passed");
+        case NOT_MATCHED -> System.out.println(result.id() + " failed");
+        case UNDETERMINED -> {
+            System.out.println(result.id() + " undetermined: " + result.reason());
+            if (result instanceof QueryResult query && !query.missingPaths().isEmpty()) {
+                System.out.println("Missing data at: " + query.missingPaths());
+            }
         }
     }
-}
+});
+```
+
+For targeted lookups, use the helper methods on `EvaluationOutcome`:
+
+```java
+outcome.findQuery("minimum-order")
+    .filter(result -> result.state().undetermined())
+    .ifPresent(result -> log.warn("Missing {}", result.missingPaths()));
 ```
 
 ## Error Handling Philosophy

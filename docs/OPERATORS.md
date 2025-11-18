@@ -1,8 +1,8 @@
 # Supported Operators
 
-JSPEC supports 13 MongoDB-style query operators, divided into three categories.
+JSPEC ships with 14 MongoDB-style query operators out of the box, grouped into comparison, collection, and advanced categories. Examples below use Java's `Map.of`/`List.of`; equivalent YAML/JSON works identically inside a `Specification`.
 
-## Comparison Operators
+## Comparison Operators (6)
 
 These operators compare a value from the document with a given operand.
 
@@ -21,7 +21,7 @@ These operators compare a value from the document with a given operand.
 Map.of("age", Map.of("$gte", 18))
 ```
 
-## Collection Operators
+## Collection Operators (4)
 
 These operators work on array/list values in the document.
 
@@ -41,7 +41,7 @@ Map.of("status", Map.of("$in", List.of("ACTIVE", "PENDING")))
 Map.of("tags", Map.of("$all", List.of("urgent", "verified")))
 ```
 
-## Advanced Operators
+## Advanced Operators (4)
 
 These operators provide more complex evaluation capabilities.
 
