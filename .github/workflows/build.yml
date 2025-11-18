@@ -20,13 +20,12 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
       - name: Build with Maven
-        run: mvn --batch-mode clean verify
-        env:
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: mvn -B clean verify
+
+      - name: Generate Coverage Report
+        run: mvn -B jacoco:report
 
       - name: Upload test results
         if: always()

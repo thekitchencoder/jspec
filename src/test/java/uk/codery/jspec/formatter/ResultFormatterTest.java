@@ -561,4 +561,352 @@ class ResultFormatterTest {
         assertThat(text).contains("Status:         Partially Determined");
         assertThat(summary.fullyDetermined()).isFalse();
     }
+
+    // ==================== Summary Formatter Tests ====================
+
+    @Test
+    void summaryFormatter_default() {
+        SummaryResultFormatter formatter = new SummaryResultFormatter();
+
+        String summary = formatter.format(sampleOutcome);
+
+        assertThat(summary).isNotBlank();
+        assertThat(summary).contains("test-spec evaluation summary");
+        assertThat(summary).contains("Queries:");
+        assertThat(summary).contains("Composites:");
+        assertThat(formatter.formatType()).isEqualTo("summary");
+        assertThat(formatter.showFailures()).isFalse();
+    }
+
+    @Test
+    void summaryFormatter_showsQueryCounts() {
+        SummaryResultFormatter formatter = new SummaryResultFormatter();
+
+        String summary = formatter.format(complexOutcome);
+
+        assertThat(summary).contains("Queries: 3 total");
+        assertThat(summary).contains("1 passed");
+        assertThat(summary).contains("2 failed");
+    }
+
+    @Test
+    void summaryFormatter_showsCompositeCounts() {
+        SummaryResultFormatter formatter = new SummaryResultFormatter();
+
+        String summary = formatter.format(complexOutcome);
+
+        assertThat(summary).contains("Composites: 1 total");
+        assertThat(summary).contains("0 passed");
+        assertThat(summary).contains("1 failed");
+    }
+
+    @Test
+    void summaryFormatter_withShowFailures() {
+        SummaryResultFormatter formatter = new SummaryResultFormatter(true);
+
+        String summary = formatter.format(complexOutcome);
+
+        assertThat(summary).isNotBlank();
+        assertThat(summary).contains("Failed Queries:");
+        assertThat(summary).contains("country-check");
+        assertThat(summary).contains("email-check");
+        assertThat(summary).contains("Failed Composites:");
+        assertThat(summary).contains("eligibility");
+        assertThat(formatter.showFailures()).isTrue();
+    }
+
+    @Test
+    void summaryFormatter_noFailures_showsNoFailuresSection() {
+        SummaryResultFormatter formatter = new SummaryResultFormatter(true);
+
+        String summary = formatter.format(sampleOutcome);
+
+        // All passed, so no failures section
+        assertThat(summary).doesNotContain("Failed Queries:");
+        assertThat(summary).doesNotContain("Failed Composites:");
+    }
+
+    @Test
+    void summaryFormatter_emptyResults() {
+        EvaluationSummary emptySummary = EvaluationSummary.from(Collections.emptyList());
+        EvaluationOutcome emptyOutcome = new EvaluationOutcome("empty-spec", Collections.emptyList(), emptySummary);
+
+        SummaryResultFormatter formatter = new SummaryResultFormatter();
+        String summary = formatter.format(emptyOutcome);
+
+        assertThat(summary).contains("Queries: 0 total");
+        assertThat(summary).contains("Composites: 0 total");
+    }
+
+    @Test
+    void summaryFormatter_onlyQueries() {
+        QueryCriterion query1 = QueryCriterion.builder()
+                .id("q1")
+                .field("a").eq(1)
+                .build();
+        QueryResult result1 = QueryResult.matched(query1);
+
+        EvaluationSummary summary = EvaluationSummary.from(List.of(result1));
+        EvaluationOutcome outcome = new EvaluationOutcome("query-only-spec", List.of(result1), summary);
+
+        SummaryResultFormatter formatter = new SummaryResultFormatter();
+        String output = formatter.format(outcome);
+
+        assertThat(output).contains("Queries: 1 total");
+        assertThat(output).contains("1 passed");
+        assertThat(output).contains("0 failed");
+        assertThat(output).contains("Composites: 0 total");
+    }
+
+    @Test
+    void summaryFormatter_showFailures_displaysChildFailures() {
+        QueryCriterion query1 = QueryCriterion.builder()
+                .id("child-fail")
+                .field("x").eq(1)
+                .build();
+        QueryResult childResult = QueryResult.notMatched(query1, List.of("x"));
+
+        CompositeCriterion composite = CompositeCriterion.builder()
+                .id("parent-fail")
+                .and()
+                .criteria(query1)
+                .build();
+        CompositeResult compositeResult = new CompositeResult(composite, EvaluationState.NOT_MATCHED, List.of(childResult));
+
+        EvaluationSummary summary = EvaluationSummary.from(List.of(childResult, compositeResult));
+        EvaluationOutcome outcome = new EvaluationOutcome("child-fail-spec", List.of(childResult, compositeResult), summary);
+
+        SummaryResultFormatter formatter = new SummaryResultFormatter(true);
+        String output = formatter.format(outcome);
+
+        assertThat(output).contains("Failed Composites:");
+        assertThat(output).contains("parent-fail");
+        assertThat(output).contains("child-fail");
+    }
+
+    // ==================== Custom Formatter Tests ====================
+
+    @Test
+    void customFormatter_default() {
+        CustomResultFormatter formatter = new CustomResultFormatter();
+
+        String output = formatter.format(complexOutcome);
+
+        assertThat(output).isNotBlank();
+        assertThat(output).contains("specification: complex-spec");
+        assertThat(formatter.formatType()).isEqualTo("text");
+        assertThat(formatter.verbose()).isFalse();
+    }
+
+    @Test
+    void customFormatter_showsCompositeResults() {
+        CustomResultFormatter formatter = new CustomResultFormatter();
+
+        String output = formatter.format(complexOutcome);
+
+        assertThat(output).contains("eligibility:");
+        assertThat(output).contains("junction: AND");
+        assertThat(output).contains("match:");
+        assertThat(output).contains("state:");
+        assertThat(output).contains("stats:");
+    }
+
+    @Test
+    void customFormatter_verbose_showsCriteria() {
+        CustomResultFormatter formatter = new CustomResultFormatter(true);
+
+        String output = formatter.format(complexOutcome);
+
+        assertThat(output).contains("criteria:");
+        assertThat(output).contains("age-check");
+        assertThat(output).contains("country-check");
+        assertThat(formatter.verbose()).isTrue();
+    }
+
+    @Test
+    void customFormatter_showsQueryResults() {
+        // Create outcome with just queries in a composite
+        QueryCriterion query = QueryCriterion.builder()
+                .id("test-query")
+                .field("field").eq("value")
+                .build();
+        QueryResult queryResult = QueryResult.matched(query);
+
+        CompositeCriterion composite = CompositeCriterion.builder()
+                .id("parent")
+                .and()
+                .criteria(query)
+                .build();
+        CompositeResult compositeResult = new CompositeResult(composite, EvaluationState.MATCHED, List.of(queryResult));
+
+        EvaluationSummary summary = EvaluationSummary.from(List.of(compositeResult));
+        EvaluationOutcome outcome = new EvaluationOutcome("query-spec", List.of(compositeResult), summary);
+
+        CustomResultFormatter formatter = new CustomResultFormatter(true);
+        String output = formatter.format(outcome);
+
+        assertThat(output).contains("test-query:");
+        assertThat(output).contains("match: true");
+        assertThat(output).contains("state: MATCHED");
+    }
+
+    @Test
+    void customFormatter_showsReason() {
+        QueryCriterion query = QueryCriterion.builder()
+                .id("failing-query")
+                .field("field").eq("value")
+                .build();
+        QueryResult queryResult = QueryResult.undetermined(query, "Test reason", List.of("field"));
+
+        CompositeCriterion composite = CompositeCriterion.builder()
+                .id("parent")
+                .and()
+                .criteria(query)
+                .build();
+        CompositeResult compositeResult = new CompositeResult(composite, EvaluationState.UNDETERMINED, List.of(queryResult));
+
+        EvaluationSummary summary = EvaluationSummary.from(List.of(compositeResult));
+        EvaluationOutcome outcome = new EvaluationOutcome("reason-spec", List.of(compositeResult), summary);
+
+        CustomResultFormatter formatter = new CustomResultFormatter(true);
+        String output = formatter.format(outcome);
+
+        assertThat(output).contains("reason:");
+    }
+
+    @Test
+    void customFormatter_showsMissingPaths_whenVerbose() {
+        QueryCriterion query = QueryCriterion.builder()
+                .id("missing-query")
+                .field("field").eq("value")
+                .build();
+        QueryResult queryResult = QueryResult.undetermined(query, "Test reason", List.of("field", "nested.path"));
+
+        CompositeCriterion composite = CompositeCriterion.builder()
+                .id("parent")
+                .and()
+                .criteria(query)
+                .build();
+        CompositeResult compositeResult = new CompositeResult(composite, EvaluationState.UNDETERMINED, List.of(queryResult));
+
+        EvaluationSummary summary = EvaluationSummary.from(List.of(compositeResult));
+        EvaluationOutcome outcome = new EvaluationOutcome("missing-spec", List.of(compositeResult), summary);
+
+        CustomResultFormatter formatter = new CustomResultFormatter(true);
+        String output = formatter.format(outcome);
+
+        assertThat(output).contains("missing:");
+        assertThat(output).contains("field");
+        assertThat(output).contains("nested.path");
+    }
+
+    @Test
+    void customFormatter_showsReferenceResults() {
+        QueryCriterion query = QueryCriterion.builder()
+                .id("original")
+                .field("field").eq("value")
+                .build();
+        QueryResult queryResult = QueryResult.matched(query);
+
+        CriterionReference reference = new CriterionReference("original");
+        ReferenceResult refResult = new ReferenceResult(reference, queryResult);
+
+        CompositeCriterion composite = CompositeCriterion.builder()
+                .id("parent")
+                .and()
+                .addReference(reference)
+                .build();
+        CompositeResult compositeResult = new CompositeResult(composite, EvaluationState.MATCHED, List.of(refResult));
+
+        EvaluationSummary summary = EvaluationSummary.from(List.of(compositeResult));
+        EvaluationOutcome outcome = new EvaluationOutcome("ref-spec", List.of(compositeResult), summary);
+
+        CustomResultFormatter formatter = new CustomResultFormatter(true);
+        String output = formatter.format(outcome);
+
+        assertThat(output).contains("Type: Reference");
+        assertThat(output).contains("References: original");
+    }
+
+    @Test
+    void customFormatter_showsStatistics() {
+        CustomResultFormatter formatter = new CustomResultFormatter();
+
+        String output = formatter.format(complexOutcome);
+
+        assertThat(output).contains("stats:");
+        assertThat(output).contains("matched:");
+        assertThat(output).contains("not_matched:");
+        assertThat(output).contains("undetermined:");
+    }
+
+    @Test
+    void customFormatter_emptyResults() {
+        EvaluationSummary emptySummary = EvaluationSummary.from(Collections.emptyList());
+        EvaluationOutcome emptyOutcome = new EvaluationOutcome("empty-spec", Collections.emptyList(), emptySummary);
+
+        CustomResultFormatter formatter = new CustomResultFormatter();
+        String output = formatter.format(emptyOutcome);
+
+        assertThat(output).contains("specification: empty-spec");
+    }
+
+    @Test
+    void customFormatter_nestedComposites() {
+        QueryCriterion query1 = QueryCriterion.builder()
+                .id("q1")
+                .field("a").eq(1)
+                .build();
+        QueryResult result1 = QueryResult.matched(query1);
+
+        CompositeCriterion inner = CompositeCriterion.builder()
+                .id("inner")
+                .and()
+                .criteria(query1)
+                .build();
+        CompositeResult innerResult = new CompositeResult(inner, EvaluationState.MATCHED, List.of(result1));
+
+        CompositeCriterion outer = CompositeCriterion.builder()
+                .id("outer")
+                .or()
+                .addCriterion(inner)
+                .build();
+        CompositeResult outerResult = new CompositeResult(outer, EvaluationState.MATCHED, List.of(innerResult));
+
+        EvaluationSummary summary = EvaluationSummary.from(List.of(outerResult));
+        EvaluationOutcome outcome = new EvaluationOutcome("nested-spec", List.of(outerResult), summary);
+
+        CustomResultFormatter formatter = new CustomResultFormatter(true);
+        String output = formatter.format(outcome);
+
+        assertThat(output).contains("outer:");
+        assertThat(output).contains("inner:");
+    }
+
+    // ==================== FormatterException Tests ====================
+
+    @Test
+    void formatterException_withMessage() {
+        FormatterException exception = new FormatterException("Test error message");
+
+        assertThat(exception.getMessage()).isEqualTo("Test error message");
+        assertThat(exception.getCause()).isNull();
+    }
+
+    @Test
+    void formatterException_withMessageAndCause() {
+        Throwable cause = new RuntimeException("Root cause");
+        FormatterException exception = new FormatterException("Test error message", cause);
+
+        assertThat(exception.getMessage()).isEqualTo("Test error message");
+        assertThat(exception.getCause()).isSameAs(cause);
+        assertThat(exception.getCause().getMessage()).isEqualTo("Root cause");
+    }
+
+    @Test
+    void formatterException_isRuntimeException() {
+        FormatterException exception = new FormatterException("Test");
+
+        assertThat(exception).isInstanceOf(RuntimeException.class);
+    }
 }
