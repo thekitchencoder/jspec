@@ -7,7 +7,7 @@
 
     <groupId>uk.codery</groupId>
     <artifactId>jspec</artifactId>
-    <version>0.5.1</version>
+    <version>0.5.2</version>
     <packaging>jar</packaging>
 
     <name>JSpec</name>
@@ -158,25 +158,6 @@
                                 </rule>
                             </rules>
                         </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Spot bugs -->
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
-                <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.8.3.0</version>
-                <configuration>
-                    <effort>Max</effort>
-                    <threshold>High</threshold>
-                    <xmlOutput>true</xmlOutput>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>

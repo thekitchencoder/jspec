@@ -18,7 +18,7 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jspec.version>0.5.1</jspec.version>
+        <jspec.version>0.5.2</jspec.version>
     </properties>
 
     <dependencies>
