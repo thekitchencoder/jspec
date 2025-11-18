@@ -154,7 +154,7 @@ public class CompositeCriterionBuilder {
     }
 
     public CompositeCriterionBuilder addReference(@NonNull Criterion criterion){
-        return this.addCriterion(criterion.ref());
+        return this.addCriterion(criterion.referrence());
     }
 
     /**

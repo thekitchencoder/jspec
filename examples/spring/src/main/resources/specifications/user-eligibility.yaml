@@ -1,27 +1,20 @@
 id: user-eligibility
 criteria:
   - id: age-check
-    type: query
     query:
       age:
         $gte: 18
   - id: status-check
-    type: query
     query:
       status:
         $eq: active
   - id: email-exists
-    type: query
     query:
       email:
         $exists: true
   - id: eligibility
-    type: composite
     junction: AND
     criteria:
-      - id: age-check
-        type: reference
-      - id: status-check
-        type: reference
-      - id: email-exists
-        type: reference
+      - ref: age-check
+      - ref: status-check
+      - ref: email-exists

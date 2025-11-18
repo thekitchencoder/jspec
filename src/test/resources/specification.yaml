@@ -1,38 +1,29 @@
 id: shopping-cart-validation
 criteria:
-  # Query criteria (type: query)
-  - type: query
-    id: minimum-order-value
+  # Query criteria
+  - id: minimum-order-value
     query: {order: {total: {$gte: 25.00}}}
 
-  - type: query
-    id: customer-verified
+  - id: customer-verified
     query: {customer: {verified: true}}
 
-  - type: query
-    id: shipping-eligible
+  - id: shipping-eligible
     query: {order: {shipping: {country: {$in: [US, CA, UK, AU]}}}}
 
-  - type: query
-    id: items-in-stock
+  - id: items-in-stock
     query: {order: {items: {$elemMatch: {in_stock: true}}}}
 
-  # Composite criterion (type: composite) - replaces criteriaGroups
-  - type: composite
-    id: express-shipping-eligibility
+  # Composite criterion - replaces criteriaGroups
+  - id: express-shipping-eligibility
     junction: AND
     criteria:
-      # Reference existing criteria (type: reference)
-      - type: reference
-        id: minimum-order-value
+      # Reference existing criteria
+      - ref: minimum-order-value
 
-      - type: reference
-        id: customer-verified
+      - ref: customer-verified
 
-      - type: reference
-        id: shipping-eligible
+      - ref: shipping-eligible
 
       # Inline query criterion
-      - type: query
-        id: prime-member
+      - id: prime-member
         query: {customer: {membership: {$eq: PRIME}}}

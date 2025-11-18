@@ -19,23 +19,23 @@ import uk.codery.jspec.result.EvaluationResult;
  * {@link CriterionReference} provides a way to reference other criteria by ID.
  *
  * <h3>Serialization:</h3>
- * Criteria are serialized/deserialized as JSON objects with a "type" property
- * that distinguishes between the allowed implementations.
+ * Criteria are serialized/deserialized using type deduction based on present properties:
+ * <ul>
+ *   <li>If has "query" property → {@link QueryCriterion}</li>
+ *   <li>If has "junction" property → {@link CompositeCriterion}</li>
+ *   <li>If has "ref" property → {@link CriterionReference}</li>
+ * </ul>
  *
  * <h3>Evaluation:</h3>
  * All criteria must provide an implementation of the {@code evaluate} method
  * to define how they are assessed against a given document in a specific
  * evaluation context.
  */
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "type"
-)
+@JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = QueryCriterion.class, name = "query"),
-        @JsonSubTypes.Type(value = CompositeCriterion.class, name = "composite"),
-        @JsonSubTypes.Type(value = CriterionReference.class, name = "reference")
+        @JsonSubTypes.Type(QueryCriterion.class),
+        @JsonSubTypes.Type(CompositeCriterion.class),
+        @JsonSubTypes.Type(CriterionReference.class)
 })
 public sealed interface Criterion
         permits QueryCriterion, CompositeCriterion, CriterionReference {
@@ -52,7 +52,7 @@ public sealed interface Criterion
      *
      * @return the CriterionReference (never null)
      */
-    default Criterion ref() {
+    default Criterion referrence() {
         return new CriterionReference(id());
     }
 
