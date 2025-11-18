@@ -82,7 +82,7 @@ class OperatorRegistryTest {
     void testRegister_multipleOperators() {
         registry.register("$op1", (val, operand) -> true);
         registry.register("$op2", (val, operand) -> false);
-        registry.register("$op3", (val, operand) -> val.equals(operand));
+        registry.register("$op3", Object::equals);
 
         assertThat(registry.size()).isEqualTo(3);
         assertThat(registry.availableOperators()).containsExactlyInAnyOrder("$op1", "$op2", "$op3");
@@ -439,5 +439,209 @@ class OperatorRegistryTest {
 
         // New call should reflect changes
         assertThat(registry.availableOperators()).containsExactlyInAnyOrder("$op1", "$op2");
+    }
+
+    // ==================== Additional Coverage Tests ====================
+
+    @Test
+    void testComparisonOperators_withIncompatibleTypes_shouldReturnFalse() {
+        registry = OperatorRegistry.withDefaults();
+
+        OperatorHandler gt = registry.get("$gt");
+        OperatorHandler gte = registry.get("$gte");
+        OperatorHandler lt = registry.get("$lt");
+        OperatorHandler lte = registry.get("$lte");
+
+        // Non-comparable types
+        assertThat(gt.evaluate("string", 10)).isFalse();
+        assertThat(gte.evaluate("string", 10)).isFalse();
+        assertThat(lt.evaluate("string", 10)).isFalse();
+        assertThat(lte.evaluate("string", 10)).isFalse();
+
+        // Different non-number comparables (ClassCastException)
+        assertThat(gt.evaluate(java.time.LocalDate.now(), "string")).isFalse();
+        assertThat(gte.evaluate(java.time.LocalDate.now(), "string")).isFalse();
+        assertThat(lt.evaluate(java.time.LocalDate.now(), "string")).isFalse();
+        assertThat(lte.evaluate(java.time.LocalDate.now(), "string")).isFalse();
+    }
+
+    @Test
+    void testComparisonOperators_withNonComparables_shouldReturnFalse() {
+        registry = OperatorRegistry.withDefaults();
+
+        OperatorHandler gt = registry.get("$gt");
+        OperatorHandler gte = registry.get("$gte");
+        OperatorHandler lt = registry.get("$lt");
+        OperatorHandler lte = registry.get("$lte");
+
+        // Objects that are not Comparable
+        Object obj1 = new Object();
+        Object obj2 = new Object();
+
+        assertThat(gt.evaluate(obj1, obj2)).isFalse();
+        assertThat(gte.evaluate(obj1, obj2)).isFalse();
+        assertThat(lt.evaluate(obj1, obj2)).isFalse();
+        assertThat(lte.evaluate(obj1, obj2)).isFalse();
+    }
+
+    @Test
+    void testIn_withInvalidOperand_shouldReturnFalse() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler in = registry.get("$in");
+
+        // Non-list operand
+        assertThat(in.evaluate("value", "not-a-list")).isFalse();
+        assertThat(in.evaluate("value", 123)).isFalse();
+    }
+
+    @Test
+    void testIn_withListValue_shouldCheckIfAnyMatch() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler in = registry.get("$in");
+
+        // List value - should check if any item is in operand list
+        assertThat(in.evaluate(java.util.List.of("red", "blue"), java.util.List.of("red", "green"))).isTrue();
+        assertThat(in.evaluate(java.util.List.of("yellow", "orange"), java.util.List.of("red", "green"))).isFalse();
+    }
+
+    @Test
+    void testNin_withInvalidOperand_shouldReturnFalse() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler nin = registry.get("$nin");
+
+        // Non-list operand
+        assertThat(nin.evaluate("value", "not-a-list")).isFalse();
+    }
+
+    @Test
+    void testNin_withListValue_shouldCheckIfNoneMatch() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler nin = registry.get("$nin");
+
+        // List value - should check if no items are in operand list
+        assertThat(nin.evaluate(java.util.List.of("yellow", "orange"), java.util.List.of("red", "green"))).isTrue();
+        assertThat(nin.evaluate(java.util.List.of("red", "orange"), java.util.List.of("red", "green"))).isFalse();
+    }
+
+    @Test
+    void testAll_withInvalidTypes_shouldReturnFalse() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler all = registry.get("$all");
+
+        // Non-list value
+        assertThat(all.evaluate("not-a-list", java.util.List.of(1, 2))).isFalse();
+
+        // Non-list operand
+        assertThat(all.evaluate(java.util.List.of(1, 2, 3), "not-a-list")).isFalse();
+    }
+
+    @Test
+    void testSize_withInvalidTypes_shouldReturnFalse() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler size = registry.get("$size");
+
+        // Non-list value
+        assertThat(size.evaluate("not-a-list", 3)).isFalse();
+
+        // Non-number operand
+        assertThat(size.evaluate(java.util.List.of(1, 2, 3), "three")).isFalse();
+    }
+
+    @Test
+    void testExists_withInvalidOperand_shouldReturnFalse() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler exists = registry.get("$exists");
+
+        // Non-boolean operand
+        assertThat(exists.evaluate("value", "true")).isFalse();
+        assertThat(exists.evaluate("value", 1)).isFalse();
+    }
+
+    @Test
+    void testType_withCustomClass_shouldReturnClassName() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler type = registry.get("$type");
+
+        // Custom class
+        class MyClass {}
+        assertThat(type.evaluate(new MyClass(), "myclass")).isTrue();
+    }
+
+    @Test
+    void testRegex_withInvalidOperand_shouldReturnFalse() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler regex = registry.get("$regex");
+
+        // Non-string pattern
+        assertThat(regex.evaluate("test", 123)).isFalse();
+        assertThat(regex.evaluate("test", java.util.List.of())).isFalse();
+    }
+
+    @Test
+    void testRegex_withInvalidPattern_shouldReturnFalse() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler regex = registry.get("$regex");
+
+        // Invalid regex pattern
+        assertThat(regex.evaluate("test", "[invalid(")).isFalse();
+    }
+
+    @Test
+    void testElemMatch_withInvalidTypes_shouldReturnFalse() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler elemMatch = registry.get("$elemMatch");
+
+        // Non-list value
+        assertThat(elemMatch.evaluate("not-a-list", java.util.Map.of("field", "value"))).isFalse();
+
+        // Non-map operand
+        assertThat(elemMatch.evaluate(java.util.List.of(1, 2), "not-a-map")).isFalse();
+    }
+
+    @Test
+    void testElemMatch_withValidTypes_returnsBasedOnNonEmpty() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler elemMatch = registry.get("$elemMatch");
+
+        // Simplified implementation checks if list is non-empty
+        assertThat(elemMatch.evaluate(java.util.List.of(1, 2), java.util.Map.of("field", "value"))).isTrue();
+        assertThat(elemMatch.evaluate(java.util.List.of(), java.util.Map.of("field", "value"))).isFalse();
+    }
+
+    @Test
+    void testGetAll_snapshotBehavior() {
+        registry.register("$op1", (val, operand) -> true);
+
+        Map<String, OperatorHandler> snapshot = registry.getAll();
+        assertThat(snapshot).hasSize(1);
+
+        // Register more operators
+        registry.register("$op2", (val, operand) -> false);
+
+        // Snapshot should not change
+        assertThat(snapshot).hasSize(1);
+
+        // New call should reflect changes
+        assertThat(registry.getAll()).hasSize(2);
+    }
+
+    @Test
+    void testComparisonOperators_withDifferentNumberTypes() {
+        registry = OperatorRegistry.withDefaults();
+
+        OperatorHandler gt = registry.get("$gt");
+        OperatorHandler gte = registry.get("$gte");
+        OperatorHandler lt = registry.get("$lt");
+        OperatorHandler lte = registry.get("$lte");
+
+        // Different number types (int vs double)
+        assertThat(gt.evaluate(10.5, 10)).isTrue();
+        assertThat(gte.evaluate(10.0, 10)).isTrue();
+        assertThat(lt.evaluate(9.5, 10)).isTrue();
+        assertThat(lte.evaluate(10.0, 10)).isTrue();
+
+        // Long vs Integer
+        assertThat(gt.evaluate(100L, 99)).isTrue();
+        assertThat(lt.evaluate(99L, 100)).isTrue();
     }
 }

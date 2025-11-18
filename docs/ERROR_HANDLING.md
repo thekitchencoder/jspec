@@ -25,8 +25,8 @@ Every criterion evaluation produces one of three states:
 - Reasons include:
   - **Missing data** in input document
   - **Invalid criterion** (unknown operator, malformed query)
-  - **Type mismatch** (operator expects number, got string)
-  - **Operator error** (regex pattern invalid, etc.)
+  - **Severe type mismatch** where the evaluator cannot safely continue (e.g., unknown query type)
+  - **Operator error** (custom handler threw, runtime regex failure, etc.)
 
 ---
 
@@ -241,100 +241,40 @@ public record EvaluationResult(
 
 ---
 
-## Graceful Failure Handling Strategy
+## Failure Handling Paths
 
 ### Unknown Operators
-
-**Current behavior:**
-```java
-// CriterionEvaluator.java:194
-System.err.println("Unknown operator: " + op);
-continue;  // Silently ignores
-```
-
-**Proposed behavior:**
-```java
-if (handler == null) {
-    logger.warn("Unknown operator '{}' in criterion '{}'", op, context);
-    return InnerResult.undetermined("Unknown operator: " + op);
-}
-```
-
-**Result:**
-- No exception thrown
-- Evaluation continues
-- Criterion marked as UNDETERMINED
-- Logged for debugging
+- `CriterionEvaluator` checks every `$operator` lookup. If no handler exists it logs a warning and returns an `InnerResult` with `EvaluationState.UNDETERMINED`.
+- The corresponding `QueryResult` carries `reason = "Unknown operator: $foo"` so orchestrators can surface the misconfiguration.
+- Other criteria (and criteria groups) continue evaluating normally.
 
 ### Type Mismatches
-
-**Current behavior:**
-```java
-// May throw ClassCastException
-List<?> list = (List<?>) operand;
-```
-
-**Proposed behavior:**
-```java
-if (!(operand instanceof List)) {
-    logger.warn("Operator $in expects List, got {} in criterion '{}'",
-                operand.getClass().getSimpleName(), context);
-    return InnerResult.undetermined("Type mismatch: $in expects List");
-}
-List<?> list = (List<?>) operand;
-```
-
-**Result:**
-- No exception thrown
-- Evaluation continues
-- Criterion marked as UNDETERMINED
-- Logged for debugging
+- Each operator validates operand types before casting. When a mismatch occurs, JSPEC logs a warning (e.g., “Operator $in expects List, got String”) and the operator returns `false`.
+- Because the handler reported `false`, the enclosing criterion ends up `NOT_MATCHED`. This mirrors MongoDB’s semantics (invalid comparison evaluates to false) while still surfacing the warning in logs.
+- Severe errors inside an operator (e.g., unexpected runtime exception) are caught and converted to `UNDETERMINED`.
 
 ### Invalid Regex Patterns
-
-**Current behavior:**
-```java
-// May throw PatternSyntaxException
-Pattern pattern = Pattern.compile((String) operand);
-```
-
-**Proposed behavior:**
-```java
-try {
-    Pattern pattern = Pattern.compile((String) operand);
-    return pattern.matcher(String.valueOf(val)).find();
-} catch (PatternSyntaxException e) {
-    logger.warn("Invalid regex pattern '{}' in criterion '{}': {}",
-                operand, context, e.getMessage());
-    return false;  // Treat as UNDETERMINED
-}
-```
-
-**Result:**
-- No exception thrown
-- Evaluation continues
-- Criterion marked as UNDETERMINED
-- Logged for debugging
+- `$regex` compiles the pattern inside a try/catch. Invalid patterns log a warning and the operator returns `false`, producing a `NOT_MATCHED` result. If the failure is due to runtime issues (e.g., the JDK regex engine throws), the exception path bubbles up to `evaluateOperatorQuery`, which marks the criterion `UNDETERMINED`.
 
 ### Missing Data
+- Dot-notation navigation and array traversal record the exact missing path (e.g., `applicant.address.city`). The evaluator emits `UNDETERMINED` with `missingPaths` populated so orchestrators can decide whether to retry, fetch more data, or route to a human.
 
-**Current behavior:** ✅ Already handled gracefully
-```java
-if (val == null) {
-    return createMissingResult(path);
-}
-```
-
-**Keep this pattern!** It's already correct.
+### Summary
+| Scenario             | State Returned   | Logging Level | Notes |
+|----------------------|------------------|---------------|-------|
+| Unknown operator     | `UNDETERMINED`   | `WARN`        | Stops evaluating the offending operator but keeps processing the rest of the specification. |
+| Type mismatch        | `NOT_MATCHED`    | `WARN`/`DEBUG`| Operator returns `false`; severe exceptions escalate to `UNDETERMINED`. |
+| Invalid regex        | `NOT_MATCHED` or `UNDETERMINED` | `WARN` | Compile errors yield `NOT_MATCHED`; runtime regex errors escalate to `UNDETERMINED`. |
+| Missing data         | `UNDETERMINED`   | `DEBUG`/`WARN`| `missingPaths` enumerates absent fields. |
 
 ---
 
 ## Strict vs Lenient Modes (Future Enhancement)
 
-### Lenient Mode (Default - Recommended for v1.0)
+### Lenient Mode (Current Default)
 - Unknown operators → UNDETERMINED + warn
-- Type mismatches → UNDETERMINED + warn
-- Invalid patterns → UNDETERMINED + warn
+- Type mismatches → NOT_MATCHED + warn (mirrors MongoDB behavior)
+- Invalid patterns → NOT_MATCHED + warn (compile errors) / UNDETERMINED (runtime errors)
 - Missing data → UNDETERMINED
 - **Never throws exceptions**
 
@@ -345,14 +285,12 @@ if (val == null) {
 - Missing data → Still UNDETERMINED (not an error)
 - **Fail fast for development/testing**
 
-**Configuration (future):**
+**Configuration (future idea):**
 ```java
-CriterionEvaluator evaluator = CriterionEvaluator.builder()
-    .strictMode(true)  // Throw exceptions instead of UNDETERMINED
-    .build();
+CriterionEvaluator evaluator = CriterionEvaluatorFactory.strict(); // hypothetical
 ```
 
-**For v1.0:** Implement lenient mode only. Add strict mode later if needed.
+**Status:** Only lenient mode ships today; strict mode remains on the roadmap.
 
 ---
 
@@ -398,144 +336,36 @@ if (!(operand instanceof List)) {
 
 ```java
 public record EvaluationOutcome(
-    String specificationId,
-    List<EvaluationResult> criterionResults,
-    List<CriteriaGroupResult> criteriaGroupResults,
-    EvaluationSummary summary  // NEW
-)
+        String specificationId,
+        List<EvaluationResult> results,
+        EvaluationSummary summary) {
+
+    public EvaluationOutcome {
+        results = results != null ? List.copyOf(results) : List.of();
+    }
+}
 
 public record EvaluationSummary(
-    int total,
-    int matched,
-    int notMatched,
-    int undetermined,     // NEW - count of criteria that couldn't evaluate
-    boolean fullyDetermined    // true if all criteria evaluated successfully
-)
+        int total,
+        int matched,
+        int notMatched,
+        int undetermined,
+        boolean fullyDetermined) {
+
+    public static EvaluationSummary from(Iterable<EvaluationResult> results) { ... }
+}
 ```
 
 **Benefits:**
-- See at a glance if any criteria failed to evaluate
-- Detect partial evaluations
-- Make informed decisions about result confidence
+- Summaries tell you instantly whether the evaluation was fully determined.
+- Consumers iterate `outcome.results()` to inspect both query and composite criteria without juggling separate collections.
+- Helper methods (`EvaluationOutcome.find`, `findQuery`, `findComposite`, etc.) simplify targeted lookups while maintaining immutability.
 
 ---
 
-## Updated Priority 1: Error Handling
+## Future Enhancments
 
-### Week 1 Tasks (Revised)
-
-**Instead of throwing exceptions, implement graceful degradation:**
-
-1. ✅ **Add tri-state evaluation model**
-   - Add `EvaluationState` enum (MATCHED / NOT_MATCHED / UNDETERMINED)
-   - Update `EvaluationResult` with state and failureReason
-   - Keep backward compatibility with `matched()` method
-
-2. ✅ **Handle unknown operators gracefully**
-   - Return UNDETERMINED instead of printing to stderr
-   - Add warning log with operator name and criterion ID
-   - Track failure reason for debugging
-
-3. ✅ **Handle type mismatches gracefully**
-   - Check types before casting
-   - Return UNDETERMINED on type errors
-   - Add warning log with expected vs actual types
-
-4. ✅ **Handle invalid patterns gracefully**
-   - Wrap regex compilation in try-catch
-   - Return UNDETERMINED on PatternSyntaxException
-   - Add warning log with pattern and error
-
-5. ✅ **Add SLF4J logging**
-   - Replace all `System.err.println()` with logger.warn()
-   - Add INFO logging for specification evaluation
-   - Add DEBUG logging for criterion evaluation
-   - Keep library neutral (SLF4J API only)
-
-6. ✅ **Add evaluation summary**
-   - Track determined vs undetermined criteria
-   - Add `fullyDetermined` flag to outcome
-   - Help users detect partial evaluations
-
----
-
-## Testing Strategy
-
-### Test Cases for Graceful Degradation
-
-```java
-@Test
-void unknownOperator_shouldReturnUndetermined() {
-    Criterion criterion = new Criterion("test", Map.of("age", Map.of("$unknown", 18)));
-    EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
-
-    assertEquals(EvaluationState.UNDETERMINED, result.state());
-    assertThat(result.failureReason()).contains("Unknown operator: $unknown");
-}
-
-@Test
-void typeMismatch_shouldReturnUndetermined() {
-    Criterion criterion = new Criterion("test", Map.of("age", Map.of("$in", "not-a-list")));
-    EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
-
-    assertEquals(EvaluationState.UNDETERMINED, result.state());
-    assertThat(result.failureReason()).contains("Type mismatch");
-}
-
-@Test
-void invalidRegex_shouldReturnUndetermined() {
-    Criterion criterion = new Criterion("test", Map.of("name", Map.of("$regex", "[invalid")));
-    EvaluationResult result = evaluator.evaluateCriterion(document, criterion);
-
-    assertEquals(EvaluationState.UNDETERMINED, result.state());
-    assertThat(result.failureReason()).contains("Invalid regex");
-}
-
-@Test
-void missingData_shouldReturnUndetermined() {
-    Map<String, Object> doc = Map.of(); // empty
-    Criterion criterion = new Criterion("test", Map.of("age", Map.of("$gt", 18)));
-    EvaluationResult result = evaluator.evaluateCriterion(doc, criterion);
-
-    assertEquals(EvaluationState.UNDETERMINED, result.state());
-    assertThat(result.missingPaths()).contains("age");
-}
-
-@Test
-void multipleCriteria_oneUndetermined_shouldContinue() {
-    List<Criterion> criteria = List.of(
-        new Criterion("good", Map.of("age", Map.of("$eq", 25))),
-        new Criterion("bad", Map.of("age", Map.of("$unknown", 18))),  // Unknown operator
-        new Criterion("good2", Map.of("name", Map.of("$eq", "John")))
-    );
-
-    EvaluationOutcome outcome = evaluator.evaluate(document,
-        new Specification("spec", criteria, List.of()));
-
-    // All 3 criteria should have results
-    assertEquals(3, outcome.criterionResults().size());
-
-    // One should be UNDETERMINED
-    assertEquals(1, outcome.summary().undeterminedCriteria());
-    assertFalse(outcome.summary().fullyDetermined());
-
-    // Other two should have valid states
-    assertEquals(2, outcome.summary().matchedCriteria() + outcome.summary().notMatchedCriteria());
-}
-```
-
----
-
-## Migration Path
-
-### Phase 1: v0.x → v1.0 (Lenient Mode Only)
-1. Add `EvaluationState` enum
-2. Update `EvaluationResult` (breaking change OK)
-3. Implement graceful degradation everywhere
-4. Replace stderr with SLF4J logging
-5. Add comprehensive tests
-
-### Phase 2: v1.1+ (Add Strict Mode - Future)
+### Phase 2: v1.1+ (Add Strict Mode)
 1. Add `StrictMode` configuration option
 2. Create exception hierarchy for strict mode
 3. Make strict mode opt-in
@@ -552,12 +382,3 @@ void multipleCriteria_oneUndetermined_shouldContinue() {
 - ✅ All failures logged for debugging
 - ✅ Partial evaluation clearly indicated
 - ✅ Future: opt-in strict mode for development
-
-**Key Changes:**
-1. Add `EvaluationState` enum
-2. Update `EvaluationResult` with state + failureReason
-3. Return UNDETERMINED instead of throwing
-4. Add SLF4J logging (warn on failures)
-5. Track evaluation completeness
-
-This design maintains backward compatibility while adding the graceful degradation contract you need.
