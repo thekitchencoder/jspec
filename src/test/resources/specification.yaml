@@ -18,11 +18,11 @@ criteria:
     junction: AND
     criteria:
       # Reference existing criteria
-      - id: minimum-order-value
+      - ref: minimum-order-value
 
-      - id: customer-verified
+      - ref: customer-verified
 
-      - id: shipping-eligible
+      - ref: shipping-eligible
 
       # Inline query criterion
       - id: prime-member

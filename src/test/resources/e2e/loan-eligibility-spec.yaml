@@ -95,37 +95,37 @@ criteria:
   - id: basic-eligibility
     junction: AND
     criteria:
-      - id: age-minimum
-      - id: age-maximum
-      - id: employment-status
-      - id: not-bankrupt
+      - ref: age-minimum
+      - ref: age-maximum
+      - ref: employment-status
+      - ref: not-bankrupt
 
   # Either good credit OR diverse income sources
   - id: financial-strength
     junction: OR
     criteria:
-      - id: credit-score-good
-      - id: income-sources-diverse
+      - ref: credit-score-good
+      - ref: income-sources-diverse
 
   # All location and industry checks
   - id: location-industry-checks
     junction: AND
     criteria:
-      - id: residence-in-approved-states
-      - id: no-excluded-industries
+      - ref: residence-in-approved-states
+      - ref: no-excluded-industries
 
   # Contact validation
   - id: contact-validation
     junction: AND
     criteria:
-      - id: email-exists
-      - id: email-format-valid
-      - id: phone-type-check
+      - ref: email-exists
+      - ref: email-format-valid
+      - ref: phone-type-check
 
   # Premium customer indicators (at least one)
   - id: premium-indicators
     junction: OR
     criteria:
-      - id: has-previous-loans
-      - id: employer-name
-      - id: income-range
+      - ref: has-previous-loans
+      - ref: employer-name
+      - ref: income-range

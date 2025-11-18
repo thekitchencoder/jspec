@@ -15,6 +15,6 @@ criteria:
   - id: eligibility
     junction: AND
     criteria:
-      - id: age-check
-      - id: status-check
-      - id: email-exists
+      - ref: age-check
+      - ref: status-check
+      - ref: email-exists
