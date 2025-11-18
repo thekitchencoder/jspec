@@ -36,7 +36,7 @@ Add the dependency to your `pom.xml`:
 
 ### Basic Usage
 
-1. **Define a `Specification`** containing your criteria. You can write it as YAML/JSON or construct it programmatically.
+1. **Define a `Specification`** containing your criteria. You can write it as YAML/JSON or construct it programmatically. Each entry is auto-typed: a `query` map becomes a `QueryCriterion`, a `junction` block becomes a `CompositeCriterion`, and `ref` entries reference previously defined criteria (so they only evaluate once).
 
     ```yaml
     # specification.yaml
@@ -49,10 +49,11 @@ Add the dependency to your `pom.xml`:
       - id: customer-verified
         query:
           customer.verified: true
-    criteriaGroups:
       - id: express-shipping-eligible
         junction: AND
-        criteria: [minimum-order, customer-verified]
+        criteria:
+          - ref: minimum-order
+          - ref: customer-verified
     ```
 
 2. **Instantiate the evaluator** and inspect the tri-state results.
@@ -60,6 +61,8 @@ Add the dependency to your `pom.xml`:
     ```java
     import com.fasterxml.jackson.databind.ObjectMapper;
     import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+    import java.io.File;
+    import java.util.Map;
     import uk.codery.jspec.evaluator.SpecificationEvaluator;
     import uk.codery.jspec.model.Specification;
     import uk.codery.jspec.result.EvaluationOutcome;
@@ -89,7 +92,7 @@ For deeper dives, read the docs in `docs/`:
 - **[Supported Operators](docs/OPERATORS.md)** – Reference for all 14 MongoDB-style operators.
 - **[Evaluation Model](docs/EVALUATION_MODEL.md)** – How the tri-state pipeline surfaces errors without throwing.
 - **[Architecture](docs/ARCHITECTURE.md)** – Core records, evaluators, and thread-safety guidance.
-- **[General Use Cases](docs/usecases.md)** – Practical scenarios for embedding JSPEC.
+- **[General Use Cases](docs/USECASES.md)** – Practical scenarios for embedding JSPEC.
 - **[AI Use Cases](docs/AI_USECASES.md)** – Synthesized guidance for guardrails, hybrid-symbolic patterns, and agent routing.
 - **[JavaDoc](https://javadoc.io/doc/uk.codery/jspec)** – Full API reference.
 
