@@ -177,6 +177,37 @@ Uses dot notation to traverse nested maps:
 - `order.shipping.country` → `document.get("order").get("shipping").get("country")`
 - Implemented in `CriterionEvaluator.navigate()` method
 
+### 5. Context-Document References
+
+`$contextPath` is an **operand sentinel** (not an operator, not a junction) — a late-bound reference into a separately-supplied context document. Use it when one specification needs to be scored against many context documents (for example, matching a single claim against each of several candidate identities).
+
+**Operand shape:**
+
+```java
+Map.of("email", Map.of("$eq", Map.of("$contextPath", "candidate.email")))
+```
+
+**Two-stage architecture:**
+- **Normalised once** at `SpecificationEvaluator` construction time. `SpecificationNormaliser` walks each `QueryCriterion.query()` and replaces every `{ "$contextPath": "..." }` map literal with a typed `ContextPathReference` record. Sentinel detection never enters the per-evaluation hot path.
+- **Resolved per-evaluation** by `ContextPathResolver` from inside `QueryCriterion.evaluate`. The resolver walks the normalised query and, for each `ContextPathReference`, looks the dot-notation path up against the context document supplied to `evaluator.evaluate(target, context)`.
+
+**Missing-path semantics:** if any `$contextPath` operand fails to resolve, the containing criterion short-circuits to `UNDETERMINED` and the unresolved path is recorded as `context.<path>` in `missingPaths` — mirroring how target-document misses are surfaced.
+
+**API:** the new two-arg form `evaluator.evaluate(target, context)` accepts both documents; the single-arg `evaluate(target)` is sugar that passes `Map.of()` as the context.
+
+```java
+Specification spec = new Specification("same-email", List.of(
+    new QueryCriterion("match",
+        Map.of("email", Map.of("$eq", Map.of("$contextPath", "candidate.email"))))));
+SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+EvaluationOutcome outcome = evaluator.evaluate(
+    Map.of("email", "a@b.com"),
+    Map.of("candidate", Map.of("email", "a@b.com")));
+// outcome.summary().matched() == 1
+```
+
+See the **Operator System** section above for the distinct concept of MongoDB-style operators.
+
 ## Terminology & Naming Decisions
 
 ### Project Evolution: "Rules" → "Criteria" (November 2025)
@@ -846,8 +877,8 @@ For questions about this codebase:
 
 ---
 
-**Last Updated**: 2025-11-17 (v0.4.0: Enhanced EvaluationOutcome API with Optional-based lookups and convenience methods)
-**Version**: 0.4.0
+**Last Updated**: 2026-05-13 (v0.5.0: $contextPath operand sentinel for context-document evaluation)
+**Version**: 0.5.0
 **Java Version**: 21
 **Total Lines of Code**: ~1500 (main source)
 **Test Files**: 15 test files with comprehensive coverage
