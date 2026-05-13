@@ -193,6 +193,8 @@ Map.of("email", Map.of("$eq", Map.of("$contextPath", "candidate.email")))
 
 **Missing-path semantics:** if any `$contextPath` operand fails to resolve, the containing criterion short-circuits to `UNDETERMINED` and the unresolved path is recorded as `context.<path>` in `missingPaths` — mirroring how target-document misses are surfaced.
 
+**Present-but-null vs missing:** `ContextPathResolver` treats a path whose *final* segment is present-but-`null` as a successful resolution that yields `null` to the operator (so `$eq: null` will compare against `null`). A path with a missing intermediate or terminal entry is treated as unresolved and short-circuits the criterion to `UNDETERMINED`. The distinction is meaningful: if you want a missing context value to make the criterion `UNDETERMINED`, omit the key entirely rather than setting it to `null`.
+
 **API:** the new two-arg form `evaluator.evaluate(target, context)` accepts both documents; the single-arg `evaluate(target)` is sugar that passes `Map.of()` as the context.
 
 ```java

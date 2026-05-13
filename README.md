@@ -112,6 +112,8 @@ EvaluationOutcome outcome = evaluator.evaluate(target, context);
 
 If a `$contextPath` operand fails to resolve, the containing criterion becomes `UNDETERMINED` and the unresolved path is recorded as `context.<path>` in the result's `missingPaths` — consistent with how target-document misses are surfaced.
 
+A path whose final segment is present-but-`null` resolves successfully and yields `null` to the operator (so `$eq: null` works); a path with a missing entry is unresolved and short-circuits to `UNDETERMINED`. Omit a key entirely if you want the criterion to be `UNDETERMINED` rather than compared against `null`.
+
 The sentinel works identically in YAML specifications — just write `$contextPath: candidate.email` wherever an operand value would appear.
 
 ## Documentation
