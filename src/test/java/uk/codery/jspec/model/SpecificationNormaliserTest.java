@@ -70,4 +70,30 @@ class SpecificationNormaliserTest {
                 UnsupportedOperationException.class,
                 () -> normalised.put("x", "y"));
     }
+
+    @Test
+    void nullValueInsideMapDoesNotThrow() {
+        // Regression: bare YAML keys produce {key: null}; must pass through.
+        java.util.Map<String, Object> query = new java.util.HashMap<>();
+        query.put("$eq", null);
+        Object normalised = SpecificationNormaliser.normalise(query);
+        assertThat(((Map<?, ?>) normalised).get("$eq")).isNull();
+    }
+
+    @Test
+    void sentinelKeyWithNullValueIsTreatedAsPlainMap() {
+        // YAML "$contextPath:" with no value → {$contextPath: null}.
+        // Must NOT throw; must NOT produce a ContextPathReference.
+        java.util.Map<String, Object> query = new java.util.HashMap<>();
+        query.put("$contextPath", null);
+        Object normalised = SpecificationNormaliser.normalise(query);
+        assertThat(normalised).isInstanceOf(Map.class);
+        assertThat(((Map<?, ?>) normalised).containsKey("$contextPath")).isTrue();
+        assertThat(((Map<?, ?>) normalised).get("$contextPath")).isNull();
+    }
+
+    @Test
+    void normaliseAcceptsTopLevelNull() {
+        assertThat(SpecificationNormaliser.normalise(null)).isNull();
+    }
 }
