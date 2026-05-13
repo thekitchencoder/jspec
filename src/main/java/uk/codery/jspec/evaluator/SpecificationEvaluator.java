@@ -241,10 +241,54 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      * @see EvaluationContext
      */
     public EvaluationOutcome evaluate(Object document) {
+        return evaluate(document, Map.of());
+    }
+
+    /**
+     * Evaluates the bound specification against a target document, with a separate
+     * context document supplied for resolving {@code $contextPath} operand references.
+     *
+     * <p>This is the two-arg form of {@link #evaluate(Object)}. The single-arg form
+     * delegates to this method with an empty context document ({@code Map.of()}).
+     *
+     * <h3>Context References</h3>
+     * <p>When a criterion's operand contains a {@code { "$contextPath": "a.b.c" }}
+     * sentinel (normalised to a {@link uk.codery.jspec.model.ContextPathReference} at
+     * construction time), the path is resolved against {@code contextDoc} — not against
+     * the target {@code document}. This separates the data being evaluated from the
+     * values used to parameterise the criteria.
+     *
+     * <h3>Example:</h3>
+     * <pre>{@code
+     * Specification spec = new Specification("same-email", List.of(
+     *     new QueryCriterion("match",
+     *         Map.of("email", Map.of("$eq", Map.of("$contextPath", "candidate.email"))))
+     * ));
+     * SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+     *
+     * Map<String, Object> target  = Map.of("email", "a@b.com");
+     * Map<String, Object> context = Map.of("candidate", Map.of("email", "a@b.com"));
+     *
+     * EvaluationOutcome outcome = evaluator.evaluate(target, context);
+     * // outcome.summary().matched() == 1
+     * }</pre>
+     *
+     * <h3>Thread Safety:</h3>
+     * <p>This method is thread-safe and can be called concurrently from multiple threads.
+     *
+     * @param document the target document to evaluate (typically a Map, but can be any Object)
+     * @param contextDoc the context document used to resolve {@code $contextPath} operand
+     *                   references; pass {@code Map.of()} when no context references are used
+     * @return evaluation outcome with results and summary
+     * @see #evaluate(Object)
+     * @see EvaluationContext
+     * @see uk.codery.jspec.model.ContextPathReference
+     */
+    public EvaluationOutcome evaluate(Object document, Object contextDoc) {
         log.info("Starting evaluation of specification '{}'", specification.id());
 
-        // Create evaluation context with result cache
-        EvaluationContext context = new EvaluationContext(criterionEvaluator);
+        // Create evaluation context with result cache and context document
+        EvaluationContext context = new EvaluationContext(criterionEvaluator, contextDoc);
 
         // Evaluate all criteria in parallel
         // The context handles caching and reference resolution
