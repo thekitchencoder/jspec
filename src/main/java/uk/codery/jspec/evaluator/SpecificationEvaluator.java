@@ -1,13 +1,16 @@
 package uk.codery.jspec.evaluator;
 
 import lombok.extern.slf4j.Slf4j;
+import uk.codery.jspec.model.Criterion;
 import uk.codery.jspec.model.QueryCriterion;
 import uk.codery.jspec.model.Specification;
+import uk.codery.jspec.model.SpecificationNormaliser;
 import uk.codery.jspec.result.EvaluationOutcome;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationSummary;
 
 import java.util.List;
+import java.util.Map;
 
 import static java.util.function.Predicate.not;
 
@@ -145,6 +148,20 @@ import static java.util.function.Predicate.not;
 public record SpecificationEvaluator(Specification specification, CriterionEvaluator criterionEvaluator) {
 
     /**
+     * Canonical constructor that normalises the bound specification's query
+     * criteria, replacing raw {@code { "$contextPath": "..." }} maps with typed
+     * {@link uk.codery.jspec.model.ContextPathReference} instances. This shifts
+     * sentinel detection out of the per-evaluation hot path.
+     *
+     * @param specification the specification to bind (normalised before storing)
+     * @param criterionEvaluator the criterion evaluator to use for query evaluation
+     */
+    public SpecificationEvaluator(Specification specification, CriterionEvaluator criterionEvaluator) {
+        this.specification = normalise(specification);
+        this.criterionEvaluator = criterionEvaluator;
+    }
+
+    /**
      * Creates a SpecificationEvaluator with default built-in operators.
      *
      * <p>This is the recommended constructor for most use cases.
@@ -156,6 +173,23 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      */
     public SpecificationEvaluator(Specification specification) {
         this(specification, new CriterionEvaluator());
+    }
+
+    private static Specification normalise(Specification spec) {
+        List<Criterion> criteria = spec.criteria().stream()
+                .map(SpecificationEvaluator::normaliseCriterion)
+                .toList();
+        return new Specification(spec.id(), criteria);
+    }
+
+    private static Criterion normaliseCriterion(Criterion c) {
+        if (c instanceof QueryCriterion q) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> normalised =
+                    (Map<String, Object>) SpecificationNormaliser.normalise(q.query());
+            return new QueryCriterion(q.id(), normalised);
+        }
+        return c; // CompositeCriterion / CriterionReference contain no operand literals
     }
 
     /**
