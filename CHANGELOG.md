@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-03
+
+### Added
+- **`$contextPath` operand sentinel for context-document evaluation.** A query operand
+  shaped `{ "$contextPath": "<dot.path>" }` is a late-bound reference into a separately
+  supplied context document, resolved per-evaluation — letting one specification be scored
+  against many context documents (e.g. matching a claim against each candidate identity).
+- **Two-arg `evaluate(target, context)`** on `SpecificationEvaluator`; the single-arg
+  `evaluate(target)` is sugar passing `Map.of()` as the context.
+- **`ContextPathReference`** model type, normalised once at construction by
+  `SpecificationNormaliser` and resolved per-evaluation by `ContextPathResolver`. Serialises
+  losslessly to/from the `{ "$contextPath": "..." }` shape.
+- **Present-but-null vs missing semantics:** a context path whose final segment is present
+  and `null` resolves to `null` (so `$eq: null` compares against `null`); a path with a
+  missing intermediate or terminal entry leaves the criterion `UNDETERMINED`.
+
 ### Fixed
 - **`$or` / `$and` now follow Strong Kleene (K3) logic.** The boolean combinators
   previously collapsed an `UNDETERMINED` branch to "not matched", so a criterion

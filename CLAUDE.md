@@ -890,8 +890,8 @@ For questions about this codebase:
 
 ---
 
-**Last Updated**: 2026-05-13 (v0.5.0: $contextPath operand sentinel for context-document evaluation)
-**Version**: 0.5.0
+**Last Updated**: 2026-06-03 (v0.6.0: $contextPath context-document evaluation + Strong Kleene $or/$and)
+**Version**: 0.6.0
 **Java Version**: 21
 **Total Lines of Code**: ~1500 (main source)
 **Test Files**: 15 test files with comprehensive coverage
