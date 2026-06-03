@@ -715,6 +715,17 @@ A: Check that operand type matches operator expectations (e.g., `$in` needs List
 **Q: Parallel evaluation issues**
 A: Ensure documents are thread-safe (use immutable collections).
 
+**Q: `evaluator.specification()` isn't equal to the spec I passed in**
+A: This is expected. `SpecificationEvaluator` is a record whose constructor stores the
+*normalised* specification: every `{ "$contextPath": "..." }` operand literal is replaced
+with a typed `ContextPathReference`. So `evaluator.specification()` is structurally
+different from the constructor argument (the affected query maps hold `ContextPathReference`
+values, not raw `Map<String, String>`), and `evaluator.specification().equals(originalSpec)`
+will be `false` for any spec that uses `$contextPath`. Serialisation is still lossless —
+`ContextPathReference` round-trips back to the `{ "$contextPath": "..." }` shape — and
+re-binding `new SpecificationEvaluator(evaluator.specification())` is idempotent. Don't rely
+on reference or value equality between the returned spec and the one you passed in.
+
 ### Debugging Tips
 
 1. **Enable DEBUG logging**: Set SLF4J level to DEBUG to see individual criterion evaluations

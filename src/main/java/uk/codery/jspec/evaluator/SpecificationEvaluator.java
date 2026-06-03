@@ -195,6 +195,8 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      */
     @Override
     public Specification specification() {
+        // Override exists only to attach the Javadoc above — the body is identical to
+        // the record's auto-generated accessor; no structural behaviour here.
         return specification;
     }
 
