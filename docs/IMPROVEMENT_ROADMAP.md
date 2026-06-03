@@ -814,3 +814,32 @@ examples/
 - ✅ Documentation (README, JavaDoc, design docs)
 
 **Remaining work:** Only optional nice-to-haves (examples, Maven Central publishing)
+
+---
+
+## Known limitations of `$contextPath`
+
+The `$contextPath` operand sentinel (added in v0.5.0) is feature-complete and well-tested. Two sharp edges noted here have since been resolved (see CHANGELOG [Unreleased]).
+
+1. ✅ **`$or` branch false-positives** — **RESOLVED.** A missing `$contextPath` inside one
+   `$or`/`$and` branch no longer short-circuits the whole criterion to `UNDETERMINED`.
+   Resolution now leaves an `UnresolvedReference` sentinel in place and the evaluator
+   combines branches with Strong Kleene logic, so a matching `$or` branch wins despite an
+   unresolved sibling and a definitively-false `$and` resolves to `NOT_MATCHED`. This also
+   fixed the underlying gap that `$or`/`$and` were boolean rather than tri-state.
+   Note: the originally-suggested "resolve per-branch, escalate only if every branch is
+   missing" fix would have been incorrect — dropping a missing branch and OR-ing the rest
+   yields `NOT_MATCHED` where K3 requires `UNDETERMINED` (`NOT_MATCHED ∨ UNDET`). The
+   missing-ness has to be carried into evaluation as a branch-level `UNDETERMINED`, which
+   is what the sentinel approach does. See `OrAndKleeneSemanticsTest`.
+
+2. ✅ **Allocation cost on plain (sentinel-free) queries** — **RESOLVED.** `ContextPathResolver`
+   now tracks whether any rewrite happened and returns the original immutable sub-tree by
+   reference when no `$contextPath` operand is present; `QueryCriterion.evaluate` reuses the
+   existing criterion rather than allocating a resolved copy.
+
+   Scope note: this removes the *per-evaluation* allocation. `SpecificationNormaliser.normalise`
+   still allocates a fresh `LinkedHashMap` per query map *once* at `SpecificationEvaluator`
+   construction, even for sentinel-free specs. That one-time cost is deliberately left as-is —
+   the same reference-equality guard could be added there if construction ever shows up in a
+   profile, but it does not sit on the hot path.

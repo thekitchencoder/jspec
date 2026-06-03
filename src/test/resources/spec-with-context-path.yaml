@@ -1,0 +1,12 @@
+id: claim-vs-candidate
+criteria:
+  - id: same-email
+    query:
+      email:
+        $eq:
+          $contextPath: candidate.email
+  - id: same-country
+    query:
+      country:
+        $eq:
+          $contextPath: candidate.country

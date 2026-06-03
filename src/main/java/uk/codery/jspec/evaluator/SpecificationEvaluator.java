@@ -1,13 +1,17 @@
 package uk.codery.jspec.evaluator;
 
 import lombok.extern.slf4j.Slf4j;
+import uk.codery.jspec.model.ContextPathReference;
+import uk.codery.jspec.model.Criterion;
 import uk.codery.jspec.model.QueryCriterion;
 import uk.codery.jspec.model.Specification;
+import uk.codery.jspec.model.SpecificationNormaliser;
 import uk.codery.jspec.result.EvaluationOutcome;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationSummary;
 
 import java.util.List;
+import java.util.Map;
 
 import static java.util.function.Predicate.not;
 
@@ -145,6 +149,20 @@ import static java.util.function.Predicate.not;
 public record SpecificationEvaluator(Specification specification, CriterionEvaluator criterionEvaluator) {
 
     /**
+     * Canonical constructor that normalises the bound specification's query
+     * criteria, replacing raw {@code { "$contextPath": "..." }} maps with typed
+     * {@link uk.codery.jspec.model.ContextPathReference} instances. This shifts
+     * sentinel detection out of the per-evaluation hot path.
+     *
+     * @param specification the specification to bind (normalised before storing)
+     * @param criterionEvaluator the criterion evaluator to use for query evaluation
+     */
+    public SpecificationEvaluator(Specification specification, CriterionEvaluator criterionEvaluator) {
+        this.specification = normalise(specification);
+        this.criterionEvaluator = criterionEvaluator;
+    }
+
+    /**
      * Creates a SpecificationEvaluator with default built-in operators.
      *
      * <p>This is the recommended constructor for most use cases.
@@ -156,6 +174,47 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      */
     public SpecificationEvaluator(Specification specification) {
         this(specification, new CriterionEvaluator());
+    }
+
+    /**
+     * Returns the bound specification in its <em>normalised</em> form — this is not
+     * the identical object passed to the constructor.
+     *
+     * <p>Each {@code { "$contextPath": "..." }} operand literal has been replaced with a
+     * typed {@link ContextPathReference}, so in memory the affected
+     * {@link QueryCriterion#query()} maps hold {@code ContextPathReference} values where
+     * the original held raw {@code Map<String, String>} sentinels. Callers that inspect
+     * operand types directly should expect this.
+     *
+     * <p>Serialisation is lossless: {@code ContextPathReference} round-trips back to the
+     * {@code { "$contextPath": "..." }} shape (see {@code ContextPathReferenceRoundTripTest}),
+     * and re-binding via {@code new SpecificationEvaluator(evaluator.specification())} is
+     * idempotent because normalisation leaves already-typed references untouched.
+     *
+     * @return the normalised specification bound to this evaluator
+     */
+    @Override
+    public Specification specification() {
+        // Override exists only to attach the Javadoc above — the body is identical to
+        // the record's auto-generated accessor; no structural behaviour here.
+        return specification;
+    }
+
+    private static Specification normalise(Specification spec) {
+        List<Criterion> criteria = spec.criteria().stream()
+                .map(SpecificationEvaluator::normaliseCriterion)
+                .toList();
+        return new Specification(spec.id(), criteria);
+    }
+
+    private static Criterion normaliseCriterion(Criterion c) {
+        if (c instanceof QueryCriterion q) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> normalised =
+                    (Map<String, Object>) SpecificationNormaliser.normalise(q.query());
+            return new QueryCriterion(q.id(), normalised);
+        }
+        return c; // CompositeCriterion / CriterionReference contain no operand literals
     }
 
     /**
@@ -207,10 +266,54 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      * @see EvaluationContext
      */
     public EvaluationOutcome evaluate(Object document) {
+        return evaluate(document, Map.of());
+    }
+
+    /**
+     * Evaluates the bound specification against a target document, with a separate
+     * context document supplied for resolving {@code $contextPath} operand references.
+     *
+     * <p>This is the two-arg form of {@link #evaluate(Object)}. The single-arg form
+     * delegates to this method with an empty context document ({@code Map.of()}).
+     *
+     * <h3>Context References</h3>
+     * <p>When a criterion's operand contains a {@code { "$contextPath": "a.b.c" }}
+     * sentinel (normalised to a {@link uk.codery.jspec.model.ContextPathReference} at
+     * construction time), the path is resolved against {@code contextDoc} — not against
+     * the target {@code document}. This separates the data being evaluated from the
+     * values used to parameterise the criteria.
+     *
+     * <h3>Example:</h3>
+     * <pre>{@code
+     * Specification spec = new Specification("same-email", List.of(
+     *     new QueryCriterion("match",
+     *         Map.of("email", Map.of("$eq", Map.of("$contextPath", "candidate.email"))))
+     * ));
+     * SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+     *
+     * Map<String, Object> target  = Map.of("email", "a@b.com");
+     * Map<String, Object> context = Map.of("candidate", Map.of("email", "a@b.com"));
+     *
+     * EvaluationOutcome outcome = evaluator.evaluate(target, context);
+     * // outcome.summary().matched() == 1
+     * }</pre>
+     *
+     * <h3>Thread Safety:</h3>
+     * <p>This method is thread-safe and can be called concurrently from multiple threads.
+     *
+     * @param document the target document to evaluate (typically a Map, but can be any Object)
+     * @param contextDoc the context document used to resolve {@code $contextPath} operand
+     *                   references; pass {@code Map.of()} when no context references are used
+     * @return evaluation outcome with results and summary
+     * @see #evaluate(Object)
+     * @see EvaluationContext
+     * @see uk.codery.jspec.model.ContextPathReference
+     */
+    public EvaluationOutcome evaluate(Object document, Object contextDoc) {
         log.info("Starting evaluation of specification '{}'", specification.id());
 
-        // Create evaluation context with result cache
-        EvaluationContext context = new EvaluationContext(criterionEvaluator);
+        // Create evaluation context with result cache and context document
+        EvaluationContext context = new EvaluationContext(criterionEvaluator, contextDoc);
 
         // Evaluate all criteria in parallel
         // The context handles caching and reference resolution

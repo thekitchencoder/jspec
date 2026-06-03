@@ -1,10 +1,12 @@
 package uk.codery.jspec.model;
 
 import uk.codery.jspec.builder.CriterionBuilder;
+import uk.codery.jspec.evaluator.ContextPathResolver;
 import uk.codery.jspec.evaluator.EvaluationContext;
 import uk.codery.jspec.result.EvaluationResult;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -108,24 +110,49 @@ public record QueryCriterion(String id, Map<String, Object> query) implements Cr
 
     /**
      * Ensures the query map is immutable.
+     *
+     * <p>Uses {@code LinkedHashMap} + {@code Collections.unmodifiableMap} (rather than
+     * {@code Map.copyOf}) so that null leaf values pass through. This matters because
+     * resolved context-path references may legitimately produce {@code {$eq: null}},
+     * and {@code Map.copyOf} would NPE on such entries. Consistent with the pattern
+     * used by {@link uk.codery.jspec.model.SpecificationNormaliser} and
+     * {@link uk.codery.jspec.evaluator.ContextPathResolver}.
      */
     public QueryCriterion {
-        query = query != null ? Map.copyOf(query) : Collections.emptyMap();
+        query = query != null
+                ? Collections.unmodifiableMap(new LinkedHashMap<>(query))
+                : Collections.emptyMap();
     }
 
     /**
      * Evaluates this query criterion against a document.
      *
-     * <p>Delegates to the {@link uk.codery.jspec.evaluator.CriterionEvaluator}
-     * in the context to perform the actual MongoDB-style query matching.
+     * <p>Resolves any {@link ContextPathReference} operands against the context
+     * document first; if any references cannot be resolved, the criterion
+     * short-circuits to {@code UNDETERMINED} with the missing paths listed.
+     * Otherwise a resolved copy of this criterion is passed to the
+     * {@link uk.codery.jspec.evaluator.CriterionEvaluator} for matching.
      *
      * @param document the document to evaluate against
-     * @param context the evaluation context (provides evaluator and cache)
+     * @param context the evaluation context (provides evaluator, context doc, and cache)
      * @return the evaluation result
      */
     @Override
     public EvaluationResult evaluate(Object document, EvaluationContext context) {
-        return context.evaluator().evaluateQuery(document, this);
+        // A missing $contextPath no longer short-circuits the whole criterion. The
+        // resolver leaves an UnresolvedReference sentinel in place, and the evaluator
+        // decides per-operator whether that miss influences the outcome — so a matching
+        // $or branch can still win despite an unresolved sibling, and a definitively-
+        // false $and short-circuits to NOT_MATCHED. Missing paths are reported only
+        // when they actually leave the criterion UNDETERMINED.
+        Map<String, Object> resolvedQuery = ContextPathResolver.resolve(query, context.contextDoc());
+
+        // Fast path: a plain query (no $contextPath operands) resolves to the same
+        // map instance, so reuse this criterion rather than reallocating a copy.
+        QueryCriterion resolved = resolvedQuery == query
+                ? this
+                : new QueryCriterion(id, resolvedQuery);
+        return context.evaluator().evaluateQuery(document, resolved);
     }
 
     /**

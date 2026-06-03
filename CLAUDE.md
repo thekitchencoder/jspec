@@ -177,6 +177,39 @@ Uses dot notation to traverse nested maps:
 - `order.shipping.country` → `document.get("order").get("shipping").get("country")`
 - Implemented in `CriterionEvaluator.navigate()` method
 
+### 5. Context-Document References
+
+`$contextPath` is an **operand sentinel** (not an operator, not a junction) — a late-bound reference into a separately-supplied context document. Use it when one specification needs to be scored against many context documents (for example, matching a single claim against each of several candidate identities).
+
+**Operand shape:**
+
+```java
+Map.of("email", Map.of("$eq", Map.of("$contextPath", "candidate.email")))
+```
+
+**Two-stage architecture:**
+- **Normalised once** at `SpecificationEvaluator` construction time. `SpecificationNormaliser` walks each `QueryCriterion.query()` and replaces every `{ "$contextPath": "..." }` map literal with a typed `ContextPathReference` record. Sentinel detection never enters the per-evaluation hot path.
+- **Resolved per-evaluation** by `ContextPathResolver` from inside `QueryCriterion.evaluate`. The resolver walks the normalised query and, for each `ContextPathReference`, looks the dot-notation path up against the context document supplied to `evaluator.evaluate(target, context)`.
+
+**Missing-path semantics:** if any `$contextPath` operand fails to resolve, the containing criterion short-circuits to `UNDETERMINED` and the unresolved path is recorded as `context.<path>` in `missingPaths` — mirroring how target-document misses are surfaced.
+
+**Present-but-null vs missing:** `ContextPathResolver` treats a path whose *final* segment is present-but-`null` as a successful resolution that yields `null` to the operator (so `$eq: null` will compare against `null`). A path with a missing intermediate or terminal entry is treated as unresolved and short-circuits the criterion to `UNDETERMINED`. The distinction is meaningful: if you want a missing context value to make the criterion `UNDETERMINED`, omit the key entirely rather than setting it to `null`.
+
+**API:** the new two-arg form `evaluator.evaluate(target, context)` accepts both documents; the single-arg `evaluate(target)` is sugar that passes `Map.of()` as the context.
+
+```java
+Specification spec = new Specification("same-email", List.of(
+    new QueryCriterion("match",
+        Map.of("email", Map.of("$eq", Map.of("$contextPath", "candidate.email"))))));
+SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+EvaluationOutcome outcome = evaluator.evaluate(
+    Map.of("email", "a@b.com"),
+    Map.of("candidate", Map.of("email", "a@b.com")));
+// outcome.summary().matched() == 1
+```
+
+See the **Operator System** section above for the distinct concept of MongoDB-style operators.
+
 ## Terminology & Naming Decisions
 
 ### Project Evolution: "Rules" → "Criteria" (November 2025)
@@ -468,7 +501,7 @@ operators.put("$myOperator", (val, operand) -> {
 });
 ```
 
-**Important**: Always check types before casting. Return `false` for type mismatches (becomes UNDETERMINED).
+**Important**: Always check types before casting. Return `false` for type mismatches — a boolean operator handler that returns `false` surfaces as **NOT_MATCHED**. (UNDETERMINED is reserved for unknown operators, missing field data, unresolved `$contextPath` references, and handlers that throw — not for operand type mismatches.)
 
 ### Testing Patterns
 
@@ -682,6 +715,17 @@ A: Check that operand type matches operator expectations (e.g., `$in` needs List
 **Q: Parallel evaluation issues**
 A: Ensure documents are thread-safe (use immutable collections).
 
+**Q: `evaluator.specification()` isn't equal to the spec I passed in**
+A: This is expected. `SpecificationEvaluator` is a record whose constructor stores the
+*normalised* specification: every `{ "$contextPath": "..." }` operand literal is replaced
+with a typed `ContextPathReference`. So `evaluator.specification()` is structurally
+different from the constructor argument (the affected query maps hold `ContextPathReference`
+values, not raw `Map<String, String>`), and `evaluator.specification().equals(originalSpec)`
+will be `false` for any spec that uses `$contextPath`. Serialisation is still lossless —
+`ContextPathReference` round-trips back to the `{ "$contextPath": "..." }` shape — and
+re-binding `new SpecificationEvaluator(evaluator.specification())` is idempotent. Don't rely
+on reference or value equality between the returned spec and the one you passed in.
+
 ### Debugging Tips
 
 1. **Enable DEBUG logging**: Set SLF4J level to DEBUG to see individual criterion evaluations
@@ -846,8 +890,8 @@ For questions about this codebase:
 
 ---
 
-**Last Updated**: 2025-11-17 (v0.4.0: Enhanced EvaluationOutcome API with Optional-based lookups and convenience methods)
-**Version**: 0.4.0
+**Last Updated**: 2026-05-13 (v0.5.0: $contextPath operand sentinel for context-document evaluation)
+**Version**: 0.5.0
 **Java Version**: 21
 **Total Lines of Code**: ~1500 (main source)
 **Test Files**: 15 test files with comprehensive coverage

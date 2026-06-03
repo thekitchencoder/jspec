@@ -89,15 +89,32 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EvaluationContext {
 
     private final CriterionEvaluator evaluator;
+    private final Object contextDoc;
     private final Map<String, EvaluationResult> cache = new ConcurrentHashMap<>();
 
     /**
-     * Creates an evaluation context with the given evaluator.
+     * Creates an evaluation context with the given evaluator and an empty context document.
      *
      * @param evaluator the criterion evaluator to use for query evaluation
      */
     public EvaluationContext(CriterionEvaluator evaluator) {
+        this(evaluator, Map.of());
+    }
+
+    /**
+     * Creates an evaluation context with the given evaluator and context document.
+     *
+     * <p>The context document is the source for {@code $contextPath} references
+     * resolved during criterion evaluation. A {@code null} {@code contextDoc} is
+     * normalised to {@link Map#of()} so downstream code never has to null-check.
+     *
+     * @param evaluator the criterion evaluator to use for query evaluation
+     * @param contextDoc the context document used for resolving context-path references;
+     *                   {@code null} is normalised to an empty map
+     */
+    public EvaluationContext(CriterionEvaluator evaluator, Object contextDoc) {
         this.evaluator = evaluator;
+        this.contextDoc = contextDoc == null ? Map.of() : contextDoc;
     }
 
     /**
@@ -107,6 +124,17 @@ public class EvaluationContext {
      */
     public CriterionEvaluator evaluator() {
         return evaluator;
+    }
+
+    /**
+     * Returns the context document used for resolving {@code $contextPath} references.
+     *
+     * <p>Never returns {@code null}; an empty {@link Map} is the "no context" sentinel.
+     *
+     * @return the context document (never {@code null})
+     */
+    public Object contextDoc() {
+        return contextDoc;
     }
 
     /**

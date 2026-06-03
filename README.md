@@ -19,6 +19,7 @@ JSPEC (JSON Specification Evaluator) is a lightweight, Spring-independent Java l
 - **Deep document navigation** – Dot notation walks arbitrarily nested JSON/YAML payloads.
 - **Zero framework dependencies** – Works in plain Java applications or alongside Spring.
 - **Java 21 foundation** – Modern records, switch expressions, and immutable collections throughout.
+- **Context-document references** – `$contextPath` operand sentinel lets one specification be scored against many context documents.
 
 ## Quick Start
 
@@ -84,6 +85,36 @@ Add the dependency to your `pom.xml`:
         System.out.printf(" - %s -> %s%n", result.id(), result.state())
     );
     ```
+
+## Context-Document References
+
+`$contextPath` is an operand sentinel that defers a value lookup to a separately-supplied context document. Reach for it when the same specification needs to be evaluated against many context documents — for example, scoring a single claim against each of several candidate identities — so the criteria stay templated and only the context changes per call.
+
+```java
+import java.util.Map;
+import uk.codery.jspec.evaluator.SpecificationEvaluator;
+import uk.codery.jspec.model.QueryCriterion;
+import uk.codery.jspec.model.Specification;
+import uk.codery.jspec.result.EvaluationOutcome;
+
+Specification spec = new Specification("same-email", java.util.List.of(
+    new QueryCriterion("match",
+        Map.of("email", Map.of("$eq", Map.of("$contextPath", "candidate.email"))))));
+
+SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+Map<String, Object> target  = Map.of("email", "a@b.com");
+Map<String, Object> context = Map.of("candidate", Map.of("email", "a@b.com"));
+
+EvaluationOutcome outcome = evaluator.evaluate(target, context);
+// outcome.summary().matched() == 1
+```
+
+If a `$contextPath` operand fails to resolve, the containing criterion becomes `UNDETERMINED` and the unresolved path is recorded as `context.<path>` in the result's `missingPaths` — consistent with how target-document misses are surfaced.
+
+A path whose final segment is present-but-`null` resolves successfully and yields `null` to the operator (so `$eq: null` works); a path with a missing entry is unresolved and short-circuits to `UNDETERMINED`. Omit a key entirely if you want the criterion to be `UNDETERMINED` rather than compared against `null`.
+
+The sentinel works identically in YAML specifications — just write `$contextPath: candidate.email` wherever an operand value would appear.
 
 ## Documentation
 
