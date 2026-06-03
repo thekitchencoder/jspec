@@ -240,4 +240,30 @@ class OrAndKleeneSemanticsTest {
                 Map.of("candidate", Map.of("x", 99)));   // 5 != 99 → $eq false → $not true
         assertThat(state).isEqualTo(EvaluationState.MATCHED);
     }
+
+    // ─── $contextPath inside $elemMatch's sub-query ──────────────────────────
+
+    /** $elemMatch takes a sub-query map as its operand; an unresolved $contextPath
+     *  nested inside it is caught by collectUnresolved (which recurses the operand
+     *  map) and yields UNDETERMINED before the element scan runs. */
+    @Test
+    void elemMatchWithMissingContextPath_isUndetermined() {
+        EvaluationState state = evalWithContext(
+                Map.of("tags", Map.of("$elemMatch",
+                        Map.of("$eq", Map.of("$contextPath", "candidate.required")))),
+                Map.of("tags", List.of("gold", "silver")),
+                Map.of());   // candidate.required absent
+        assertThat(state).isEqualTo(EvaluationState.UNDETERMINED);
+    }
+
+    /** Control: with the context path present, $elemMatch matches an element normally. */
+    @Test
+    void elemMatchWithResolvableContextPath_evaluatesNormally() {
+        EvaluationState state = evalWithContext(
+                Map.of("tags", Map.of("$elemMatch",
+                        Map.of("$eq", Map.of("$contextPath", "candidate.required")))),
+                Map.of("tags", List.of("gold", "silver")),
+                Map.of("candidate", Map.of("required", "gold")));  // "gold" element matches
+        assertThat(state).isEqualTo(EvaluationState.MATCHED);
+    }
 }
