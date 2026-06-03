@@ -14,4 +14,6 @@ package uk.codery.jspec.evaluator;
  *
  * @param path the already-prefixed {@code context.<dot.path>} that failed to resolve
  */
+// Package-private by design: this sentinel is an internal evaluation detail and must
+// never escape the evaluator package or appear in a public result.
 record UnresolvedReference(String path) {}
