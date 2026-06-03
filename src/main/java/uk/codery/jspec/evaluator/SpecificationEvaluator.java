@@ -1,6 +1,7 @@
 package uk.codery.jspec.evaluator;
 
 import lombok.extern.slf4j.Slf4j;
+import uk.codery.jspec.model.ContextPathReference;
 import uk.codery.jspec.model.Criterion;
 import uk.codery.jspec.model.QueryCriterion;
 import uk.codery.jspec.model.Specification;
@@ -173,6 +174,28 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      */
     public SpecificationEvaluator(Specification specification) {
         this(specification, new CriterionEvaluator());
+    }
+
+    /**
+     * Returns the bound specification in its <em>normalised</em> form — this is not
+     * the identical object passed to the constructor.
+     *
+     * <p>Each {@code { "$contextPath": "..." }} operand literal has been replaced with a
+     * typed {@link ContextPathReference}, so in memory the affected
+     * {@link QueryCriterion#query()} maps hold {@code ContextPathReference} values where
+     * the original held raw {@code Map<String, String>} sentinels. Callers that inspect
+     * operand types directly should expect this.
+     *
+     * <p>Serialisation is lossless: {@code ContextPathReference} round-trips back to the
+     * {@code { "$contextPath": "..." }} shape (see {@code ContextPathReferenceRoundTripTest}),
+     * and re-binding via {@code new SpecificationEvaluator(evaluator.specification())} is
+     * idempotent because normalisation leaves already-typed references untouched.
+     *
+     * @return the normalised specification bound to this evaluator
+     */
+    @Override
+    public Specification specification() {
+        return specification;
     }
 
     private static Specification normalise(Specification spec) {
