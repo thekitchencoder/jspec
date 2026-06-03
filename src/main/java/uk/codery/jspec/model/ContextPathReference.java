@@ -22,7 +22,8 @@ import java.util.Map;
  * via {@link #toJson()} and reconstructs it via {@link #fromJson(Map)} so that
  * formatters and round-trips preserve the on-disk shape.
  *
- * @param path dot-notation path into the context document; must be non-blank
+ * @param path dot-notation path into the context document; must be non-blank and
+ *             free of empty segments (no leading, trailing, or doubled {@code '.'})
  */
 public record ContextPathReference(String path) {
 
@@ -31,6 +32,13 @@ public record ContextPathReference(String path) {
     public ContextPathReference {
         if (path == null || path.isBlank()) {
             throw new IllegalArgumentException("ContextPathReference path must be non-blank");
+        }
+        // A leading/trailing/doubled dot yields an empty segment under split("\\."),
+        // which would silently miss against the context document. Reject at construction
+        // so spec authors get a clear error instead of a confusing "context..foo" miss.
+        if (path.startsWith(".") || path.endsWith(".") || path.contains("..")) {
+            throw new IllegalArgumentException(
+                    "ContextPathReference path must not have empty segments (no leading/trailing/doubled '.'), got: " + path);
         }
     }
 
@@ -54,11 +62,14 @@ public record ContextPathReference(String path) {
      */
     @JsonCreator
     public static ContextPathReference fromJson(Map<String, Object> map) {
-        Object value = map.get(SENTINEL_KEY);
+        // Must agree with ContextPathReferences.fromOperand: the sentinel is the SOLE key.
+        // Otherwise the normaliser would treat a multi-key map as a plain query map while
+        // a Jackson round-trip resurrected it as a reference — the two paths must not diverge.
+        Object value = map.size() == 1 ? map.get(SENTINEL_KEY) : null;
         if (!(value instanceof String s) || s.isBlank()) {
             throw new IllegalArgumentException(
                     "ContextPathReference must be of shape { \"" + SENTINEL_KEY
-                            + "\": <non-blank String> }, got " + map);
+                            + "\": <non-blank String> } with no other keys, got " + map);
         }
         return new ContextPathReference(s);
     }
