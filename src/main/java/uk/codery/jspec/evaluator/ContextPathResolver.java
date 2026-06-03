@@ -10,9 +10,11 @@ import java.util.Map;
 
 /**
  * Walks a normalised query tree, replacing every {@link ContextPathReference}
- * with the value found at its path in the supplied context document.
- * Collects any unresolved references rather than failing fast — that way the
- * caller can report all missing paths in one go.
+ * with the value found at its path in the supplied context document. A reference
+ * that cannot be resolved is replaced with an {@link UnresolvedReference} sentinel
+ * rather than failing fast; the evaluator then decides, per operator, whether that
+ * miss actually influences the criterion's outcome (e.g. a missing operand in one
+ * {@code $or} branch does not taint a sibling branch that matched).
  */
 public final class ContextPathResolver {
 
@@ -20,23 +22,28 @@ public final class ContextPathResolver {
 
     private ContextPathResolver() {}
 
+    /**
+     * Returns a copy of {@code query} with every {@link ContextPathReference}
+     * resolved against {@code contextDoc} (or replaced with an
+     * {@link UnresolvedReference} sentinel where the path is absent). When the query
+     * contains no references the original map instance is returned unchanged, so
+     * plain specs incur zero per-evaluation reallocation.
+     */
     @SuppressWarnings("unchecked")
-    public static ResolutionResult resolve(Map<String, Object> query, Object contextDoc) {
-        List<String> missing = new ArrayList<>();
-        Object resolved = walk(query, contextDoc, missing);
-        return new ResolutionResult((Map<String, Object>) resolved, List.copyOf(missing));
+    public static Map<String, Object> resolve(Map<String, Object> query, Object contextDoc) {
+        return (Map<String, Object>) walk(query, contextDoc);
     }
 
-    private static Object walk(Object value, Object contextDoc, List<String> missing) {
+    private static Object walk(Object value, Object contextDoc) {
         if (value instanceof ContextPathReference ref) {
-            return lookup(ref, contextDoc, missing);
+            return lookup(ref, contextDoc);
         }
         if (value instanceof Map<?, ?> map) {
             Map<String, Object> out = new LinkedHashMap<>(map.size());
             boolean rewritten = false;
             for (Map.Entry<?, ?> e : map.entrySet()) {
                 Object original = e.getValue();
-                Object walked = walk(original, contextDoc, missing);
+                Object walked = walk(original, contextDoc);
                 rewritten |= walked != original;
                 out.put((String) e.getKey(), walked);
             }
@@ -52,7 +59,7 @@ public final class ContextPathResolver {
             boolean rewritten = false;
             List<Object> out = new ArrayList<>(list.size());
             for (Object v : list) {
-                Object walked = walk(v, contextDoc, missing);
+                Object walked = walk(v, contextDoc);
                 rewritten |= walked != v;
                 out.add(walked);
             }
@@ -61,16 +68,12 @@ public final class ContextPathResolver {
         return value;
     }
 
-    private static Object lookup(ContextPathReference ref, Object contextDoc, List<String> missing) {
+    private static Object lookup(ContextPathReference ref, Object contextDoc) {
         Object current = contextDoc;
         for (String segment : ref.path().split("\\.")) {
             if (!(current instanceof Map<?, ?> map) || !map.containsKey(segment)) {
-                String path = CONTEXT_PREFIX + ref.path();
-                missing.add(path);
                 // Leave a typed sentinel (not null — null is a valid resolved value).
-                // The evaluator decides per-operator whether this missing path actually
-                // influences the outcome, so resolution no longer short-circuits globally.
-                return new UnresolvedReference(path);
+                return new UnresolvedReference(CONTEXT_PREFIX + ref.path());
             }
             current = map.get(segment);
         }

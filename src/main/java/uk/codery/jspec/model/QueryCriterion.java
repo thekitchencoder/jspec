@@ -3,7 +3,6 @@ package uk.codery.jspec.model;
 import uk.codery.jspec.builder.CriterionBuilder;
 import uk.codery.jspec.evaluator.ContextPathResolver;
 import uk.codery.jspec.evaluator.EvaluationContext;
-import uk.codery.jspec.evaluator.ResolutionResult;
 import uk.codery.jspec.result.EvaluationResult;
 
 import java.util.Collections;
@@ -140,21 +139,19 @@ public record QueryCriterion(String id, Map<String, Object> query) implements Cr
      */
     @Override
     public EvaluationResult evaluate(Object document, EvaluationContext context) {
-        ResolutionResult resolution =
-                ContextPathResolver.resolve(query, context.contextDoc());
-
-        // Note: a missing $contextPath no longer short-circuits the whole criterion.
-        // The resolver leaves an UnresolvedReference sentinel in place, and the
-        // evaluator decides per-operator whether that miss influences the outcome —
-        // so a matching $or branch can still win despite an unresolved sibling, and
-        // a definitively-false $and short-circuits to NOT_MATCHED. Missing paths are
-        // reported only when they actually leave the criterion UNDETERMINED.
+        // A missing $contextPath no longer short-circuits the whole criterion. The
+        // resolver leaves an UnresolvedReference sentinel in place, and the evaluator
+        // decides per-operator whether that miss influences the outcome — so a matching
+        // $or branch can still win despite an unresolved sibling, and a definitively-
+        // false $and short-circuits to NOT_MATCHED. Missing paths are reported only
+        // when they actually leave the criterion UNDETERMINED.
+        Map<String, Object> resolvedQuery = ContextPathResolver.resolve(query, context.contextDoc());
 
         // Fast path: a plain query (no $contextPath operands) resolves to the same
         // map instance, so reuse this criterion rather than reallocating a copy.
-        QueryCriterion resolved = resolution.resolved() == query
+        QueryCriterion resolved = resolvedQuery == query
                 ? this
-                : new QueryCriterion(id, resolution.resolved());
+                : new QueryCriterion(id, resolvedQuery);
         return context.evaluator().evaluateQuery(document, resolved);
     }
 

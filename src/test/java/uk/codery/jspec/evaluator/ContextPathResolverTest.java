@@ -19,23 +19,24 @@ class ContextPathResolverTest {
                 "claim.dob",
                 Map.of("$eq", new ContextPathReference("candidate.dob")));
 
-        ResolutionResult result = ContextPathResolver.resolve(query, ctx);
+        Map<String, Object> resolved = ContextPathResolver.resolve(query, ctx);
 
-        assertThat(result.missingPaths()).isEmpty();
-        Map<?, ?> eq = (Map<?, ?>) ((Map<?, ?>) result.resolved().get("claim.dob"));
+        Map<?, ?> eq = (Map<?, ?>) resolved.get("claim.dob");
         assertThat(eq.get("$eq")).isEqualTo(dob);  // typed, not stringified
     }
 
     @Test
-    void reportsMissingPathsWithContextPrefix() {
+    void unresolvedReferenceBecomesSentinelWithContextPrefix() {
         Map<String, Object> ctx = Map.of("candidate", Map.of());  // dob absent
         Map<String, Object> query = Map.of(
                 "claim.dob",
                 Map.of("$eq", new ContextPathReference("candidate.dob")));
 
-        ResolutionResult result = ContextPathResolver.resolve(query, ctx);
+        Map<String, Object> resolved = ContextPathResolver.resolve(query, ctx);
 
-        assertThat(result.missingPaths()).containsExactly("context.candidate.dob");
+        Object eqOperand = ((Map<?, ?>) resolved.get("claim.dob")).get("$eq");
+        assertThat(eqOperand)
+                .isEqualTo(new UnresolvedReference("context.candidate.dob"));
     }
 
     @Test
@@ -47,9 +48,9 @@ class ContextPathResolverTest {
                         new ContextPathReference("candidate.tag"),
                         "silver")));
 
-        ResolutionResult result = ContextPathResolver.resolve(query, ctx);
+        Map<String, Object> resolved = ContextPathResolver.resolve(query, ctx);
 
-        List<?> resolvedList = (List<?>) ((Map<?, ?>) result.resolved().get("claim.tag")).get("$in");
+        List<?> resolvedList = (List<?>) ((Map<?, ?>) resolved.get("claim.tag")).get("$in");
         assertThat(resolvedList).isEqualTo(List.of("gold", "silver"));
     }
 
@@ -61,18 +62,17 @@ class ContextPathResolverTest {
                 "claim.tags",
                 Map.of("$all", new ContextPathReference("candidate.tags")));
 
-        ResolutionResult result = ContextPathResolver.resolve(query, ctx);
+        Map<String, Object> resolved = ContextPathResolver.resolve(query, ctx);
 
-        Object resolvedAll = ((Map<?, ?>) result.resolved().get("claim.tags")).get("$all");
+        Object resolvedAll = ((Map<?, ?>) resolved.get("claim.tags")).get("$all");
         assertThat(resolvedAll).isEqualTo(List.of("gold", "vip"));
     }
 
     @Test
     void plainQueriesAreReturnedUnchanged() {
         Map<String, Object> query = Map.of("age", Map.of("$gte", 18));
-        ResolutionResult result = ContextPathResolver.resolve(query, Map.of());
-        assertThat(result.missingPaths()).isEmpty();
-        assertThat(result.resolved()).isEqualTo(query);
+        Map<String, Object> resolved = ContextPathResolver.resolve(query, Map.of());
+        assertThat(resolved).isEqualTo(query);
     }
 
     @Test
@@ -84,19 +84,21 @@ class ContextPathResolverTest {
                 "age", Map.of("$gte", 18),
                 "tags", Map.of("$in", List.of("gold", "silver")));
 
-        ResolutionResult result = ContextPathResolver.resolve(query, Map.of());
+        Map<String, Object> resolved = ContextPathResolver.resolve(query, Map.of());
 
-        assertThat(result.resolved()).isSameAs(query);
+        assertThat(resolved).isSameAs(query);
     }
 
     @Test
-    void nullContextDocTreatsAllRefsAsMissing() {
+    void nullContextDocTreatsAllRefsAsUnresolved() {
         Map<String, Object> query = Map.of(
                 "claim.email",
                 Map.of("$eq", new ContextPathReference("candidate.email")));
 
-        ResolutionResult result = ContextPathResolver.resolve(query, null);
+        Map<String, Object> resolved = ContextPathResolver.resolve(query, null);
 
-        assertThat(result.missingPaths()).containsExactly("context.candidate.email");
+        Object eqOperand = ((Map<?, ?>) resolved.get("claim.email")).get("$eq");
+        assertThat(eqOperand)
+                .isEqualTo(new UnresolvedReference("context.candidate.email"));
     }
 }
