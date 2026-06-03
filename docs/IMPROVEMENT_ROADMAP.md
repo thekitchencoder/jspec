@@ -819,9 +819,19 @@ examples/
 
 ## Known limitations of `$contextPath`
 
-The `$contextPath` operand sentinel (added in v0.5.0) is feature-complete and well-tested. One sharp edge noted here has been resolved (see CHANGELOG [Unreleased]); one remains.
+The `$contextPath` operand sentinel (added in v0.5.0) is feature-complete and well-tested. Two sharp edges noted here have since been resolved (see CHANGELOG [Unreleased]).
 
-1. **`$or` branch false-positives.** `ContextPathResolver.walk` descends into every list and map without operator-aware semantics. If a `$contextPath` operand inside one branch of an `$or` operator resolves missing, the entire criterion becomes `UNDETERMINED` — even when another `$or` branch with no missing references would have matched. The fix lives in the resolver (e.g. attempt resolution per-branch and only escalate if every branch reports missing); worth doing if/when this becomes important in practice.
+1. ✅ **`$or` branch false-positives** — **RESOLVED.** A missing `$contextPath` inside one
+   `$or`/`$and` branch no longer short-circuits the whole criterion to `UNDETERMINED`.
+   Resolution now leaves an `UnresolvedReference` sentinel in place and the evaluator
+   combines branches with Strong Kleene logic, so a matching `$or` branch wins despite an
+   unresolved sibling and a definitively-false `$and` resolves to `NOT_MATCHED`. This also
+   fixed the underlying gap that `$or`/`$and` were boolean rather than tri-state.
+   Note: the originally-suggested "resolve per-branch, escalate only if every branch is
+   missing" fix would have been incorrect — dropping a missing branch and OR-ing the rest
+   yields `NOT_MATCHED` where K3 requires `UNDETERMINED` (`NOT_MATCHED ∨ UNDET`). The
+   missing-ness has to be carried into evaluation as a branch-level `UNDETERMINED`, which
+   is what the sentinel approach does. See `OrAndKleeneSemanticsTest`.
 
 2. ✅ **Allocation cost on plain (sentinel-free) queries** — **RESOLVED.** `ContextPathResolver`
    now tracks whether any rewrite happened and returns the original immutable sub-tree by

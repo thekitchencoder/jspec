@@ -323,8 +323,8 @@ public class CriterionEvaluator {
         operators.put("$elemMatch", this::evaluateElemMatchOperator);
         operators.put("$all", this::evaluateAllOperator);
         operators.put("$not", this::evaluateNotOperator);
-        operators.put("$and", this::evaluateAndOperator);
-        operators.put("$or", this::evaluateOrOperator);
+        // $and / $or are not boolean OperatorHandlers — they are intercepted in
+        // evaluateOperator() and combined tri-state via Strong Kleene logic.
     }
 
     private boolean evaluateInOperator(Object val, Object operand) {
@@ -582,63 +582,6 @@ public class CriterionEvaluator {
         }
     }
 
-    private boolean evaluateAndOperator(Object val, Object operand) {
-        try {
-            if (!(operand instanceof List<?> conditions)) {
-                log.warn("Operator $and expects List of conditions, got {} - treating as not matched",
-                           operand == null ? "null" : operand.getClass().getSimpleName());
-                return false;
-            }
-
-            // All conditions must match
-            for (Object condition : conditions) {
-                if (!(condition instanceof Map)) {
-                    log.warn("Each condition in $and must be a Map, got {} - treating as not matched",
-                               condition == null ? "null" : condition.getClass().getSimpleName());
-                    return false;
-                }
-                @SuppressWarnings("unchecked")
-                Map<String, Object> conditionMap = (Map<String, Object>) condition;
-                InnerResult result = evaluateOperatorQuery(val, conditionMap);
-                if (result.state != EvaluationState.MATCHED) {
-                    return false;
-                }
-            }
-            return true;
-        } catch (Exception e) {
-            log.warn("Error evaluating $and operator: {}", e.getMessage(), e);
-            return false;
-        }
-    }
-
-    private boolean evaluateOrOperator(Object val, Object operand) {
-        try {
-            if (!(operand instanceof List<?> conditions)) {
-                log.warn("Operator $or expects List of conditions, got {} - treating as not matched",
-                           operand == null ? "null" : operand.getClass().getSimpleName());
-                return false;
-            }
-
-            // At least one condition must match
-            for (Object condition : conditions) {
-                if (!(condition instanceof Map)) {
-                    log.warn("Each condition in $or must be a Map, got {} - treating as not matched",
-                               condition == null ? "null" : condition.getClass().getSimpleName());
-                    return false;
-                }
-                @SuppressWarnings("unchecked")
-                Map<String, Object> conditionMap = (Map<String, Object>) condition;
-                InnerResult result = evaluateOperatorQuery(val, conditionMap);
-                if (result.state == EvaluationState.MATCHED) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            log.warn("Error evaluating $or operator: {}", e.getMessage(), e);
-            return false;
-        }
-    }
 
     private boolean evaluateBetweenOperator(Object val, Object operand) {
         try {
@@ -908,31 +851,152 @@ public class CriterionEvaluator {
         return queryMap.keySet().stream().anyMatch(k -> k.startsWith("$"));
     }
 
+    /**
+     * Evaluates the operators in a single query map and combines them with Strong
+     * Kleene AND (multiple operators on one field are a conjunction). The combinators
+     * {@code $or}/{@code $and} are handled tri-state so an UNDETERMINED branch is
+     * combined via Kleene logic rather than collapsed to "not matched".
+     */
     private InnerResult evaluateOperatorQuery(Object val, Map<String, Object> queryMap) {
-        boolean allMatched = true;
+        EvaluationState combined = EvaluationState.MATCHED;
+        List<String> missingPaths = new ArrayList<>();
+        String failureReason = null;
 
         for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
             String op = entry.getKey();
             if (!op.startsWith("$")) continue;
 
-            OperatorHandler handler = operators.get(op);
-            if (handler == null) {
-                log.warn("Unknown operator '{}' - marking criterion as UNDETERMINED", op);
-                return InnerResult.undetermined("Unknown operator: " + op);
-            }
+            InnerResult opResult = evaluateOperator(val, op, entry.getValue());
 
-            try {
-                if (!handler.evaluate(val, entry.getValue())) {
-                    allMatched = false;
-                    break;
-                }
-            } catch (Exception e) {
-                log.warn("Error evaluating operator '{}': {} - marking as UNDETERMINED", op, e.getMessage(), e);
-                return InnerResult.undetermined("Error evaluating operator " + op + ": " + e.getMessage());
-            }
+            combined = combined.and(opResult.state);
+            missingPaths.addAll(opResult.missingPaths);
+            if (failureReason == null) failureReason = opResult.failureReason;
+
+            if (combined == EvaluationState.NOT_MATCHED) break;  // AND short-circuit
         }
 
-        return allMatched ? InnerResult.matched() : InnerResult.notMatched();
+        return finalise(combined, missingPaths, failureReason);
+    }
+
+    /**
+     * Evaluates one operator entry to a tri-state result. An operand carrying an
+     * unresolved {@code $contextPath} sentinel yields UNDETERMINED before the handler
+     * runs; {@code $or}/{@code $and} are dispatched to their tri-state combinators.
+     */
+    private InnerResult evaluateOperator(Object val, String op, Object operand) {
+        if (op.equals("$or")) return evaluateOr(val, operand);
+        if (op.equals("$and")) return evaluateAnd(val, operand);
+
+        List<String> unresolved = collectUnresolved(operand);
+        if (!unresolved.isEmpty()) {
+            return new InnerResult(EvaluationState.UNDETERMINED, List.copyOf(unresolved),
+                    "Unresolved context path" + (unresolved.size() == 1 ? "" : "s") + ": "
+                            + String.join(", ", unresolved));
+        }
+
+        OperatorHandler handler = operators.get(op);
+        if (handler == null) {
+            log.warn("Unknown operator '{}' - marking criterion as UNDETERMINED", op);
+            return InnerResult.undetermined("Unknown operator: " + op);
+        }
+
+        try {
+            return handler.evaluate(val, operand) ? InnerResult.matched() : InnerResult.notMatched();
+        } catch (Exception e) {
+            log.warn("Error evaluating operator '{}': {} - marking as UNDETERMINED", op, e.getMessage(), e);
+            return InnerResult.undetermined("Error evaluating operator " + op + ": " + e.getMessage());
+        }
+    }
+
+    /** {@code $or}: Kleene disjunction over the branch results (identity NOT_MATCHED). */
+    private InnerResult evaluateOr(Object val, Object operand) {
+        if (!(operand instanceof List<?> conditions)) {
+            log.warn("Operator $or expects List of conditions, got {} - treating as not matched",
+                    operand == null ? "null" : operand.getClass().getSimpleName());
+            return InnerResult.notMatched();
+        }
+        return combineBranches(val, conditions, EvaluationState.NOT_MATCHED, EvaluationState.MATCHED, "$or");
+    }
+
+    /** {@code $and}: Kleene conjunction over the branch results (identity MATCHED). */
+    private InnerResult evaluateAnd(Object val, Object operand) {
+        if (!(operand instanceof List<?> conditions)) {
+            log.warn("Operator $and expects List of conditions, got {} - treating as not matched",
+                    operand == null ? "null" : operand.getClass().getSimpleName());
+            return InnerResult.notMatched();
+        }
+        return combineBranches(val, conditions, EvaluationState.MATCHED, EvaluationState.NOT_MATCHED, "$and");
+    }
+
+    /**
+     * Folds the branches of a boolean combinator with Kleene logic. {@code identity}
+     * is the fold seed (NOT_MATCHED for OR, MATCHED for AND) and {@code shortCircuit}
+     * is the absorbing state that lets the fold stop early (MATCHED for OR,
+     * NOT_MATCHED for AND).
+     */
+    private InnerResult combineBranches(Object val, List<?> conditions,
+                                        EvaluationState identity, EvaluationState shortCircuit,
+                                        String operatorName) {
+        EvaluationState combined = identity;
+        List<String> missingPaths = new ArrayList<>();
+        String failureReason = null;
+
+        for (Object condition : conditions) {
+            if (!(condition instanceof Map)) {
+                log.warn("Each condition in {} must be a Map, got {} - treating as not matched",
+                        operatorName, condition == null ? "null" : condition.getClass().getSimpleName());
+                return InnerResult.notMatched();
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> conditionMap = (Map<String, Object>) condition;
+
+            InnerResult branch = evaluateOperatorQuery(val, conditionMap);
+            combined = (identity == EvaluationState.MATCHED)
+                    ? combined.and(branch.state)
+                    : combined.or(branch.state);
+            missingPaths.addAll(branch.missingPaths);
+            if (failureReason == null) failureReason = branch.failureReason;
+
+            if (combined == shortCircuit) break;
+        }
+
+        return finalise(combined, missingPaths, failureReason);
+    }
+
+    /**
+     * Builds the result for a combined evaluation. Per the design decision, missing
+     * paths are surfaced only when they left the result UNDETERMINED — a path inside a
+     * branch that was overridden by a MATCHED/NOT_MATCHED sibling did not influence the
+     * outcome and is therefore not reported.
+     */
+    private static InnerResult finalise(EvaluationState state, List<String> missingPaths, String failureReason) {
+        return switch (state) {
+            case MATCHED -> InnerResult.matched();
+            case NOT_MATCHED -> InnerResult.notMatched();
+            case UNDETERMINED -> new InnerResult(EvaluationState.UNDETERMINED, List.copyOf(missingPaths), failureReason);
+        };
+    }
+
+    /**
+     * Recursively collects the {@code context.<path>} of every unresolved
+     * {@code $contextPath} sentinel reachable inside an operator operand (directly, or
+     * nested in a list/map such as {@code $in: [<ref>, ...]} or {@code $not: {...}}).
+     */
+    private static List<String> collectUnresolved(Object operand) {
+        if (operand instanceof UnresolvedReference ref) {
+            return List.of(ref.path());
+        }
+        if (operand instanceof List<?> list) {
+            List<String> out = new ArrayList<>();
+            for (Object element : list) out.addAll(collectUnresolved(element));
+            return out;
+        }
+        if (operand instanceof Map<?, ?> map) {
+            List<String> out = new ArrayList<>();
+            for (Object value : map.values()) out.addAll(collectUnresolved(value));
+            return out;
+        }
+        return List.of();
     }
 
     private InnerResult evaluateFieldQuery(Object val, Map<String, Object> queryMap, String path) {

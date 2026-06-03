@@ -65,8 +65,12 @@ public final class ContextPathResolver {
         Object current = contextDoc;
         for (String segment : ref.path().split("\\.")) {
             if (!(current instanceof Map<?, ?> map) || !map.containsKey(segment)) {
-                missing.add(CONTEXT_PREFIX + ref.path());
-                return null;  // sentinel; caller short-circuits via hasMissingPaths()
+                String path = CONTEXT_PREFIX + ref.path();
+                missing.add(path);
+                // Leave a typed sentinel (not null — null is a valid resolved value).
+                // The evaluator decides per-operator whether this missing path actually
+                // influences the outcome, so resolution no longer short-circuits globally.
+                return new UnresolvedReference(path);
             }
             current = map.get(segment);
         }

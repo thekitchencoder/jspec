@@ -5,7 +5,6 @@ import uk.codery.jspec.evaluator.ContextPathResolver;
 import uk.codery.jspec.evaluator.EvaluationContext;
 import uk.codery.jspec.evaluator.ResolutionResult;
 import uk.codery.jspec.result.EvaluationResult;
-import uk.codery.jspec.result.QueryResult;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -144,12 +143,12 @@ public record QueryCriterion(String id, Map<String, Object> query) implements Cr
         ResolutionResult resolution =
                 ContextPathResolver.resolve(query, context.contextDoc());
 
-        if (resolution.hasMissingPaths()) {
-            return QueryResult.undetermined(
-                    this,
-                    "Unresolved context paths: " + String.join(", ", resolution.missingPaths()),
-                    resolution.missingPaths());
-        }
+        // Note: a missing $contextPath no longer short-circuits the whole criterion.
+        // The resolver leaves an UnresolvedReference sentinel in place, and the
+        // evaluator decides per-operator whether that miss influences the outcome —
+        // so a matching $or branch can still win despite an unresolved sibling, and
+        // a definitively-false $and short-circuits to NOT_MATCHED. Missing paths are
+        // reported only when they actually leave the criterion UNDETERMINED.
 
         // Fast path: a plain query (no $contextPath operands) resolves to the same
         // map instance, so reuse this criterion rather than reallocating a copy.

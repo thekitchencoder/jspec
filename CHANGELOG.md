@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`$or` / `$and` now follow Strong Kleene (K3) logic.** The boolean combinators
+  previously collapsed an `UNDETERMINED` branch to "not matched", so a criterion
+  could report `NOT_MATCHED` where the tri-state model requires `UNDETERMINED`
+  (e.g. `UNDET ∨ NOT_MATCHED`, or `MATCHED ∧ UNDET`). They now fold their branch
+  results with `EvaluationState.or()` / `.and()`.
+- **`$contextPath` no longer produces false `UNDETERMINED` across boolean branches.**
+  A missing context path inside one `$or`/`$and` branch previously short-circuited the
+  *entire* criterion to `UNDETERMINED`. Now an unresolved reference is carried as a
+  sentinel and evaluated in place, so a matching `$or` branch still wins despite an
+  unresolved sibling, and a definitively-false `$and` short-circuits to `NOT_MATCHED`.
+
+### Changed
+- **Context-path resolution moved from a global pre-pass gate into per-operator
+  evaluation.** `ContextPathResolver` now substitutes an `UnresolvedReference` sentinel
+  for a missing path instead of short-circuiting; `QueryCriterion.evaluate` no longer
+  gates on `ResolutionResult.hasMissingPaths()`.
+- **Missing paths are reported only when they influenced an `UNDETERMINED` result.**
+  A path inside a branch overridden by a `MATCHED`/`NOT_MATCHED` sibling is no longer
+  listed in `missingPaths` (it did not affect the outcome). Top-level field misses are
+  unchanged.
+
 ### Performance
 - **Plain (sentinel-free) queries skip query-tree reallocation.** `ContextPathResolver`
   returns the original immutable query sub-tree by reference when no `$contextPath`
