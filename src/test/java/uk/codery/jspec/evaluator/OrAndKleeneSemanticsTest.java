@@ -199,4 +199,45 @@ class OrAndKleeneSemanticsTest {
         assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
         assertThat(result.missingPaths()).isEmpty();
     }
+
+    // ─── Empty-combinator (vacuous truth) semantics ──────────────────────────
+
+    /** combineBranches folds from the identity element, so an empty combinator
+     *  returns that identity. $or: [] → NOT_MATCHED (no branch can match). */
+    @Test
+    void emptyOr_isNotMatched() {
+        assertThat(eval(Map.of("value", Map.of("$or", List.of())), Map.of("value", 1)))
+                .isEqualTo(EvaluationState.NOT_MATCHED);
+    }
+
+    /** $and: [] → MATCHED (vacuously, no branch fails). Note MongoDB rejects an
+     *  empty $and/$or as a query error; jspec chooses the identity instead. */
+    @Test
+    void emptyAnd_isMatched() {
+        assertThat(eval(Map.of("value", Map.of("$and", List.of())), Map.of("value", 1)))
+                .isEqualTo(EvaluationState.MATCHED);
+    }
+
+    // ─── $contextPath inside a non-Kleene operator ($not) ────────────────────
+
+    /** collectUnresolved recurses into the operand map, so an unresolved
+     *  $contextPath nested inside $not yields UNDETERMINED (can't evaluate). */
+    @Test
+    void notWithMissingContextPath_isUndetermined() {
+        EvaluationState state = evalWithContext(
+                Map.of("value", Map.of("$not", Map.of("$eq", Map.of("$contextPath", "candidate.x")))),
+                Map.of("value", 5),
+                Map.of());   // candidate.x absent
+        assertThat(state).isEqualTo(EvaluationState.UNDETERMINED);
+    }
+
+    /** Control: with the context path present, $not evaluates normally. */
+    @Test
+    void notWithResolvableContextPath_evaluatesNormally() {
+        EvaluationState state = evalWithContext(
+                Map.of("value", Map.of("$not", Map.of("$eq", Map.of("$contextPath", "candidate.x")))),
+                Map.of("value", 5),
+                Map.of("candidate", Map.of("x", 99)));   // 5 != 99 → $eq false → $not true
+        assertThat(state).isEqualTo(EvaluationState.MATCHED);
+    }
 }
