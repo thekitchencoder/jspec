@@ -819,8 +819,11 @@ examples/
 
 ## Known limitations of `$contextPath`
 
-The `$contextPath` operand sentinel (added in v0.5.0) is feature-complete and well-tested, but two minor sharp edges remain. Both are non-blocking; recording here so we don't have to rediscover them.
+The `$contextPath` operand sentinel (added in v0.5.0) is feature-complete and well-tested. One sharp edge noted here has been resolved (see CHANGELOG [Unreleased]); one remains.
 
 1. **`$or` branch false-positives.** `ContextPathResolver.walk` descends into every list and map without operator-aware semantics. If a `$contextPath` operand inside one branch of an `$or` operator resolves missing, the entire criterion becomes `UNDETERMINED` — even when another `$or` branch with no missing references would have matched. The fix lives in the resolver (e.g. attempt resolution per-branch and only escalate if every branch reports missing); worth doing if/when this becomes important in practice.
 
-2. **Allocation cost on plain (sentinel-free) queries.** `ContextPathResolver.walk` rebuilds the entire query map even when there are no `ContextPathReference` instances anywhere in the tree. A "did I rewrite anything?" guard in `walk` would let plain queries skip the rebuild and return the original map unchanged. Trivial to add when measured to matter.
+2. ✅ **Allocation cost on plain (sentinel-free) queries** — **RESOLVED.** `ContextPathResolver`
+   now tracks whether any rewrite happened and returns the original immutable sub-tree by
+   reference when no `$contextPath` operand is present; `QueryCriterion.evaluate` reuses the
+   existing criterion rather than allocating a resolved copy.

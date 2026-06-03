@@ -76,6 +76,20 @@ class ContextPathResolverTest {
     }
 
     @Test
+    void plainQueriesAreReturnedByReferenceWithoutReallocation() {
+        // Fast path: when a query tree contains no ContextPathReference, resolve
+        // must return the exact same map instance — no per-evaluation reallocation
+        // of the query tree for plain specs.
+        Map<String, Object> query = Map.of(
+                "age", Map.of("$gte", 18),
+                "tags", Map.of("$in", List.of("gold", "silver")));
+
+        ResolutionResult result = ContextPathResolver.resolve(query, Map.of());
+
+        assertThat(result.resolved()).isSameAs(query);
+    }
+
+    @Test
     void nullContextDocTreatsAllRefsAsMissing() {
         Map<String, Object> query = Map.of(
                 "claim.email",

@@ -151,7 +151,11 @@ public record QueryCriterion(String id, Map<String, Object> query) implements Cr
                     resolution.missingPaths());
         }
 
-        QueryCriterion resolved = new QueryCriterion(id, resolution.resolved());
+        // Fast path: a plain query (no $contextPath operands) resolves to the same
+        // map instance, so reuse this criterion rather than reallocating a copy.
+        QueryCriterion resolved = resolution.resolved() == query
+                ? this
+                : new QueryCriterion(id, resolution.resolved());
         return context.evaluator().evaluateQuery(document, resolved);
     }
 

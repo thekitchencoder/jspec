@@ -33,15 +33,30 @@ public final class ContextPathResolver {
         }
         if (value instanceof Map<?, ?> map) {
             Map<String, Object> out = new LinkedHashMap<>(map.size());
+            boolean rewritten = false;
             for (Map.Entry<?, ?> e : map.entrySet()) {
-                out.put((String) e.getKey(), walk(e.getValue(), contextDoc, missing));
+                Object original = e.getValue();
+                Object walked = walk(original, contextDoc, missing);
+                rewritten |= walked != original;
+                out.put((String) e.getKey(), walked);
             }
+            // Fast path: no descendant was a ContextPathReference, so the input
+            // tree (already immutable post-normalisation) is returned unchanged —
+            // plain specs incur zero per-evaluation reallocation.
+            if (!rewritten) return value;
             // LinkedHashMap + unmodifiableMap (not Map.copyOf) so that null leaf values
             // (e.g. {$eq: null}) pass through — Map.copyOf would NPE.
             return Collections.unmodifiableMap(out);
         }
         if (value instanceof List<?> list) {
-            return list.stream().map(v -> walk(v, contextDoc, missing)).toList();
+            boolean rewritten = false;
+            List<Object> out = new ArrayList<>(list.size());
+            for (Object v : list) {
+                Object walked = walk(v, contextDoc, missing);
+                rewritten |= walked != v;
+                out.add(walked);
+            }
+            return rewritten ? Collections.unmodifiableList(out) : value;
         }
         return value;
     }

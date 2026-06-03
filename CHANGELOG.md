@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance
+- **Plain (sentinel-free) queries skip query-tree reallocation.** `ContextPathResolver`
+  returns the original immutable query sub-tree by reference when no `$contextPath`
+  operand is present, and `QueryCriterion.evaluate` reuses the existing criterion rather
+  than allocating a resolved copy.
+
 ## [0.4.0] - 2025-11-17
 
 ### Added
