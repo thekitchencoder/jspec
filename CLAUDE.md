@@ -501,7 +501,7 @@ operators.put("$myOperator", (val, operand) -> {
 });
 ```
 
-**Important**: Always check types before casting. Return `false` for type mismatches (becomes UNDETERMINED).
+**Important**: Always check types before casting. Return `false` for type mismatches — a boolean operator handler that returns `false` surfaces as **NOT_MATCHED**. (UNDETERMINED is reserved for unknown operators, missing field data, unresolved `$contextPath` references, and handlers that throw — not for operand type mismatches.)
 
 ### Testing Patterns
 

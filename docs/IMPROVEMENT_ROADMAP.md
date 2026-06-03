@@ -837,3 +837,9 @@ The `$contextPath` operand sentinel (added in v0.5.0) is feature-complete and we
    now tracks whether any rewrite happened and returns the original immutable sub-tree by
    reference when no `$contextPath` operand is present; `QueryCriterion.evaluate` reuses the
    existing criterion rather than allocating a resolved copy.
+
+   Scope note: this removes the *per-evaluation* allocation. `SpecificationNormaliser.normalise`
+   still allocates a fresh `LinkedHashMap` per query map *once* at `SpecificationEvaluator`
+   construction, even for sentinel-free specs. That one-time cost is deliberately left as-is —
+   the same reference-equality guard could be added there if construction ever shows up in a
+   profile, but it does not sit on the hot path.

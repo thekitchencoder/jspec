@@ -81,7 +81,9 @@ import java.util.regex.PatternSyntaxException;
  * <h2>Key Features</h2>
  * <ul>
  *   <li><b>Tri-State Evaluation:</b> MATCHED / NOT_MATCHED / UNDETERMINED</li>
- *   <li><b>Graceful Degradation:</b> Invalid operators/types become UNDETERMINED, never throw exceptions</li>
+ *   <li><b>Graceful Degradation:</b> never throws — unknown operators, missing data and
+ *       unresolved {@code $contextPath} references become UNDETERMINED; operand type
+ *       mismatches become NOT_MATCHED</li>
  *   <li><b>Regex Caching:</b> Thread-safe LRU cache (100 patterns) for ~10-100x speedup</li>
  *   <li><b>Dot Notation:</b> Navigate nested fields with "address.city" syntax</li>
  *   <li><b>Custom Operators:</b> Extensible via OperatorRegistry</li>
@@ -149,7 +151,7 @@ import java.util.regex.PatternSyntaxException;
  * <ul>
  *   <li><b>MATCHED</b> - Criterion evaluated successfully, condition is TRUE</li>
  *   <li><b>NOT_MATCHED</b> - Criterion evaluated successfully, condition is FALSE</li>
- *   <li><b>UNDETERMINED</b> - Could not evaluate (missing data, invalid operator, type mismatch)</li>
+ *   <li><b>UNDETERMINED</b> - Could not evaluate (missing data, unknown operator, unresolved context path)</li>
  * </ul>
  *
  * <p>This model enables graceful degradation - one bad criterion never stops evaluation.
