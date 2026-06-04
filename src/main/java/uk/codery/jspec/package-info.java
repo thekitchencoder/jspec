@@ -3,7 +3,7 @@
  *
  * <p>This library provides a lightweight, Spring-independent framework for evaluating
  * business criteria against JSON/YAML documents using MongoDB-style query operators.
- * It supports 13 built-in operators and can be extended with custom operators.
+ * It supports 23 built-in query operators and can be extended with custom operators.
  *
  * <h2>Core Concepts</h2>
  *

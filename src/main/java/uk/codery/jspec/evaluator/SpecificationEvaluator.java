@@ -166,8 +166,8 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      * Creates a SpecificationEvaluator with default built-in operators.
      *
      * <p>This is the recommended constructor for most use cases.
-     * It creates an internal {@link CriterionEvaluator} with all 13 built-in
-     * MongoDB-style operators.
+     * It creates an internal {@link CriterionEvaluator} with all 23 built-in
+     * query operators.
      *
      * @param specification the specification to evaluate documents against
      * @see #SpecificationEvaluator(Specification, CriterionEvaluator)

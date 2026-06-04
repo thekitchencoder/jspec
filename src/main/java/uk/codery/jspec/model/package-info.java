@@ -60,7 +60,7 @@
  * <p><b>Junction vs Operator:</b> Do not confuse these two concepts:
  * <ul>
  *   <li><b>Junction</b> - Combines multiple criteria (AND/OR) - only 2 values</li>
- *   <li><b>Operator</b> - Evaluates a single criterion ($eq, $gt, $in, etc.) - 13 operators</li>
+ *   <li><b>Operator</b> - Evaluates a single criterion ($eq, $gt, $in, etc.) - 23 operators</li>
  * </ul>
  *
  * @see uk.codery.jspec.model.Criterion

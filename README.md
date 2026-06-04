@@ -12,7 +12,7 @@ JSPEC (JSON Specification Evaluator) is a lightweight, Spring-independent Java l
 
 ## Features
 
-- **14 MongoDB-style operators** – Reuse familiar query syntax for comparison, collection, and advanced checks.
+- **23 query operators** – Comparison, collection, advanced, string, date/range, and logical (`$and`/`$or`/`$not`) checks, using familiar MongoDB-style query syntax.
 - **Tri-state evaluation** – Every criterion reports `MATCHED`, `NOT_MATCHED`, or `UNDETERMINED` for precise diagnostics.
 - **Graceful error handling** – Bad data, unknown operators, or type mismatches never halt the evaluation pipeline.
 - **Thread-safe by design** – Immutable records and parallel execution make large specifications fast and safe.
@@ -120,7 +120,7 @@ The sentinel works identically in YAML specifications — just write `$contextPa
 
 For deeper dives, read the docs in `docs/`:
 
-- **[Supported Operators](docs/OPERATORS.md)** – Reference for all 14 MongoDB-style operators.
+- **[Supported Operators](docs/OPERATORS.md)** – Reference for all 23 query operators.
 - **[Evaluation Model](docs/EVALUATION_MODEL.md)** – How the tri-state pipeline surfaces errors without throwing.
 - **[Architecture](docs/ARCHITECTURE.md)** – Core records, evaluators, and thread-safety guidance.
 - **[General Use Cases](docs/USECASES.md)** – Practical scenarios for embedding JSPEC.

@@ -21,7 +21,7 @@
  * }</pre>
  *
  * <h3>{@link uk.codery.jspec.evaluator.CriterionEvaluator}</h3>
- * <p>Evaluates individual criteria using MongoDB-style operators. Supports 13 built-in
+ * <p>Evaluates individual criteria using query operators. Supports 23 built-in
  * operators and can be extended with custom operators via {@link uk.codery.jspec.operator.OperatorRegistry}.
  *
  * <pre>{@code

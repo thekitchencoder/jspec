@@ -2,7 +2,8 @@
  * Operator extensibility support for custom MongoDB-style query operators.
  *
  * <p>This package provides the infrastructure for extending the library with custom
- * operators beyond the 13 built-in MongoDB-style operators. Users can register custom
+ * operators beyond the 20 built-in operators registered by
+ * {@link uk.codery.jspec.operator.OperatorRegistry#withDefaults()}. Users can register custom
  * operators to handle domain-specific evaluation logic.
  *
  * <h2>Core Classes</h2>
@@ -41,7 +42,9 @@
  *
  * <h2>Built-in Operators</h2>
  *
- * <p>The library provides 13 MongoDB-style operators out of the box:
+ * <p>{@link uk.codery.jspec.operator.OperatorRegistry#withDefaults()} provides 20 operators
+ * out of the box (the {@link uk.codery.jspec.evaluator.CriterionEvaluator} additionally
+ * supports the {@code $not}, {@code $and}, and {@code $or} logical operators, for 23 total):
  *
  * <h3>Comparison (6 operators)</h3>
  * <ul>
@@ -61,12 +64,26 @@
  *   <li>{@code $size} - Array size equals</li>
  * </ul>
  *
- * <h3>Advanced (3 operators)</h3>
+ * <h3>Advanced (4 operators)</h3>
  * <ul>
  *   <li>{@code $exists} - Field existence</li>
  *   <li>{@code $type} - Type checking</li>
  *   <li>{@code $regex} - Pattern matching</li>
  *   <li>{@code $elemMatch} - Array element matching</li>
+ * </ul>
+ *
+ * <h3>String (3 operators)</h3>
+ * <ul>
+ *   <li>{@code $contains} - Substring or collection element check</li>
+ *   <li>{@code $startsWith} - String prefix match</li>
+ *   <li>{@code $endsWith} - String suffix match</li>
+ * </ul>
+ *
+ * <h3>Range/Date (3 operators)</h3>
+ * <ul>
+ *   <li>{@code $between} - Inclusive numeric range</li>
+ *   <li>{@code $dateBefore} - Date/time before</li>
+ *   <li>{@code $dateAfter} - Date/time after</li>
  * </ul>
  *
  * <h2>Custom Operator Examples</h2>

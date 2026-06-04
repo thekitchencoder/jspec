@@ -13,7 +13,7 @@ The engine has a clean, layered architecture designed for simplicity, immutabili
 
 2.  **Evaluation Layer:** This is the logic engine of the library.
     *   `SpecificationEvaluator`: The main entry point. It is bound to a specific `Specification` and orchestrates the evaluation of all criteria (queries, composites, references) against a document in parallel.
-    *   `CriterionEvaluator`: The workhorse that evaluates a single `Criterion`. It contains the logic for all 14 built-in operators and implements the tri-state evaluation model.
+    *   `CriterionEvaluator`: The workhorse that evaluates a single `Criterion`. It contains the logic for all 23 built-in operators and implements the tri-state evaluation model.
 
 3.  **Result Layer:** This layer consists of immutable records that capture the outcome of an evaluation.
     *   `EvaluationOutcome`: The final result of a `SpecificationEvaluator` run (with helper finders and summaries).

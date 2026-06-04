@@ -14,7 +14,7 @@ package uk.codery.jspec.model;
  * <p><b>IMPORTANT:</b> Do not confuse "Junction" with "Operator":
  * <ul>
  *   <li><b>Junction</b> - Combines multiple criteria (AND/OR) - only 2 values</li>
- *   <li><b>Operator</b> - Evaluates a single criterion ({@code $eq}, {@code $gt}, {@code $in}, etc.) - 13 operators</li>
+ *   <li><b>Operator</b> - Evaluates a single criterion ({@code $eq}, {@code $gt}, {@code $in}, etc.) - 23 operators</li>
  * </ul>
  *
  * <h2>Usage Examples</h2>

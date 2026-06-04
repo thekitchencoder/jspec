@@ -8,7 +8,7 @@ Your JSON Specification Evaluator is a **production-ready, Spring-independent li
 - ✅ Zero Spring coupling
 - ✅ Clean 3-layer architecture
 - ✅ Thread-safe with parallel evaluation
-- ✅ 13 MongoDB-style operators (all optimized)
+- ✅ 23 query operators (comparison, collection, advanced, string, date/range, and logical `$and`/`$or`/`$not`; all optimized)
 - ✅ **Comprehensive test coverage** (15 test files including unit, integration, operator-specific, builder, formatter, and caching tests)
 - ✅ **Tri-state evaluation model** (MATCHED/NOT_MATCHED/UNDETERMINED)
 - ✅ **SLF4J logging integration** (graceful degradation with proper logging)
@@ -53,7 +53,7 @@ This roadmap has been updated to reflect the significant progress made on the JS
 **Status:** Comprehensive test suite implemented
 
 - [x] **Unit tests for CriterionEvaluator** - `CriterionEvaluatorTest.java` created
-  - All 13 operators tested individually
+  - All 23 operators tested individually
   - Edge cases: null values, type mismatches, nested structures
 
 - [x] **Unit tests for SpecificationEvaluator** - `SpecificationEvaluatorTest.java` created
@@ -331,7 +331,7 @@ private String getType(Object val) {
     - `Specification.java` - Complete with construction and evaluation examples
     - `Junction.java` - **NEW:** 117 lines - Complete with AND/OR semantics, Junction vs Operator distinction
   - Evaluator classes:
-    - `CriterionEvaluator.java` - **ENHANCED:** 126 lines - Complete with all 13 operators documented, tri-state model, performance optimizations
+    - `CriterionEvaluator.java` - **ENHANCED:** Complete with all 23 operators documented, tri-state model, performance optimizations
     - `SpecificationEvaluator.java` - **NEW:** 123 lines - Complete with parallel evaluation, caching, thread safety
   - Result classes:
     - `EvaluationOutcome.java` - Has JavaDoc

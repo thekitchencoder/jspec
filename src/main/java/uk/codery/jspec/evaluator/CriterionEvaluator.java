@@ -22,8 +22,9 @@ import java.util.regex.PatternSyntaxException;
  * Core evaluation engine for individual {@link QueryCriterion} instances using MongoDB-style query operators.
  *
  * <p>The {@code CriterionEvaluator} is responsible for evaluating a single query criterion against
- * a document. It supports 13 built-in MongoDB-style operators and can be extended with custom
- * operators via {@link uk.codery.jspec.operator.OperatorRegistry}.
+ * a document. It supports 23 built-in query operators spanning comparison, collection, advanced,
+ * string, date/range, and logical ({@code $and}/{@code $or}/{@code $not}) categories, and can be
+ * extended with custom operators via {@link uk.codery.jspec.operator.OperatorRegistry}.
  *
  * <h2>Supported Operators</h2>
  *
@@ -262,8 +263,10 @@ public class CriterionEvaluator {
     /**
      * Creates a CriterionEvaluator with built-in operators.
      *
-     * <p>This constructor initializes the evaluator with the default set of 13
-     * MongoDB-style operators. Use this constructor for standard evaluation needs.
+     * <p>This constructor initializes the evaluator with the default set of 23
+     * query operators (the 20 {@link uk.codery.jspec.operator.OperatorRegistry} defaults plus
+     * {@code $not} and the {@code $and}/{@code $or} logical combinators). Use this constructor
+     * for standard evaluation needs.
      *
      * <p>For custom operators, use {@link #CriterionEvaluator(OperatorRegistry)} instead.
      */

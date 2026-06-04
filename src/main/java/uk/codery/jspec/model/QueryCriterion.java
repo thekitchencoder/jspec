@@ -15,7 +15,7 @@ import java.util.Map;
  * <p>This is the fundamental evaluation unit that:
  * <ul>
  *   <li>Matches document fields against query conditions</li>
- *   <li>Supports 13 MongoDB-style operators ($eq, $gt, $in, $regex, etc.)</li>
+ *   <li>Supports 23 query operators ($eq, $gt, $in, $regex, $contains, $between, $and, etc.)</li>
  *   <li>Uses dot notation for nested field access (e.g., "address.city")</li>
  *   <li>Returns tri-state results (MATCHED / NOT_MATCHED / UNDETERMINED)</li>
  * </ul>

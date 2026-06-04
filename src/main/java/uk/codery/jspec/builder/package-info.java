@@ -46,7 +46,9 @@
  *
  * <h2>Supported Operators</h2>
  *
- * <p>CriterionBuilder provides fluent methods for all 13 MongoDB-style operators:
+ * <p>CriterionBuilder provides dedicated fluent methods for the comparison, collection, and
+ * advanced operators below. Any of the 23 supported operators (including the string, date/range,
+ * and logical extensions) can also be applied via the generic {@code operator(name, value)} method:
  *
  * <h3>Comparison Operators</h3>
  * <pre>{@code
