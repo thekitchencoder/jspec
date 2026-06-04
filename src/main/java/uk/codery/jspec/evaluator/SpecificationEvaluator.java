@@ -1,6 +1,7 @@
 package uk.codery.jspec.evaluator;
 
 import lombok.extern.slf4j.Slf4j;
+import uk.codery.jspec.model.CompositeCriterion;
 import uk.codery.jspec.model.ContextPathReference;
 import uk.codery.jspec.model.Criterion;
 import uk.codery.jspec.model.QueryCriterion;
@@ -10,6 +11,7 @@ import uk.codery.jspec.result.EvaluationOutcome;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationSummary;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -218,6 +220,34 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
     }
 
     /**
+     * Builds an index of criterion id → criterion definition, walking recursively into
+     * {@link CompositeCriterion#criteria()} so nested composites are indexed too. Only
+     * {@link QueryCriterion} and {@link CompositeCriterion} are indexed; references are
+     * skipped (their id equals their target id, so indexing them would be meaningless
+     * and could shadow the real definition).
+     *
+     * @param criteria the (normalised) top-level criteria
+     * @return a fresh map of indexable criteria by id
+     */
+    private static Map<String, Criterion> buildCriterionIndex(List<Criterion> criteria) {
+        Map<String, Criterion> index = new HashMap<>();
+        indexCriteria(criteria, index);
+        return index;
+    }
+
+    private static void indexCriteria(List<Criterion> criteria, Map<String, Criterion> index) {
+        for (Criterion c : criteria) {
+            if (c instanceof QueryCriterion) {
+                index.putIfAbsent(c.id(), c);
+            } else if (c instanceof CompositeCriterion composite) {
+                index.putIfAbsent(composite.id(), composite);
+                indexCriteria(composite.criteria(), index);
+            }
+            // CriterionReference: skip (id equals target id)
+        }
+    }
+
+    /**
      * Evaluates the bound specification against a document.
      *
      * <p>This method:
@@ -312,8 +342,12 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
     public EvaluationOutcome evaluate(Object document, Object contextDoc) {
         log.info("Starting evaluation of specification '{}'", specification.id());
 
-        // Create evaluation context with result cache and context document
-        EvaluationContext context = new EvaluationContext(criterionEvaluator, contextDoc);
+        // Build the criterion index (id → definition) so references can be resolved
+        // on demand regardless of evaluation order — including references to composites.
+        Map<String, Criterion> index = buildCriterionIndex(specification.criteria());
+
+        // Create evaluation context with result cache, context document, and index
+        EvaluationContext context = new EvaluationContext(criterionEvaluator, contextDoc, index);
 
         // Evaluate all criteria in parallel
         // The context handles caching and reference resolution

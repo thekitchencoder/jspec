@@ -130,29 +130,34 @@ public record CriterionReference(String ref) implements Criterion {
     }
 
     /**
-     * Evaluates this reference by looking up the cached result.
+     * Cache-only fallback for resolving this reference.
      *
-     * <p>Process:
+     * <p><b>This method is the no-index fallback only.</b> The primary resolution path is
+     * {@link EvaluationContext#getOrEvaluate(Criterion, Object)}, which special-cases
+     * references and resolves them centrally (including on-demand evaluation of the
+     * target and cycle detection). Crucially, that special-casing means
+     * {@code getOrEvaluate} <em>never</em> calls {@code reference.evaluate(...)} — so
+     * this method cannot recurse into itself, and a reference wrapper is never cached
+     * under its own id (which equals the target id).
+     *
+     * <p>This body is therefore reached only when a {@code CriterionReference} is
+     * evaluated directly (not via {@code getOrEvaluate}). It preserves the historical
+     * cache-only semantics:
      * <ol>
-     *   <li>Look up referenced criterion's result in the context cache</li>
-     *   <li>If found, return ReferenceResult wrapping the cached result</li>
-     *   <li>If not found, return UNDETERMINED with error message</li>
+     *   <li>Look up the referenced criterion's result in the context cache</li>
+     *   <li>If found, wrap it in a {@link ReferenceResult}</li>
+     *   <li>If not found, return UNDETERMINED via {@link ReferenceResult#missing}</li>
      * </ol>
-     *
-     * <p><b>Important:</b> Referenced criteria must be evaluated BEFORE references.
-     * The {@link uk.codery.jspec.evaluator.SpecificationEvaluator} ensures this by:
-     * <ul>
-     *   <li>Evaluating all non-reference criteria first</li>
-     *   <li>Then evaluating composites that may contain references</li>
-     * </ul>
      *
      * @param document the document being evaluated (unused by references)
      * @param context the evaluation context containing the result cache
-     * @return the referenced result (if found) or UNDETERMINED (if not found)
+     * @return the referenced result (if cached) or UNDETERMINED (if not)
      */
     @Override
     public EvaluationResult evaluate(Object document, EvaluationContext context) {
-        // Look up in cache - if not found, this is an error
+        // Cache-only fallback. The on-demand / cycle-aware path lives in
+        // EvaluationContext.getOrEvaluate, which does NOT call this method for
+        // references — so there is no recursion here.
         EvaluationResult referencedResult = context.getCached(ref);
 
         if (referencedResult == null) {

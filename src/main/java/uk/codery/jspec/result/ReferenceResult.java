@@ -112,6 +112,20 @@ public record ReferenceResult(
         return new ReferenceResult(reference, missingResult);
     }
 
+    /**
+     * Creates a cycle reference result (a reference cycle was detected while resolving
+     * this reference). Degrades gracefully to UNDETERMINED rather than recursing
+     * unboundedly.
+     */
+    public static ReferenceResult cycle(CriterionReference reference) {
+        QueryResult cycleResult = QueryResult.undetermined(
+                new QueryCriterion(reference.id()),
+                "Reference cycle detected involving criterion '" + reference.id() + "'",
+                Collections.singletonList("criterion-reference")
+        );
+        return new ReferenceResult(reference, cycleResult);
+    }
+
     @Override
     public String id() {
         return reference.id();
