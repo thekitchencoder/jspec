@@ -85,7 +85,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * // Get all available operator names
  * Set<String> operators = registry.availableOperators();
- * // Returns: [$eq, $ne, $gt, $gte, $lt, $lte, $in, $nin, $all, $size, $exists, $type, $regex, $elemMatch]
+ * // Returns the 20 defaults: [$eq, $ne, $gt, $gte, $lt, $lte, $in, $nin, $all, $size,
+ * //   $exists, $type, $regex, $elemMatch, $contains, $startsWith, $endsWith,
+ * //   $between, $dateBefore, $dateAfter]
  *
  * // Check if specific operator exists
  * if (registry.contains("$regex")) {
