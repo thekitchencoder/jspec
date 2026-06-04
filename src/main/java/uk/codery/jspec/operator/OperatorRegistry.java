@@ -620,6 +620,7 @@ public class OperatorRegistry {
         return false;
     }
 
+    // Standalone OperatorRegistry use; shadowed by CriterionEvaluator's richer impl.
     private boolean evaluateStartsWith(Object val, Object operand) {
         if (!(val instanceof String str) || !(operand instanceof String prefix)) {
             return false;
@@ -636,6 +637,7 @@ public class OperatorRegistry {
 
     // Range operator implementation (best-effort; CriterionEvaluator overrides this)
 
+    // Standalone OperatorRegistry use; shadowed by CriterionEvaluator's richer impl.
     private boolean evaluateBetween(Object val, Object operand) {
         if (!(operand instanceof List<?> range) || range.size() != 2) {
             return false;
@@ -645,6 +647,7 @@ public class OperatorRegistry {
 
     // Date operator implementations (best-effort; CriterionEvaluator overrides these)
 
+    // Standalone OperatorRegistry use; shadowed by CriterionEvaluator's richer impl.
     private boolean evaluateDateBefore(Object val, Object operand) {
         try {
             return java.time.Instant.parse(String.valueOf(val))

@@ -183,11 +183,11 @@ public class CriterionEvaluator {
      *
      * @return an unmodifiable, sorted set of operator names (each beginning with {@code $})
      */
-    public java.util.SortedSet<String> supportedOperators() {
-        java.util.TreeSet<String> all = new java.util.TreeSet<>(operators.keySet());
+    public SortedSet<String> supportedOperators() {
+        TreeSet<String> all = new TreeSet<>(operators.keySet());
         all.add("$and");
         all.add("$or");
-        return java.util.Collections.unmodifiableSortedSet(all);
+        return Collections.unmodifiableSortedSet(all);
     }
 
     /**
@@ -311,8 +311,13 @@ public class CriterionEvaluator {
      * registry ships only a best-effort placeholder (string/range/date operators).
      *
      * <p>The plain comparison operators ({@code $eq}, {@code $ne}, {@code $gt},
-     * {@code $gte}, {@code $lt}, {@code $lte}) are intentionally NOT overridden here,
-     * so they remain registry-overridable.
+     * {@code $gte}, {@code $lt}, {@code $lte}) are intentionally NOT overridden here:
+     * they are supplied by {@link OperatorRegistry#withDefaults()} (via its
+     * {@code greaterThan()}/{@code lessThan()} family) so they remain
+     * registry-overridable (see {@code CriterionEvaluatorCustomOperatorTest}). Their
+     * type-mismatch handling follows the project contract — incomparable operands
+     * (e.g. a String value against a numeric operand) yield NOT_MATCHED (the handler
+     * returns {@code false}), not UNDETERMINED.
      */
     private void registerEvaluatorBoundOperators() {
         operators.put("$contains", this::evaluateContainsOperator);
