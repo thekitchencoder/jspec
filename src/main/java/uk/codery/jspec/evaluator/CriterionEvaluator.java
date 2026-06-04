@@ -268,8 +268,7 @@ public class CriterionEvaluator {
      * <p>For custom operators, use {@link #CriterionEvaluator(OperatorRegistry)} instead.
      */
     public CriterionEvaluator() {
-        registerOperators();
-        log.debug("Created CriterionEvaluator with built-in operators");
+        this(OperatorRegistry.withDefaults());
     }
 
     /**
@@ -299,38 +298,29 @@ public class CriterionEvaluator {
             throw new IllegalArgumentException("OperatorRegistry cannot be null");
         }
         this.operators.putAll(registry.getAll());
-        // Override collection and advanced operators with internal implementations
-        // that have access to internal methods like matchValue()
-        registerInternalOperators();
+        // Overlay the operators the evaluator must own (stateful, recursive, or
+        // richer than the registry placeholders) with internal implementations.
+        registerEvaluatorBoundOperators();
         log.debug("Created CriterionEvaluator with custom registry ({} operators)", operators.size());
     }
 
     /**
-     * Registers all built-in operators.
-     * Called by the no-arg constructor for backward compatibility.
+     * Force-overrides the operators whose evaluator-bound implementations must win
+     * over whatever the registry supplied — either because they need evaluator
+     * instance state (regex cache, recursive {@code matchValue()}) or because the
+     * registry ships only a best-effort placeholder (string/range/date operators).
+     *
+     * <p>The plain comparison operators ({@code $eq}, {@code $ne}, {@code $gt},
+     * {@code $gte}, {@code $lt}, {@code $lte}) are intentionally NOT overridden here,
+     * so they remain registry-overridable.
      */
-    private void registerOperators() {
-        operators.put("$eq", Objects::equals);
-        operators.put("$ne", (val, operand) -> !Objects.equals(val, operand));
-        operators.put("$gt", (val, operand) -> compare(val, operand) > 0);
-        operators.put("$gte", (val, operand) -> compare(val, operand) >= 0);
-        operators.put("$lt", (val, operand) -> compare(val, operand) < 0);
-        operators.put("$lte", (val, operand) -> compare(val, operand) <= 0);
+    private void registerEvaluatorBoundOperators() {
         operators.put("$contains", this::evaluateContainsOperator);
         operators.put("$startsWith", this::evaluateStartsWithOperator);
         operators.put("$endsWith", this::evaluateEndsWithOperator);
         operators.put("$between", this::evaluateBetweenOperator);
         operators.put("$dateBefore", this::evaluateDateBeforeOperator);
         operators.put("$dateAfter", this::evaluateDateAfterOperator);
-        registerInternalOperators();
-    }
-
-    /**
-     * Registers operators that require access to internal methods.
-     * These operators need access to matchValue() and other internal state.
-     * Called by both constructors to ensure proper operator implementations.
-     */
-    private void registerInternalOperators() {
         operators.put("$in", this::evaluateInOperator);
         operators.put("$nin", this::evaluateNotInOperator);
         operators.put("$exists", this::evaluateExistsOperator);

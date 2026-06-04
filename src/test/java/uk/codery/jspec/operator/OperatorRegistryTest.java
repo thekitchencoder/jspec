@@ -42,11 +42,11 @@ class OperatorRegistryTest {
     }
 
     @Test
-    void testWithDefaults_shouldHave14Operators() {
+    void testWithDefaults_shouldHave20Operators() {
         registry = OperatorRegistry.withDefaults();
 
         assertThat(registry.isEmpty()).isFalse();
-        assertThat(registry.size()).isEqualTo(14);
+        assertThat(registry.size()).isEqualTo(20);
     }
 
     @Test
@@ -370,7 +370,7 @@ class OperatorRegistryTest {
         latch.await();
 
         assertThat(successCount.get()).isEqualTo(threadCount * operatorsPerThread);
-        assertThat(registry.size()).isEqualTo(14 + (threadCount * operatorsPerThread));
+        assertThat(registry.size()).isEqualTo(20 + (threadCount * operatorsPerThread));
     }
 
     @Test
@@ -400,7 +400,7 @@ class OperatorRegistryTest {
         latch.await();
 
         // Should not throw any exceptions and should have all custom operators
-        assertThat(registry.size()).isGreaterThanOrEqualTo(14);
+        assertThat(registry.size()).isGreaterThanOrEqualTo(20);
     }
 
     // ==================== Edge Cases ====================

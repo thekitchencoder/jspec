@@ -412,6 +412,18 @@ public class OperatorRegistry {
         register("$regex", this::evaluateRegex);
         register("$elemMatch", this::evaluateElemMatch);
 
+        // String operators
+        register("$contains", this::evaluateContains);
+        register("$startsWith", this::evaluateStartsWith);
+        register("$endsWith", this::evaluateEndsWith);
+
+        // Range operator - placeholder (CriterionEvaluator overrides with richer impl)
+        register("$between", this::evaluateBetween);
+
+        // Date operators - placeholders (CriterionEvaluator overrides with richer impl)
+        register("$dateBefore", this::evaluateDateBefore);
+        register("$dateAfter", this::evaluateDateAfter);
+
         log.debug("Registered {} default operators", operators.size());
     }
 
@@ -581,5 +593,63 @@ public class OperatorRegistry {
         }
         // Simplified: just check if list is not empty
         return !list.isEmpty();
+    }
+
+    // String operator implementations
+
+    private boolean evaluateContains(Object val, Object operand) {
+        if (val == null || operand == null) {
+            return false;
+        }
+        if (val instanceof String str && operand instanceof String substring) {
+            return str.contains(substring);
+        }
+        if (val instanceof Collection<?> collection) {
+            return collection.contains(operand);
+        }
+        return false;
+    }
+
+    private boolean evaluateStartsWith(Object val, Object operand) {
+        if (!(val instanceof String str) || !(operand instanceof String prefix)) {
+            return false;
+        }
+        return str.startsWith(prefix);
+    }
+
+    private boolean evaluateEndsWith(Object val, Object operand) {
+        if (!(val instanceof String str) || !(operand instanceof String suffix)) {
+            return false;
+        }
+        return str.endsWith(suffix);
+    }
+
+    // Range operator implementation (best-effort; CriterionEvaluator overrides this)
+
+    private boolean evaluateBetween(Object val, Object operand) {
+        if (!(operand instanceof List<?> range) || range.size() != 2) {
+            return false;
+        }
+        return greaterThanOrEqual(val, range.get(0)) && lessThanOrEqual(val, range.get(1));
+    }
+
+    // Date operator implementations (best-effort; CriterionEvaluator overrides these)
+
+    private boolean evaluateDateBefore(Object val, Object operand) {
+        try {
+            return java.time.Instant.parse(String.valueOf(val))
+                    .isBefore(java.time.Instant.parse(String.valueOf(operand)));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean evaluateDateAfter(Object val, Object operand) {
+        try {
+            return java.time.Instant.parse(String.valueOf(val))
+                    .isAfter(java.time.Instant.parse(String.valueOf(operand)));
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
