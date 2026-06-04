@@ -50,6 +50,18 @@ class OperatorRegistryTest {
     }
 
     @Test
+    void withDefaultsRegistersAllStandardOperators() {
+        OperatorRegistry registry = OperatorRegistry.withDefaults();
+        assertThat(registry.availableOperators()).contains(
+                "$eq","$ne","$gt","$gte","$lt","$lte",
+                "$in","$nin","$all","$size",
+                "$exists","$type","$regex","$elemMatch",
+                "$contains","$startsWith","$endsWith",
+                "$between","$dateBefore","$dateAfter");
+        assertThat(registry.size()).isEqualTo(20);
+    }
+
+    @Test
     void testWithDefaults_shouldContainAllBuiltInOperators() {
         registry = OperatorRegistry.withDefaults();
 

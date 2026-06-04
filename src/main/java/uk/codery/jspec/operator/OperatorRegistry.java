@@ -13,11 +13,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * All operations are thread-safe and can be called concurrently from multiple threads.
  *
  * <h2>Built-in Operators</h2>
- * The registry comes pre-configured with 13 MongoDB-style operators:
+ * The registry comes pre-configured with 20 MongoDB-style operators:
  * <ul>
- *   <li><b>Comparison:</b> {@code $eq}, {@code $ne}, {@code $gt}, {@code $gte}, {@code $lt}, {@code $lte}</li>
- *   <li><b>Collection:</b> {@code $in}, {@code $nin}, {@code $all}, {@code $size}</li>
- *   <li><b>Advanced:</b> {@code $exists}, {@code $type}, {@code $regex}, {@code $elemMatch}</li>
+ *   <li><b>Comparison (6):</b> {@code $eq}, {@code $ne}, {@code $gt}, {@code $gte}, {@code $lt}, {@code $lte}</li>
+ *   <li><b>Collection (4):</b> {@code $in}, {@code $nin}, {@code $all}, {@code $size}</li>
+ *   <li><b>Advanced (4):</b> {@code $exists}, {@code $type}, {@code $regex}, {@code $elemMatch}</li>
+ *   <li><b>String (3):</b> {@code $contains}, {@code $startsWith}, {@code $endsWith}</li>
+ *   <li><b>Range/Date (3):</b> {@code $between}, {@code $dateBefore}, {@code $dateAfter}</li>
  * </ul>
  *
  * <h2>Thread Safety</h2>
@@ -149,15 +151,17 @@ public class OperatorRegistry {
     /**
      * Creates an operator registry pre-populated with built-in operators.
      *
-     * <p>This factory method returns a new registry containing all 13 built-in
+     * <p>This factory method returns a new registry containing all 20 built-in
      * MongoDB-style operators. This is the recommended way to create a registry
      * for most use cases.
      *
      * <h3>Built-in Operators Included:</h3>
      * <ul>
-     *   <li><b>Comparison:</b> $eq, $ne, $gt, $gte, $lt, $lte</li>
-     *   <li><b>Collection:</b> $in, $nin, $all, $size</li>
-     *   <li><b>Advanced:</b> $exists, $type, $regex, $elemMatch</li>
+     *   <li><b>Comparison (6):</b> $eq, $ne, $gt, $gte, $lt, $lte</li>
+     *   <li><b>Collection (4):</b> $in, $nin, $all, $size</li>
+     *   <li><b>Advanced (4):</b> $exists, $type, $regex, $elemMatch</li>
+     *   <li><b>String (3):</b> $contains, $startsWith, $endsWith</li>
+     *   <li><b>Range/Date (3):</b> $between, $dateBefore, $dateAfter</li>
      * </ul>
      *
      * <h3>Example:</h3>
@@ -172,7 +176,7 @@ public class OperatorRegistry {
      * CriterionEvaluator evaluator = new CriterionEvaluator(registry);
      * }</pre>
      *
-     * @return a new {@code OperatorRegistry} with all built-in operators registered
+     * @return a new {@code OperatorRegistry} with all 20 built-in operators registered
      * @see #OperatorRegistry()
      */
     public static OperatorRegistry withDefaults() {
@@ -328,7 +332,7 @@ public class OperatorRegistry {
      * <pre>{@code
      * OperatorRegistry registry = OperatorRegistry.withDefaults();
      * System.out.println("Total operators: " + registry.size());
-     * // Output: Total operators: 14
+     * // Output: Total operators: 20
      * }</pre>
      *
      * @return the count of registered operators
@@ -371,7 +375,7 @@ public class OperatorRegistry {
      *
      * <p>This method is called automatically by {@link #withDefaults()}.
      *
-     * <p><b>Built-in Operators:</b>
+     * <p><b>Built-in Operators (20):</b>
      * <ul>
      *   <li>{@code $eq} - Equality comparison</li>
      *   <li>{@code $ne} - Not equal comparison</li>
@@ -387,6 +391,12 @@ public class OperatorRegistry {
      *   <li>{@code $type} - Type check</li>
      *   <li>{@code $regex} - Regular expression match</li>
      *   <li>{@code $elemMatch} - Array element match</li>
+     *   <li>{@code $contains} - Substring or collection element check</li>
+     *   <li>{@code $startsWith} - String prefix match</li>
+     *   <li>{@code $endsWith} - String suffix match</li>
+     *   <li>{@code $between} - Inclusive numeric range check</li>
+     *   <li>{@code $dateBefore} - Date less than (best-effort ISO-8601)</li>
+     *   <li>{@code $dateAfter} - Date greater than (best-effort ISO-8601)</li>
      * </ul>
      */
     private void registerDefaultOperators() {
