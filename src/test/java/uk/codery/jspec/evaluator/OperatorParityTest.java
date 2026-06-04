@@ -37,4 +37,15 @@ class OperatorParityTest {
         Map<String, Object> q = Map.of("n", Map.of("$gte", 5));
         assertThat(eval(noArg, q)).isEqualTo(eval(viaRegistry, q));
     }
+
+    @Test
+    void bothConstructorsExposeIdenticalOperatorKeySet() {
+        assertThat(viaRegistry.supportedOperators())
+                .isEqualTo(noArg.supportedOperators());
+    }
+
+    @Test
+    void supportedOperatorsIncludesLogicalCombinators() {
+        assertThat(noArg.supportedOperators()).contains("$and", "$or");
+    }
 }

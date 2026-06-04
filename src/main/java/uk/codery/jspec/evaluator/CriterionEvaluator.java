@@ -176,6 +176,21 @@ public class CriterionEvaluator {
     private final Map<String, OperatorHandler> operators = new HashMap<>();
 
     /**
+     * Returns the full set of query operators this evaluator supports, including
+     * the {@code $and}/{@code $or} logical combinators (which are evaluated tri-state
+     * rather than via {@link uk.codery.jspec.operator.OperatorHandler}). This is the
+     * canonical source of truth for documentation and tooling.
+     *
+     * @return an unmodifiable, sorted set of operator names (each beginning with {@code $})
+     */
+    public java.util.SortedSet<String> supportedOperators() {
+        java.util.TreeSet<String> all = new java.util.TreeSet<>(operators.keySet());
+        all.add("$and");
+        all.add("$or");
+        return java.util.Collections.unmodifiableSortedSet(all);
+    }
+
+    /**
      * Thread-safe LRU cache for compiled regex patterns.
      * Caches up to 100 patterns to avoid recompiling frequently used patterns.
      * Performance impact: ~10-100x faster for repeated patterns.
