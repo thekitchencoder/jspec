@@ -149,13 +149,20 @@ import static java.util.function.Predicate.not;
  * @since 0.3.0
  */
 @Slf4j
-public record SpecificationEvaluator(Specification specification, CriterionEvaluator criterionEvaluator) {
+public final class SpecificationEvaluator {
+
+    private final Specification specification;
+    private final CriterionEvaluator criterionEvaluator;
+    private final Map<String, Criterion> criterionIndex;
 
     /**
      * Canonical constructor that normalises the bound specification's query
      * criteria, replacing raw {@code { "$contextPath": "..." }} maps with typed
      * {@link uk.codery.jspec.model.ContextPathReference} instances. This shifts
-     * sentinel detection out of the per-evaluation hot path.
+     * sentinel detection out of the per-evaluation hot path. The criterion index
+     * (id → definition, used for on-demand reference resolution) is also built once
+     * here, since the bound specification is immutable and the index never changes
+     * between {@code evaluate} calls.
      *
      * @param specification the specification to bind (normalised before storing)
      * @param criterionEvaluator the criterion evaluator to use for query evaluation
@@ -163,6 +170,7 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
     public SpecificationEvaluator(Specification specification, CriterionEvaluator criterionEvaluator) {
         this.specification = normalise(specification);
         this.criterionEvaluator = criterionEvaluator;
+        this.criterionIndex = buildCriterionIndex(this.specification.criteria());
     }
 
     /**
@@ -196,11 +204,17 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      *
      * @return the normalised specification bound to this evaluator
      */
-    @Override
     public Specification specification() {
-        // Override exists only to attach the Javadoc above — the body is identical to
-        // the record's auto-generated accessor; no structural behaviour here.
         return specification;
+    }
+
+    /**
+     * Returns the criterion evaluator bound to this specification evaluator.
+     *
+     * @return the evaluator used for query criterion evaluation
+     */
+    public CriterionEvaluator criterionEvaluator() {
+        return criterionEvaluator;
     }
 
     private static Specification normalise(Specification spec) {
@@ -345,34 +359,38 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
     public EvaluationOutcome evaluate(Object document, Object contextDoc) {
         log.info("Starting evaluation of specification '{}'", specification.id());
 
-        // Build the criterion index (id → definition) so references can be resolved
-        // on demand regardless of evaluation order — including references to composites.
-        Map<String, Criterion> index = buildCriterionIndex(specification.criteria());
+        // Create evaluation context with result cache, context document, and the
+        // pre-computed criterion index (built once at construction).
+        EvaluationContext context = new EvaluationContext(criterionEvaluator, contextDoc, criterionIndex);
 
-        // Create evaluation context with result cache, context document, and index
-        EvaluationContext context = new EvaluationContext(criterionEvaluator, contextDoc, index);
+        List<EvaluationResult> results;
+        try {
+            // The context handles caching and reference resolution.
 
-        // Evaluate all criteria in parallel
-        // The context handles caching and reference resolution
+            // Phase 1 (queries) carries the parallel workload — queries never trigger
+            // on-demand reference resolution, so there is no cross-thread cycle hazard here.
+            specification.criteria().parallelStream().filter(QueryCriterion.class::isInstance)
+                    .forEach(criterion -> context.getOrEvaluate(criterion, document));
+            // Phase 2 is intentionally SEQUENTIAL: composite/reference evaluation can trigger
+            // on-demand resolution of referenced criteria, and the reference-cycle guard is
+            // per-thread. Running this phase in parallel allows two mutually-referencing
+            // top-level composites to deadlock on ConcurrentHashMap.computeIfAbsent bin locks
+            // across threads. Phase 1 (queries) carries the parallel workload; phase 2 is cheap
+            // orchestration over already-cached results.
+            specification.criteria().stream().filter(not(QueryCriterion.class::isInstance))
+                    .forEach(criterion -> context.getOrEvaluate(criterion, document));
 
-        // Phase 1 (queries) carries the parallel workload — queries never trigger
-        // on-demand reference resolution, so there is no cross-thread cycle hazard here.
-        specification.criteria().parallelStream().filter(QueryCriterion.class::isInstance)
-                .forEach(criterion -> context.getOrEvaluate(criterion, document));
-        // Phase 2 is intentionally SEQUENTIAL: composite/reference evaluation can trigger
-        // on-demand resolution of referenced criteria, and the reference-cycle guard is
-        // per-thread. Running this phase in parallel allows two mutually-referencing
-        // top-level composites to deadlock on ConcurrentHashMap.computeIfAbsent bin locks
-        // across threads. Phase 1 (queries) carries the parallel workload; phase 2 is cheap
-        // orchestration over already-cached results.
-        specification.criteria().stream().filter(not(QueryCriterion.class::isInstance))
-                .forEach(criterion -> context.getOrEvaluate(criterion, document));
+            log.debug("Evaluated {} criteria for specification '{}'",
+                    context.cacheSize(), specification.id());
 
-        log.debug("Evaluated {} criteria for specification '{}'",
-                context.cacheSize(), specification.id());
-
-        // Collect all results from cache
-        List<EvaluationResult> results = List.copyOf(context.getAllResults());
+            // Collect all results from cache
+            results = List.copyOf(context.getAllResults());
+        } finally {
+            // Remove the per-thread cycle-guard state from the calling thread so it does
+            // not linger on pooled threads (phase 2 runs on the calling thread; only it
+            // touches the guard).
+            context.clearThreadCycleState();
+        }
 
         // Generate summary from results
         EvaluationSummary summary = EvaluationSummary.from(results);

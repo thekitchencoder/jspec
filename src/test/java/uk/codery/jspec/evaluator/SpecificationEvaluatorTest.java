@@ -33,6 +33,19 @@ class SpecificationEvaluatorTest {
         );
     }
 
+    // ========== Accessors ==========
+
+    @Test
+    void criterionEvaluator_returnsBoundEvaluator() {
+        Specification spec = new Specification("s", List.of(
+                new QueryCriterion("age-check", Map.of("age", Map.of("$gte", 18)))));
+        CriterionEvaluator custom = new CriterionEvaluator();
+
+        assertThat(new SpecificationEvaluator(spec, custom).criterionEvaluator()).isSameAs(custom);
+        // The single-arg constructor creates its own evaluator.
+        assertThat(new SpecificationEvaluator(spec).criterionEvaluator()).isNotNull();
+    }
+
     // ========== Basic Specification Evaluation ==========
 
     @Test

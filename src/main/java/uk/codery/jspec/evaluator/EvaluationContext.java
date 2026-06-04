@@ -1,5 +1,6 @@
 package uk.codery.jspec.evaluator;
 
+import uk.codery.jspec.model.CompositeCriterion;
 import uk.codery.jspec.model.Criterion;
 import uk.codery.jspec.model.CriterionReference;
 import uk.codery.jspec.result.EvaluationResult;
@@ -226,21 +227,48 @@ public class EvaluationContext {
         if (cached != null) {
             return cached;
         }
-        // Record this id as in-progress on this thread so a reference back to it (a cycle)
-        // is detected in resolveReference BEFORE any re-entrant computeIfAbsent on the
-        // same key — which would otherwise trip ConcurrentHashMap's "Recursive update".
-        Set<String> inProgress = resolving.get();
-        boolean added = inProgress.add(criterion.id());
-        try {
-            return cache.computeIfAbsent(
-                    criterion.id(),
-                    id -> criterion.evaluate(document, this)
-            );
-        } finally {
-            if (added) {
-                inProgress.remove(criterion.id());
+        // Only composites can recurse into children that reference back into themselves, so
+        // only they need cycle-guard tracking. Recording the id BEFORE computeIfAbsent lets a
+        // self-referencing composite trip the guard in resolveReference before any same-key
+        // re-entrant computeIfAbsent (which would otherwise throw "Recursive update"). Leaf
+        // queries skip the ThreadLocal entirely, so parallel phase-1 query evaluation never
+        // touches it — which keeps the guard a single-threaded concern (see clearThreadCycleState).
+        if (criterion instanceof CompositeCriterion) {
+            Set<String> inProgress = resolving.get();
+            // May already be present if we arrived here via resolveReference (the reference's
+            // ref equals this composite's id); in that case added==false and the owning
+            // resolveReference call removes it — this finally must not.
+            boolean added = inProgress.add(criterion.id());
+            try {
+                return cache.computeIfAbsent(
+                        criterion.id(),
+                        id -> criterion.evaluate(document, this)
+                );
+            } finally {
+                if (added) {
+                    inProgress.remove(criterion.id());
+                }
             }
         }
+        return cache.computeIfAbsent(
+                criterion.id(),
+                id -> criterion.evaluate(document, this)
+        );
+    }
+
+    /**
+     * Removes this context's per-thread reference-cycle guard state from the calling thread.
+     *
+     * <p>The cycle guard is a {@link ThreadLocal}; balanced add/remove leaves the set empty
+     * after evaluation, but the empty set object would otherwise linger in the calling
+     * thread's {@code ThreadLocalMap} until this context is garbage-collected. Pooled threads
+     * (a {@code parallelStream} ForkJoinPool worker, an embedded servlet container thread, …)
+     * outlive a single evaluation, so {@link SpecificationEvaluator} calls this once each
+     * evaluation completes. Only the calling thread is affected — composites, the only
+     * criteria that touch the guard, are evaluated sequentially on that thread.
+     */
+    public void clearThreadCycleState() {
+        resolving.remove();
     }
 
     /**
