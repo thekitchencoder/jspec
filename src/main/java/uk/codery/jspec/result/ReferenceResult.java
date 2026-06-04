@@ -120,7 +120,8 @@ public record ReferenceResult(
     public static ReferenceResult cycle(CriterionReference reference) {
         QueryResult cycleResult = QueryResult.undetermined(
                 new QueryCriterion(reference.id()),
-                "Reference cycle detected involving criterion '" + reference.id() + "'",
+                "Reference cycle detected at criterion '" + reference.id()
+                        + "' (references '" + reference.ref() + "')",
                 Collections.singletonList("criterion-reference")
         );
         return new ReferenceResult(reference, cycleResult);

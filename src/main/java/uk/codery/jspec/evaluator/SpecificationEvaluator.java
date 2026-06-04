@@ -27,7 +27,8 @@ import static java.util.function.Predicate.not;
  * <h2>Key Features</h2>
  * <ul>
  *   <li><b>Specification Binding:</b> Each evaluator is bound to a single specification</li>
- *   <li><b>Parallel Evaluation:</b> Criteria are evaluated concurrently using parallel streams</li>
+ *   <li><b>Parallel Query Evaluation:</b> Query criteria are evaluated concurrently using
+ *       parallel streams; composite/reference evaluation runs sequentially for cycle-safety</li>
  *   <li><b>Result Caching:</b> Individual criterion results are cached for efficient reference reuse</li>
  *   <li><b>Graceful Degradation:</b> One failed criterion never stops the overall evaluation</li>
  *   <li><b>Comprehensive Results:</b> Returns detailed outcomes with summary statistics</li>
@@ -253,7 +254,8 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      * <p>This method:
      * <ol>
      *   <li>Creates an {@link EvaluationContext} for result caching</li>
-     *   <li>Evaluates all criteria in parallel (uses cache for references)</li>
+     *   <li>Evaluates query criteria in parallel, then composites/references sequentially
+     *       (uses cache for references)</li>
      *   <li>Collects all results from the cache</li>
      *   <li>Generates summary statistics</li>
      *   <li>Returns comprehensive evaluation outcome</li>
@@ -261,7 +263,8 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      *
      * <h3>Evaluation Process:</h3>
      * <ul>
-     *   <li><b>Parallel Evaluation:</b> All criteria evaluated concurrently</li>
+     *   <li><b>Parallel Query Evaluation:</b> Query criteria evaluated concurrently;
+     *       composites/references evaluated sequentially for reference-cycle safety</li>
      *   <li><b>Result Caching:</b> Results stored in context by criterion ID</li>
      *   <li><b>Reference Reuse:</b> References use cached results (no re-evaluation)</li>
      *   <li><b>Summary Generation:</b> Statistics computed from all results</li>
@@ -352,11 +355,17 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
         // Evaluate all criteria in parallel
         // The context handles caching and reference resolution
 
-        // Simple QueryCriterion first
+        // Phase 1 (queries) carries the parallel workload — queries never trigger
+        // on-demand reference resolution, so there is no cross-thread cycle hazard here.
         specification.criteria().parallelStream().filter(QueryCriterion.class::isInstance)
                 .forEach(criterion -> context.getOrEvaluate(criterion, document));
-        // Now composite and reference types
-        specification.criteria().parallelStream().filter(not(QueryCriterion.class::isInstance))
+        // Phase 2 is intentionally SEQUENTIAL: composite/reference evaluation can trigger
+        // on-demand resolution of referenced criteria, and the reference-cycle guard is
+        // per-thread. Running this phase in parallel allows two mutually-referencing
+        // top-level composites to deadlock on ConcurrentHashMap.computeIfAbsent bin locks
+        // across threads. Phase 1 (queries) carries the parallel workload; phase 2 is cheap
+        // orchestration over already-cached results.
+        specification.criteria().stream().filter(not(QueryCriterion.class::isInstance))
                 .forEach(criterion -> context.getOrEvaluate(criterion, document));
 
         log.debug("Evaluated {} criteria for specification '{}'",

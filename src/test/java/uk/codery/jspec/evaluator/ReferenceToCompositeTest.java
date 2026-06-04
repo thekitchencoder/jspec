@@ -1,6 +1,7 @@
 package uk.codery.jspec.evaluator;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import uk.codery.jspec.model.CompositeCriterion;
 import uk.codery.jspec.model.CriterionReference;
 import uk.codery.jspec.model.Junction;
@@ -12,6 +13,7 @@ import uk.codery.jspec.result.EvaluationState;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -96,6 +98,32 @@ class ReferenceToCompositeTest {
             assertThat(resultFor(outcome, "a").state()).isEqualTo(EvaluationState.UNDETERMINED);
             assertThat(resultFor(outcome, "b").state()).isEqualTo(EvaluationState.UNDETERMINED);
         }).doesNotThrowAnyException();
+    }
+
+    /**
+     * Concurrency regression: two mutually-referencing TOP-LEVEL composites
+     * ({@code a}→ref(b), {@code b}→ref(a)) must never deadlock. Before phase 2 was made
+     * sequential, scheduling these two composites on different ForkJoinPool worker threads
+     * could deadlock on {@code ConcurrentHashMap.computeIfAbsent} bin locks across threads
+     * (the per-thread cycle guard cannot see across threads). The {@link Timeout} makes a
+     * deadlock fail fast instead of hanging the build.
+     */
+    @Test
+    @Timeout(value = 10, unit = TimeUnit.SECONDS)
+    void mutualTopLevelCycle_completesWithoutDeadlock() {
+        // two TOP-LEVEL composites referencing each other
+        Specification spec = new Specification("mutual", List.of(
+                new CompositeCriterion("a", Junction.AND, List.of(new CriterionReference("b"))),
+                new CompositeCriterion("b", Junction.AND, List.of(new CriterionReference("a")))
+        ));
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+        // run several times to exercise scheduling; must always complete and be graceful
+        for (int i = 0; i < 50; i++) {
+            EvaluationOutcome outcome = evaluator.evaluate(Map.of());
+            // both a and b must be UNDETERMINED (cycle), never crash/hang
+            assertThat(outcome.results()).allSatisfy(r ->
+                    assertThat(r.state()).isEqualTo(EvaluationState.UNDETERMINED));
+        }
     }
 
     /**

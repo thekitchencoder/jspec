@@ -218,6 +218,10 @@ public class EvaluationContext {
         }
         // Already cached? Return it without entering computeIfAbsent. This also serves as
         // a fast path when a composite is reached on demand via a reference.
+        // NOTE: this is purely an optimization to skip the inProgress bookkeeping churn —
+        // it is NOT a check-then-act bug. The computeIfAbsent below remains the atomic
+        // source of truth, so concurrent callers that race past this read still resolve to
+        // a single cached result.
         EvaluationResult cached = cache.get(criterion.id());
         if (cached != null) {
             return cached;
