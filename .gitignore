@@ -20,3 +20,6 @@
 # Examples
 /examples/*/target/
 /examples/*/.idea/
+
+# Claude Code harness
+/.claude/
