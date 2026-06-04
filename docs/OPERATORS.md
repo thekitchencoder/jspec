@@ -139,7 +139,7 @@ These operators combine or invert query conditions for a single field. They diff
 | `$and`   | All nested sub-queries must match (Strong Kleene)    | `Map.of("age", Map.of("$and", List.of(Map.of("$gte", 18), Map.of("$lt", 65))))` |
 | `$or`    | Any nested sub-query must match (Strong Kleene)      | `Map.of("score", Map.of("$or", List.of(Map.of("$eq", 0), Map.of("$gte", 80))))` |
 
-`$not` takes a single nested query `Map` and inverts its result: a nested MATCHED becomes NOT_MATCHED and vice versa. `$and`/`$or` take a `List` of nested query maps and combine their tri-state results using Strong Kleene (K3) logic — so `$or` short-circuits to MATCHED on any match, and `$and` short-circuits to NOT_MATCHED on any non-match, even when some sub-queries are UNDETERMINED.
+`$not` takes a single nested query `Map` and inverts its result: a nested MATCHED becomes NOT_MATCHED and vice versa. A nested UNDETERMINED yields NOT_MATCHED — UNDETERMINED is not propagated through inversion. `$and`/`$or` take a `List` of nested query maps and combine their tri-state results using Strong Kleene (K3) logic — so `$or` short-circuits to MATCHED on any match, and `$and` short-circuits to NOT_MATCHED on any non-match, even when some sub-queries are UNDETERMINED.
 
 ### Example:
 ```java
