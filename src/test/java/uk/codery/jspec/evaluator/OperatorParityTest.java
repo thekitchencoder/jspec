@@ -12,8 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * The no-arg constructor and the OperatorRegistry.withDefaults() constructor
- * must expose the SAME operator set with the SAME behaviour. See
- * docs/plans/2026-06-04-operator-registry-unification.md.
+ * must expose the SAME operator set with the SAME behaviour.
  */
 class OperatorParityTest {
 

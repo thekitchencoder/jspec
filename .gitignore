@@ -23,3 +23,6 @@
 
 # Claude Code harness
 /.claude/
+
+# Implementation plans (working scaffolding, not repo documentation)
+/docs/plans/

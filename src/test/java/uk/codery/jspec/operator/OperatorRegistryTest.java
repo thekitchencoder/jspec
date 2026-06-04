@@ -730,6 +730,9 @@ class OperatorRegistryTest {
         assertThat(dateBefore.evaluate("2021-01-01T00:00:00Z", "2020-01-01T00:00:00Z")).isFalse();
         // Unparseable → false (exception path)
         assertThat(dateBefore.evaluate("not-a-date", "2020-01-01T00:00:00Z")).isFalse();
+        // Documented limitation: the standalone registry impl accepts only full ISO-8601
+        // instants, so a date-only string yields false here (CriterionEvaluator accepts it).
+        assertThat(dateBefore.evaluate("2020-01-01", "2021-01-01")).isFalse();
     }
 
     @Test

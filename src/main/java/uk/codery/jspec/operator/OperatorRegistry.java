@@ -637,9 +637,19 @@ public class OperatorRegistry {
         return str.endsWith(suffix);
     }
 
-    // Range operator implementation (best-effort; CriterionEvaluator overrides this)
+    // Range operator implementation
 
-    // Standalone OperatorRegistry use; shadowed by CriterionEvaluator's richer impl.
+    /**
+     * {@code $between} for standalone {@code OperatorRegistry} use; shadowed by
+     * {@link uk.codery.jspec.evaluator.CriterionEvaluator}'s implementation when the registry
+     * backs an evaluator.
+     *
+     * <p><b>Divergence note:</b> this version uses the registry's own
+     * {@link #greaterThanOrEqual}/{@link #lessThanOrEqual} comparison helpers, whereas the
+     * evaluator uses its {@code compare()} routine. The two agree for ordinary numeric and
+     * {@link Comparable} operands; results may differ only on exotic mixed types. For the
+     * authoritative semantics, evaluate through {@code CriterionEvaluator}.
+     */
     private boolean evaluateBetween(Object val, Object operand) {
         if (!(operand instanceof List<?> range) || range.size() != 2) {
             return false;
@@ -647,9 +657,19 @@ public class OperatorRegistry {
         return greaterThanOrEqual(val, range.get(0)) && lessThanOrEqual(val, range.get(1));
     }
 
-    // Date operator implementations (best-effort; CriterionEvaluator overrides these)
+    // Date operator implementations
 
-    // Standalone OperatorRegistry use; shadowed by CriterionEvaluator's richer impl.
+    /**
+     * {@code $dateBefore} for standalone {@code OperatorRegistry} use; shadowed by
+     * {@link uk.codery.jspec.evaluator.CriterionEvaluator}'s richer implementation.
+     *
+     * <p><b>Limitation:</b> this version accepts <em>only</em> full ISO-8601 instant strings
+     * with an offset (e.g. {@code "2020-01-01T00:00:00Z"}) via {@link java.time.Instant#parse}.
+     * Date-only strings ({@code "2025-01-01"}), epoch-millis, and the {@code "now"} sentinel —
+     * all supported by {@code CriterionEvaluator} — are <em>not</em> parsed here and yield
+     * {@code false}. Use {@code CriterionEvaluator} for the full date semantics documented in
+     * {@code docs/OPERATORS.md}.
+     */
     private boolean evaluateDateBefore(Object val, Object operand) {
         try {
             return java.time.Instant.parse(String.valueOf(val))
@@ -659,6 +679,11 @@ public class OperatorRegistry {
         }
     }
 
+    /**
+     * {@code $dateAfter} for standalone {@code OperatorRegistry} use; shadowed by
+     * {@link uk.codery.jspec.evaluator.CriterionEvaluator}'s richer implementation. Carries the
+     * same ISO-8601-instant-only limitation as {@link #evaluateDateBefore}.
+     */
     private boolean evaluateDateAfter(Object val, Object operand) {
         try {
             return java.time.Instant.parse(String.valueOf(val))
