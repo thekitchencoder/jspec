@@ -3,6 +3,7 @@ package uk.codery.jspec.operator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -655,5 +656,90 @@ class OperatorRegistryTest {
         // Long vs Integer
         assertThat(gt.evaluate(100L, 99)).isTrue();
         assertThat(lt.evaluate(99L, 100)).isTrue();
+    }
+
+    // ==================== String / Range / Date Default Operators ====================
+    // These default implementations exist for standalone OperatorRegistry use; inside a
+    // CriterionEvaluator they are shadowed by richer implementations. Exercised directly
+    // here so the registry's own behaviour is covered.
+
+    @Test
+    void testDefaultOperator_contains_shouldWorkCorrectly() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler contains = registry.get("$contains");
+
+        // String substring
+        assertThat(contains.evaluate("hello world", "lo wo")).isTrue();
+        assertThat(contains.evaluate("hello", "xyz")).isFalse();
+        // Collection membership
+        assertThat(contains.evaluate(List.of("a", "b", "c"), "b")).isTrue();
+        assertThat(contains.evaluate(List.of("a", "b"), "z")).isFalse();
+        // Null operands and unsupported value types → false
+        assertThat(contains.evaluate(null, "x")).isFalse();
+        assertThat(contains.evaluate("x", null)).isFalse();
+        assertThat(contains.evaluate(42, 4)).isFalse();
+    }
+
+    @Test
+    void testDefaultOperator_startsWith_shouldWorkCorrectly() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler startsWith = registry.get("$startsWith");
+
+        assertThat(startsWith.evaluate("hello", "he")).isTrue();
+        assertThat(startsWith.evaluate("hello", "lo")).isFalse();
+        // Non-String value or operand → false
+        assertThat(startsWith.evaluate(42, "4")).isFalse();
+        assertThat(startsWith.evaluate("hello", 5)).isFalse();
+    }
+
+    @Test
+    void testDefaultOperator_endsWith_shouldWorkCorrectly() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler endsWith = registry.get("$endsWith");
+
+        assertThat(endsWith.evaluate("hello", "lo")).isTrue();
+        assertThat(endsWith.evaluate("hello", "he")).isFalse();
+        // Non-String value or operand → false
+        assertThat(endsWith.evaluate(42, "2")).isFalse();
+        assertThat(endsWith.evaluate("hello", 5)).isFalse();
+    }
+
+    @Test
+    void testDefaultOperator_between_shouldWorkCorrectly() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler between = registry.get("$between");
+
+        // Inclusive [min, max]
+        assertThat(between.evaluate(5, List.of(1, 10))).isTrue();
+        assertThat(between.evaluate(1, List.of(1, 10))).isTrue();
+        assertThat(between.evaluate(10, List.of(1, 10))).isTrue();
+        // Below min / above max
+        assertThat(between.evaluate(0, List.of(1, 10))).isFalse();
+        assertThat(between.evaluate(11, List.of(1, 10))).isFalse();
+        // Invalid operand shapes → false
+        assertThat(between.evaluate(5, "not-a-list")).isFalse();
+        assertThat(between.evaluate(5, List.of(1, 2, 3))).isFalse();
+    }
+
+    @Test
+    void testDefaultOperator_dateBefore_shouldWorkCorrectly() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler dateBefore = registry.get("$dateBefore");
+
+        assertThat(dateBefore.evaluate("2020-01-01T00:00:00Z", "2021-01-01T00:00:00Z")).isTrue();
+        assertThat(dateBefore.evaluate("2021-01-01T00:00:00Z", "2020-01-01T00:00:00Z")).isFalse();
+        // Unparseable → false (exception path)
+        assertThat(dateBefore.evaluate("not-a-date", "2020-01-01T00:00:00Z")).isFalse();
+    }
+
+    @Test
+    void testDefaultOperator_dateAfter_shouldWorkCorrectly() {
+        registry = OperatorRegistry.withDefaults();
+        OperatorHandler dateAfter = registry.get("$dateAfter");
+
+        assertThat(dateAfter.evaluate("2021-01-01T00:00:00Z", "2020-01-01T00:00:00Z")).isTrue();
+        assertThat(dateAfter.evaluate("2020-01-01T00:00:00Z", "2021-01-01T00:00:00Z")).isFalse();
+        // Unparseable → false (exception path)
+        assertThat(dateAfter.evaluate("not-a-date", "2020-01-01T00:00:00Z")).isFalse();
     }
 }
