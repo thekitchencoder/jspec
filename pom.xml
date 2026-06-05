@@ -45,7 +45,7 @@
         <lombok.version>1.18.42</lombok.version>
         <slf4j.version>2.0.9</slf4j.version>
         <junit.version>5.10.1</junit.version>
-        <assertj.version>3.24.2</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
         <slf4j.version>2.0.9</slf4j.version>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>

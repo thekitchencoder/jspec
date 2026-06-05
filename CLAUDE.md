@@ -777,7 +777,7 @@ on reference or value equality between the returned spec and the one you passed 
 <dependency>
     <groupId>org.assertj</groupId>
     <artifactId>assertj-core</artifactId>
-    <version>3.24.2</version>
+    <version>3.27.7</version>
     <scope>test</scope>
 </dependency>
 
