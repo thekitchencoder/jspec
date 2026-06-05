@@ -2,7 +2,7 @@
 
 JSPEC supports 23 query operators out of the box, grouped into comparison, collection, advanced, string, date/range, and logical categories. Many use familiar MongoDB-style query syntax; `$contains`, `$startsWith`, `$endsWith`, `$between`, `$dateBefore`, and `$dateAfter` are jspec extensions, and `$and`/`$or`/`$not` are logical operators. Examples below use Java's `Map.of`/`List.of`; equivalent YAML/JSON works identically inside a `Specification`.
 
-Twenty of these are registered by `OperatorRegistry.withDefaults()`; `CriterionEvaluator` adds `$not` plus the `$and`/`$or` logical combinators, giving the 23 reported by `CriterionEvaluator.supportedOperators()` (the canonical source of truth).
+`OperatorRegistry.withDefaults()` seeds only the six overridable comparison operators (`$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`); `CriterionEvaluator` owns and registers the other 17 (collection, advanced, string, date/range, and the `$not`/`$and`/`$or` logical operators), giving the 23 reported by `CriterionEvaluator.supportedOperators()` (the canonical source of truth).
 
 ## Comparison Operators (6)
 

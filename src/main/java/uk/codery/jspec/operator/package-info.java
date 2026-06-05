@@ -2,9 +2,8 @@
  * Operator extensibility support for custom MongoDB-style query operators.
  *
  * <p>This package provides the infrastructure for extending the library with custom
- * operators beyond the 20 built-in operators registered by
- * {@link uk.codery.jspec.operator.OperatorRegistry#withDefaults()}. Users can register custom
- * operators to handle domain-specific evaluation logic.
+ * operators beyond the built-in set. Users can register custom operators to handle
+ * domain-specific evaluation logic.
  *
  * <h2>Core Classes</h2>
  *
@@ -42,11 +41,14 @@
  *
  * <h2>Built-in Operators</h2>
  *
- * <p>{@link uk.codery.jspec.operator.OperatorRegistry#withDefaults()} provides 20 operators
- * out of the box (the {@link uk.codery.jspec.evaluator.CriterionEvaluator} additionally
- * supports the {@code $not}, {@code $and}, and {@code $or} logical operators, for 23 total):
+ * <p>A {@link uk.codery.jspec.evaluator.CriterionEvaluator} supports 23 operators in total.
+ * {@link uk.codery.jspec.operator.OperatorRegistry#withDefaults()} seeds only the six
+ * <em>overridable</em> comparison operators below; the {@code CriterionEvaluator} registers
+ * every other operator itself (collection, advanced, string, range/date, and the
+ * {@code $not}/{@code $and}/{@code $or} logical operators), because those need evaluator
+ * internals. {@code CriterionEvaluator.supportedOperators()} is the canonical list.
  *
- * <h3>Comparison (6 operators)</h3>
+ * <h3>Comparison (6 operators — the registry defaults)</h3>
  * <ul>
  *   <li>{@code $eq} - Equality</li>
  *   <li>{@code $ne} - Not equal</li>

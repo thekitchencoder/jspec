@@ -163,7 +163,7 @@ Implementation:
 
 ### 3. Operator System
 
-23 query operators supported by `CriterionEvaluator` (via `supportedOperators()`). Twenty are registered by `OperatorRegistry.withDefaults()`; `CriterionEvaluator` adds `$not` plus the `$and`/`$or` logical combinators (special-cased in `evaluateOperator`). Not all are literally "MongoDB-style" — `$contains`/`$startsWith`/`$endsWith`/`$between`/`$dateBefore`/`$dateAfter` are jspec extensions, and `$and`/`$or`/`$not` are logical operators.
+23 query operators supported by `CriterionEvaluator` (via `supportedOperators()`). `OperatorRegistry.withDefaults()` seeds only the 6 overridable comparison operators (`$eq`/`$ne`/`$gt`/`$gte`/`$lt`/`$lte`); `CriterionEvaluator` owns and registers the other 17 — collection, advanced, string, range/date, and the `$not`/`$and`/`$or` logical operators (`$and`/`$or` special-cased in `evaluateOperator`). The evaluator-owned ones live there because they need evaluator internals (regex cache, recursive `matchValue`, rich date parsing) or are jspec extensions. Not all are literally "MongoDB-style" — `$contains`/`$startsWith`/`$endsWith`/`$between`/`$dateBefore`/`$dateAfter` are jspec extensions, and `$and`/`$or`/`$not` are logical operators.
 
 **Comparison (6)**: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`
 **Collection (4)**: `$in`, `$nin`, `$all`, `$size`
@@ -247,7 +247,7 @@ The project was originally conceived as "JSON Rules" with "rules" terminology th
 #### 1. **Operators** - MongoDB-Style Query Operators
 
 **What they are:**
-- The 23 query operators used in criterion evaluation (20 registered by `OperatorRegistry.withDefaults()`, plus `$not`, `$and`, `$or` added by `CriterionEvaluator`)
+- The 23 query operators used in criterion evaluation. `OperatorRegistry.withDefaults()` seeds only the 6 overridable comparison operators (`$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`); `CriterionEvaluator` owns and registers the other 17 (collection, advanced, string, range/date, and the `$not`/`$and`/`$or` logical operators). `CriterionEvaluator.supportedOperators()` is the canonical list.
 - Examples: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$all`, `$size`, `$exists`, `$type`, `$regex`, `$elemMatch`, `$contains`, `$startsWith`, `$endsWith`, `$between`, `$dateBefore`, `$dateAfter`, `$not`, `$and`, `$or`
 
 **Where they appear:**

@@ -301,26 +301,27 @@ public class CriterionEvaluator {
             throw new IllegalArgumentException("OperatorRegistry cannot be null");
         }
         this.operators.putAll(registry.getAll());
-        // Overlay the operators the evaluator must own (stateful, recursive, or
-        // richer than the registry placeholders) with internal implementations.
+        // Register the evaluator-owned operators on top of the registry's defaults (and any
+        // custom operators the registry carries). The registry seeds only the six overridable
+        // comparison operators; everything else is owned here.
         registerEvaluatorBoundOperators();
         log.debug("Created CriterionEvaluator with custom registry ({} operators)", operators.size());
     }
 
     /**
-     * Force-overrides the operators whose evaluator-bound implementations must win
-     * over whatever the registry supplied — either because they need evaluator
-     * instance state (regex cache, recursive {@code matchValue()}) or because the
-     * registry ships only a best-effort placeholder (string/range/date operators).
+     * Registers the operators the evaluator owns — everything except the six comparison
+     * operators. These implementations live here (not in {@link OperatorRegistry}) because
+     * they need evaluator instance state (the regex cache) or recursion through
+     * {@code matchValue()}/{@code evaluateOperatorQuery()} ({@code $elemMatch}, {@code $not}),
+     * or are jspec extensions tied to the evaluator's helpers ({@code $between} and the date
+     * operators via {@code compare()}/{@code parseToInstant()}).
      *
-     * <p>The plain comparison operators ({@code $eq}, {@code $ne}, {@code $gt},
-     * {@code $gte}, {@code $lt}, {@code $lte}) are intentionally NOT overridden here:
-     * they are supplied by {@link OperatorRegistry#withDefaults()} (via its
-     * {@code greaterThan()}/{@code lessThan()} family) so they remain
-     * registry-overridable (see {@code CriterionEvaluatorCustomOperatorTest}). Their
-     * type-mismatch handling follows the project contract — incomparable operands
-     * (e.g. a String value against a numeric operand) yield NOT_MATCHED (the handler
-     * returns {@code false}), not UNDETERMINED.
+     * <p>The plain comparison operators ({@code $eq}, {@code $ne}, {@code $gt}, {@code $gte},
+     * {@code $lt}, {@code $lte}) are intentionally NOT registered here: they are supplied by
+     * {@link OperatorRegistry#withDefaults()} so they remain registry-overridable (see
+     * {@code CriterionEvaluatorCustomOperatorTest}). Their type-mismatch handling follows the
+     * project contract — incomparable operands (e.g. a String value against a numeric operand)
+     * yield NOT_MATCHED (the handler returns {@code false}), not UNDETERMINED.
      */
     private void registerEvaluatorBoundOperators() {
         operators.put("$contains", this::evaluateContainsOperator);

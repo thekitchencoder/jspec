@@ -3,7 +3,6 @@ package uk.codery.jspec.operator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -43,39 +42,15 @@ class OperatorRegistryTest {
     }
 
     @Test
-    void testWithDefaults_shouldHave20Operators() {
+    void testWithDefaults_shouldHaveSixComparisonOperators() {
         registry = OperatorRegistry.withDefaults();
 
         assertThat(registry.isEmpty()).isFalse();
-        assertThat(registry.size()).isEqualTo(20);
-    }
-
-    @Test
-    void withDefaultsRegistersAllStandardOperators() {
-        OperatorRegistry registry = OperatorRegistry.withDefaults();
-        assertThat(registry.availableOperators()).contains(
-                "$eq","$ne","$gt","$gte","$lt","$lte",
-                "$in","$nin","$all","$size",
-                "$exists","$type","$regex","$elemMatch",
-                "$contains","$startsWith","$endsWith",
-                "$between","$dateBefore","$dateAfter");
-        assertThat(registry.size()).isEqualTo(20);
-    }
-
-    @Test
-    void testWithDefaults_shouldContainAllBuiltInOperators() {
-        registry = OperatorRegistry.withDefaults();
-
-        Set<String> operators = registry.availableOperators();
-
-        // Comparison operators
-        assertThat(operators).contains("$eq", "$ne", "$gt", "$gte", "$lt", "$lte");
-
-        // Collection operators
-        assertThat(operators).contains("$in", "$nin", "$all", "$size");
-
-        // Advanced operators
-        assertThat(operators).contains("$exists", "$type", "$regex", "$elemMatch");
+        assertThat(registry.size()).isEqualTo(6);
+        assertThat(registry.availableOperators())
+                .containsExactlyInAnyOrder("$eq", "$ne", "$gt", "$gte", "$lt", "$lte");
+        // non-comparison operators are owned by CriterionEvaluator, not the registry
+        assertThat(registry.availableOperators()).doesNotContain("$in", "$regex", "$elemMatch", "$between");
     }
 
     // ==================== Registration Tests ====================
@@ -257,6 +232,9 @@ class OperatorRegistryTest {
         assertThat(gte.evaluate(10, 5)).isTrue();
         assertThat(gte.evaluate(10, 10)).isTrue();
         assertThat(gte.evaluate(5, 10)).isFalse();
+        // Non-Number Comparable path (String.compareTo)
+        assertThat(gte.evaluate("b", "a")).isTrue();
+        assertThat(gte.evaluate("a", "b")).isFalse();
     }
 
     @Test
@@ -267,6 +245,9 @@ class OperatorRegistryTest {
         assertThat(lt.evaluate(5, 10)).isTrue();
         assertThat(lt.evaluate(10, 5)).isFalse();
         assertThat(lt.evaluate(10, 10)).isFalse();
+        // Non-Number Comparable path (String.compareTo)
+        assertThat(lt.evaluate("a", "b")).isTrue();
+        assertThat(lt.evaluate("b", "a")).isFalse();
     }
 
     @Test
@@ -277,82 +258,9 @@ class OperatorRegistryTest {
         assertThat(lte.evaluate(5, 10)).isTrue();
         assertThat(lte.evaluate(10, 10)).isTrue();
         assertThat(lte.evaluate(10, 5)).isFalse();
-    }
-
-    @Test
-    void testDefaultOperator_in_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler in = registry.get("$in");
-
-        assertThat(in.evaluate("red", java.util.List.of("red", "blue", "green"))).isTrue();
-        assertThat(in.evaluate("yellow", java.util.List.of("red", "blue", "green"))).isFalse();
-        assertThat(in.evaluate(42, java.util.List.of(1, 2, 42, 100))).isTrue();
-    }
-
-    @Test
-    void testDefaultOperator_nin_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler nin = registry.get("$nin");
-
-        assertThat(nin.evaluate("yellow", java.util.List.of("red", "blue", "green"))).isTrue();
-        assertThat(nin.evaluate("red", java.util.List.of("red", "blue", "green"))).isFalse();
-    }
-
-    @Test
-    void testDefaultOperator_exists_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler exists = registry.get("$exists");
-
-        assertThat(exists.evaluate("value", true)).isTrue();
-        assertThat(exists.evaluate(null, false)).isTrue();
-        assertThat(exists.evaluate("value", false)).isFalse();
-        assertThat(exists.evaluate(null, true)).isFalse();
-    }
-
-    @Test
-    void testDefaultOperator_type_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler type = registry.get("$type");
-
-        assertThat(type.evaluate("hello", "string")).isTrue();
-        assertThat(type.evaluate(42, "number")).isTrue();
-        assertThat(type.evaluate(true, "boolean")).isTrue();
-        assertThat(type.evaluate(java.util.List.of(), "array")).isTrue();
-        assertThat(type.evaluate(java.util.Map.of(), "object")).isTrue();
-        assertThat(type.evaluate(null, "null")).isTrue();
-        assertThat(type.evaluate("hello", "number")).isFalse();
-    }
-
-    @Test
-    void testDefaultOperator_size_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler size = registry.get("$size");
-
-        assertThat(size.evaluate(java.util.List.of(1, 2, 3), 3)).isTrue();
-        assertThat(size.evaluate(java.util.List.of(1, 2, 3), 2)).isFalse();
-        assertThat(size.evaluate(java.util.List.of(), 0)).isTrue();
-    }
-
-    @Test
-    void testDefaultOperator_regex_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler regex = registry.get("$regex");
-
-        assertThat(regex.evaluate("hello world", "hello")).isTrue();
-        assertThat(regex.evaluate("hello world", "^hello")).isTrue();
-        assertThat(regex.evaluate("hello world", "world$")).isTrue();
-        assertThat(regex.evaluate("hello world", "\\d+")).isFalse();
-        assertThat(regex.evaluate("test123", "\\d+")).isTrue();
-    }
-
-    @Test
-    void testDefaultOperator_all_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler all = registry.get("$all");
-
-        assertThat(all.evaluate(java.util.List.of(1, 2, 3, 4), java.util.List.of(2, 3))).isTrue();
-        assertThat(all.evaluate(java.util.List.of(1, 2, 3), java.util.List.of(2, 5))).isFalse();
-        assertThat(all.evaluate(java.util.List.of(1, 2, 3), java.util.List.of())).isTrue();
+        // Non-Number Comparable path (String.compareTo)
+        assertThat(lte.evaluate("a", "b")).isTrue();
+        assertThat(lte.evaluate("b", "a")).isFalse();
     }
 
     // ==================== Thread Safety Tests ====================
@@ -383,7 +291,7 @@ class OperatorRegistryTest {
         latch.await();
 
         assertThat(successCount.get()).isEqualTo(threadCount * operatorsPerThread);
-        assertThat(registry.size()).isEqualTo(20 + (threadCount * operatorsPerThread));
+        assertThat(registry.size()).isEqualTo(6 + (threadCount * operatorsPerThread));
     }
 
     @Test
@@ -413,7 +321,7 @@ class OperatorRegistryTest {
         latch.await();
 
         // Should not throw any exceptions and should have all custom operators
-        assertThat(registry.size()).isGreaterThanOrEqualTo(20);
+        assertThat(registry.size()).isGreaterThanOrEqualTo(6);
     }
 
     // ==================== Edge Cases ====================
@@ -498,130 +406,6 @@ class OperatorRegistryTest {
     }
 
     @Test
-    void testIn_withInvalidOperand_shouldReturnFalse() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler in = registry.get("$in");
-
-        // Non-list operand
-        assertThat(in.evaluate("value", "not-a-list")).isFalse();
-        assertThat(in.evaluate("value", 123)).isFalse();
-    }
-
-    @Test
-    void testIn_withListValue_shouldCheckIfAnyMatch() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler in = registry.get("$in");
-
-        // List value - should check if any item is in operand list
-        assertThat(in.evaluate(java.util.List.of("red", "blue"), java.util.List.of("red", "green"))).isTrue();
-        assertThat(in.evaluate(java.util.List.of("yellow", "orange"), java.util.List.of("red", "green"))).isFalse();
-    }
-
-    @Test
-    void testNin_withInvalidOperand_shouldReturnFalse() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler nin = registry.get("$nin");
-
-        // Non-list operand
-        assertThat(nin.evaluate("value", "not-a-list")).isFalse();
-    }
-
-    @Test
-    void testNin_withListValue_shouldCheckIfNoneMatch() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler nin = registry.get("$nin");
-
-        // List value - should check if no items are in operand list
-        assertThat(nin.evaluate(java.util.List.of("yellow", "orange"), java.util.List.of("red", "green"))).isTrue();
-        assertThat(nin.evaluate(java.util.List.of("red", "orange"), java.util.List.of("red", "green"))).isFalse();
-    }
-
-    @Test
-    void testAll_withInvalidTypes_shouldReturnFalse() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler all = registry.get("$all");
-
-        // Non-list value
-        assertThat(all.evaluate("not-a-list", java.util.List.of(1, 2))).isFalse();
-
-        // Non-list operand
-        assertThat(all.evaluate(java.util.List.of(1, 2, 3), "not-a-list")).isFalse();
-    }
-
-    @Test
-    void testSize_withInvalidTypes_shouldReturnFalse() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler size = registry.get("$size");
-
-        // Non-list value
-        assertThat(size.evaluate("not-a-list", 3)).isFalse();
-
-        // Non-number operand
-        assertThat(size.evaluate(java.util.List.of(1, 2, 3), "three")).isFalse();
-    }
-
-    @Test
-    void testExists_withInvalidOperand_shouldReturnFalse() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler exists = registry.get("$exists");
-
-        // Non-boolean operand
-        assertThat(exists.evaluate("value", "true")).isFalse();
-        assertThat(exists.evaluate("value", 1)).isFalse();
-    }
-
-    @Test
-    void testType_withCustomClass_shouldReturnClassName() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler type = registry.get("$type");
-
-        // Custom class
-        class MyClass {}
-        assertThat(type.evaluate(new MyClass(), "myclass")).isTrue();
-    }
-
-    @Test
-    void testRegex_withInvalidOperand_shouldReturnFalse() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler regex = registry.get("$regex");
-
-        // Non-string pattern
-        assertThat(regex.evaluate("test", 123)).isFalse();
-        assertThat(regex.evaluate("test", java.util.List.of())).isFalse();
-    }
-
-    @Test
-    void testRegex_withInvalidPattern_shouldReturnFalse() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler regex = registry.get("$regex");
-
-        // Invalid regex pattern
-        assertThat(regex.evaluate("test", "[invalid(")).isFalse();
-    }
-
-    @Test
-    void testElemMatch_withInvalidTypes_shouldReturnFalse() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler elemMatch = registry.get("$elemMatch");
-
-        // Non-list value
-        assertThat(elemMatch.evaluate("not-a-list", java.util.Map.of("field", "value"))).isFalse();
-
-        // Non-map operand
-        assertThat(elemMatch.evaluate(java.util.List.of(1, 2), "not-a-map")).isFalse();
-    }
-
-    @Test
-    void testElemMatch_withValidTypes_returnsBasedOnNonEmpty() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler elemMatch = registry.get("$elemMatch");
-
-        // Simplified implementation checks if list is non-empty
-        assertThat(elemMatch.evaluate(java.util.List.of(1, 2), java.util.Map.of("field", "value"))).isTrue();
-        assertThat(elemMatch.evaluate(java.util.List.of(), java.util.Map.of("field", "value"))).isFalse();
-    }
-
-    @Test
     void testGetAll_snapshotBehavior() {
         registry.register("$op1", (val, operand) -> true);
 
@@ -658,91 +442,4 @@ class OperatorRegistryTest {
         assertThat(lt.evaluate(99L, 100)).isTrue();
     }
 
-    // ==================== String / Range / Date Default Operators ====================
-    // These default implementations exist for standalone OperatorRegistry use; inside a
-    // CriterionEvaluator they are shadowed by richer implementations. Exercised directly
-    // here so the registry's own behaviour is covered.
-
-    @Test
-    void testDefaultOperator_contains_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler contains = registry.get("$contains");
-
-        // String substring
-        assertThat(contains.evaluate("hello world", "lo wo")).isTrue();
-        assertThat(contains.evaluate("hello", "xyz")).isFalse();
-        // Collection membership
-        assertThat(contains.evaluate(List.of("a", "b", "c"), "b")).isTrue();
-        assertThat(contains.evaluate(List.of("a", "b"), "z")).isFalse();
-        // Null operands and unsupported value types → false
-        assertThat(contains.evaluate(null, "x")).isFalse();
-        assertThat(contains.evaluate("x", null)).isFalse();
-        assertThat(contains.evaluate(42, 4)).isFalse();
-    }
-
-    @Test
-    void testDefaultOperator_startsWith_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler startsWith = registry.get("$startsWith");
-
-        assertThat(startsWith.evaluate("hello", "he")).isTrue();
-        assertThat(startsWith.evaluate("hello", "lo")).isFalse();
-        // Non-String value or operand → false
-        assertThat(startsWith.evaluate(42, "4")).isFalse();
-        assertThat(startsWith.evaluate("hello", 5)).isFalse();
-    }
-
-    @Test
-    void testDefaultOperator_endsWith_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler endsWith = registry.get("$endsWith");
-
-        assertThat(endsWith.evaluate("hello", "lo")).isTrue();
-        assertThat(endsWith.evaluate("hello", "he")).isFalse();
-        // Non-String value or operand → false
-        assertThat(endsWith.evaluate(42, "2")).isFalse();
-        assertThat(endsWith.evaluate("hello", 5)).isFalse();
-    }
-
-    @Test
-    void testDefaultOperator_between_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler between = registry.get("$between");
-
-        // Inclusive [min, max]
-        assertThat(between.evaluate(5, List.of(1, 10))).isTrue();
-        assertThat(between.evaluate(1, List.of(1, 10))).isTrue();
-        assertThat(between.evaluate(10, List.of(1, 10))).isTrue();
-        // Below min / above max
-        assertThat(between.evaluate(0, List.of(1, 10))).isFalse();
-        assertThat(between.evaluate(11, List.of(1, 10))).isFalse();
-        // Invalid operand shapes → false
-        assertThat(between.evaluate(5, "not-a-list")).isFalse();
-        assertThat(between.evaluate(5, List.of(1, 2, 3))).isFalse();
-    }
-
-    @Test
-    void testDefaultOperator_dateBefore_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler dateBefore = registry.get("$dateBefore");
-
-        assertThat(dateBefore.evaluate("2020-01-01T00:00:00Z", "2021-01-01T00:00:00Z")).isTrue();
-        assertThat(dateBefore.evaluate("2021-01-01T00:00:00Z", "2020-01-01T00:00:00Z")).isFalse();
-        // Unparseable → false (exception path)
-        assertThat(dateBefore.evaluate("not-a-date", "2020-01-01T00:00:00Z")).isFalse();
-        // Documented limitation: the standalone registry impl accepts only full ISO-8601
-        // instants, so a date-only string yields false here (CriterionEvaluator accepts it).
-        assertThat(dateBefore.evaluate("2020-01-01", "2021-01-01")).isFalse();
-    }
-
-    @Test
-    void testDefaultOperator_dateAfter_shouldWorkCorrectly() {
-        registry = OperatorRegistry.withDefaults();
-        OperatorHandler dateAfter = registry.get("$dateAfter");
-
-        assertThat(dateAfter.evaluate("2021-01-01T00:00:00Z", "2020-01-01T00:00:00Z")).isTrue();
-        assertThat(dateAfter.evaluate("2020-01-01T00:00:00Z", "2021-01-01T00:00:00Z")).isFalse();
-        // Unparseable → false (exception path)
-        assertThat(dateAfter.evaluate("not-a-date", "2020-01-01T00:00:00Z")).isFalse();
-    }
 }
