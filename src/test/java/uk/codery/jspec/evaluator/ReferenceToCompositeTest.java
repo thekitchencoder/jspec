@@ -50,9 +50,8 @@ class ReferenceToCompositeTest {
         Specification spec = new Specification("ref-to-composite", List.of(base, inner, outer));
         SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
 
-        // Run repeatedly: the ordering bug is timing dependent, so a single pass may
-        // pass by luck. The post-fix assertion must hold every time.
-        for (int i = 0; i < 100; i++) {
+        // Phase 2 is sequential, so resolution is now deterministic; a few passes suffice.
+        for (int i = 0; i < 10; i++) {
             EvaluationOutcome outcome = evaluator.evaluate(Map.of("age", 25));
             assertThat(resultFor(outcome, "outer").state())
                     .as("outer composite referencing inner composite, iteration %d", i)
@@ -162,7 +161,7 @@ class ReferenceToCompositeTest {
         Specification spec = new Specification("deep-chain", List.of(base, inner, mid, outer));
         SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
 
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 10; i++) {
             EvaluationOutcome outcome = evaluator.evaluate(Map.of("age", 25));
             assertThat(resultFor(outcome, "outer").state())
                     .as("4-level reference chain, iteration %d", i)

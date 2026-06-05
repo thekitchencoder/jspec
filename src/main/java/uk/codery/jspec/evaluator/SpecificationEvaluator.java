@@ -14,7 +14,6 @@ import uk.codery.jspec.result.EvaluationSummary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static java.util.function.Predicate.not;
 
@@ -143,15 +142,17 @@ import static java.util.function.Predicate.not;
  *
  * <h2>Equality</h2>
  *
- * <p>{@code equals}/{@code hashCode} compare the (normalised) specification <em>and</em> the
- * bound {@link CriterionEvaluator}. Because {@code CriterionEvaluator} uses identity equality,
- * two {@code SpecificationEvaluator}s built over the same specification but with separate
- * evaluator instances are <b>not</b> equal — even if both use the default operators:
+ * <p>{@code equals}/{@code hashCode} are based on the (normalised) {@link Specification} only —
+ * the immutable, value-typed part. The bound {@link CriterionEvaluator} is deliberately
+ * excluded: it is a behavioural collaborator with identity equality, so including it would make
+ * two evaluators over the same spec compare unequal merely because they hold different evaluator
+ * instances. Two evaluators over equal specifications are therefore equal:
  * <pre>{@code
- * new SpecificationEvaluator(spec).equals(new SpecificationEvaluator(spec)); // false
+ * new SpecificationEvaluator(spec).equals(new SpecificationEvaluator(spec)); // true
  * }</pre>
- * Keep this in mind before using {@code SpecificationEvaluator} instances as {@code Set}/
- * {@code Map} keys; key on the {@link Specification} (or its id) instead.
+ * Caveat: if you bind a custom {@code CriterionEvaluator} (e.g. with extra operators), equality
+ * still ignores it — two evaluators over the same spec but with different operator sets compare
+ * equal. Equality reflects <em>what</em> is evaluated (the specification), not <em>how</em>.
  *
  * @see Specification
  * @see CriterionEvaluator
@@ -229,22 +230,20 @@ public final class SpecificationEvaluator {
     }
 
     /**
-     * Value equality over the (normalised) specification and the bound criterion evaluator —
-     * preserving the semantics this type had as a {@code record} before the criterion index
-     * was added as a derived field. The index is excluded because it is derived from the
-     * specification. Note {@link CriterionEvaluator} itself uses identity equality.
+     * Value equality over the (normalised) {@link Specification} only. The bound
+     * {@link CriterionEvaluator} (identity equality) and the derived criterion index are
+     * excluded — see the class-level "Equality" note for the rationale and caveats.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof SpecificationEvaluator that)) return false;
-        return specification.equals(that.specification)
-                && criterionEvaluator.equals(that.criterionEvaluator);
+        return specification.equals(that.specification);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(specification, criterionEvaluator);
+        return specification.hashCode();
     }
 
     @Override

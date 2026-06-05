@@ -128,6 +128,10 @@ public class EvaluationContext implements AutoCloseable {
      * resolved during criterion evaluation. A {@code null} {@code contextDoc} is
      * normalised to {@link Map#of()} so downstream code never has to null-check.
      *
+     * <p>For use on pooled threads, prefer the three-arg constructor inside a
+     * try-with-resources block (this type is {@link AutoCloseable}) so the per-thread cycle
+     * guard is cleaned up after evaluation.
+     *
      * @param evaluator the criterion evaluator to use for query evaluation
      * @param contextDoc the context document used for resolving context-path references;
      *                   {@code null} is normalised to an empty map

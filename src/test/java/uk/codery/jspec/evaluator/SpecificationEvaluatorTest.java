@@ -58,11 +58,12 @@ class SpecificationEvaluatorTest {
         SpecificationEvaluator e2 = new SpecificationEvaluator(spec, ev); // same spec value + same evaluator
 
         assertThat(e1).isEqualTo(e1);                                  // reflexive
-        assertThat(e1).isEqualTo(e2);                                  // equal spec + same evaluator
+        assertThat(e1).isEqualTo(e2);                                  // equal spec
         assertThat(e1).hasSameHashCodeAs(e2);
         assertThat(e1).isNotEqualTo(null);                             // not an instance
         assertThat(e1).isNotEqualTo("not an evaluator");               // not an instance
-        assertThat(e1).isNotEqualTo(new SpecificationEvaluator(spec, new CriterionEvaluator())); // different evaluator
+        // Equality is on the specification only — a different (even custom) evaluator is equal.
+        assertThat(e1).isEqualTo(new SpecificationEvaluator(spec, new CriterionEvaluator()));
         assertThat(e1).isNotEqualTo(new SpecificationEvaluator(other, ev)); // different specification
         assertThat(e1.toString())
                 .contains("SpecificationEvaluator[specification=", "criterionEvaluator=");
