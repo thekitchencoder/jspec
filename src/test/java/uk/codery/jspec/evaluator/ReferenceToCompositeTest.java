@@ -140,4 +140,51 @@ class ReferenceToCompositeTest {
         EvaluationOutcome outcome = evaluator.evaluate(Map.of("age", 25));
         assertThat(resultFor(outcome, "outer").state()).isEqualTo(EvaluationState.UNDETERMINED);
     }
+
+    /**
+     * Deep chained references resolve transitively. References are followed through indexed
+     * {@link CompositeCriterion} targets at arbitrary depth: {@code outer → ref(mid) → mid →
+     * ref(inner) → inner → ref(base) → base(query)}. Each composite is indexed, so the chain
+     * resolves regardless of evaluation order. (A {@link CriterionReference} is identified by
+     * its target id — {@code id() == ref} — so there is no distinct "reference to a reference"
+     * node; chains are always Composite-to-Composite ending at a query.)
+     */
+    @Test
+    void deepChainedReferences_resolveTransitively() {
+        QueryCriterion base = new QueryCriterion("base", Map.of("age", Map.of("$gte", 18)));
+        CompositeCriterion inner = new CompositeCriterion("inner", Junction.AND,
+                List.of(new CriterionReference("base")));
+        CompositeCriterion mid = new CompositeCriterion("mid", Junction.AND,
+                List.of(new CriterionReference("inner")));
+        CompositeCriterion outer = new CompositeCriterion("outer", Junction.AND,
+                List.of(new CriterionReference("mid")));
+
+        Specification spec = new Specification("deep-chain", List.of(base, inner, mid, outer));
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        for (int i = 0; i < 50; i++) {
+            EvaluationOutcome outcome = evaluator.evaluate(Map.of("age", 25));
+            assertThat(resultFor(outcome, "outer").state())
+                    .as("4-level reference chain, iteration %d", i)
+                    .isEqualTo(EvaluationState.MATCHED);
+        }
+    }
+
+    /**
+     * A reference whose target resolves to UNDETERMINED (here, a query over missing data)
+     * propagates UNDETERMINED through the chain gracefully — documenting that an
+     * unresolvable/indeterminate target degrades rather than crashing.
+     */
+    @Test
+    void referenceToIndeterminateTarget_propagatesUndetermined() {
+        QueryCriterion base = new QueryCriterion("base", Map.of("age", Map.of("$gte", 18)));
+        CompositeCriterion outer = new CompositeCriterion("outer", Junction.AND,
+                List.of(new CriterionReference("base")));
+        Specification spec = new Specification("indeterminate", List.of(base, outer));
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+
+        // Document is missing "age", so base is UNDETERMINED and the reference propagates it.
+        EvaluationOutcome outcome = evaluator.evaluate(Map.of("name", "x"));
+        assertThat(resultFor(outcome, "outer").state()).isEqualTo(EvaluationState.UNDETERMINED);
+    }
 }

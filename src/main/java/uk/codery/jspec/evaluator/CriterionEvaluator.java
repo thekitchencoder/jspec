@@ -176,6 +176,9 @@ import java.util.regex.PatternSyntaxException;
 public class CriterionEvaluator {
     private final Map<String, OperatorHandler> operators = new HashMap<>();
 
+    /** Cached, unmodifiable view of {@link #supportedOperators()} — stable after construction. */
+    private final SortedSet<String> supportedOperators;
+
     /**
      * Returns the full set of query operators this evaluator supports. This is the canonical
      * source of truth for documentation and tooling.
@@ -190,6 +193,10 @@ public class CriterionEvaluator {
      * @since 0.7.0
      */
     public SortedSet<String> supportedOperators() {
+        return supportedOperators;
+    }
+
+    private SortedSet<String> computeSupportedOperators() {
         TreeSet<String> all = new TreeSet<>(operators.keySet());
         all.add("$not");
         all.add("$and");
@@ -269,10 +276,11 @@ public class CriterionEvaluator {
     /**
      * Creates a CriterionEvaluator with built-in operators.
      *
-     * <p>This constructor initializes the evaluator with the default set of 23
-     * query operators (the 20 {@link uk.codery.jspec.operator.OperatorRegistry} defaults plus
-     * {@code $not} and the {@code $and}/{@code $or} logical combinators). Use this constructor
-     * for standard evaluation needs.
+     * <p>This constructor initializes the evaluator with the default set of 23 query operators:
+     * the 6 comparison operators seeded by {@link uk.codery.jspec.operator.OperatorRegistry#withDefaults()},
+     * the 14 boolean-handler operators registered in {@code registerEvaluatorBoundOperators()},
+     * and the 3 tri-state logical operators ({@code $not}, {@code $and}, {@code $or}). Use this
+     * constructor for standard evaluation needs.
      *
      * <p>For custom operators, use {@link #CriterionEvaluator(OperatorRegistry)} instead.
      */
@@ -311,6 +319,7 @@ public class CriterionEvaluator {
         // custom operators the registry carries). The registry seeds only the six overridable
         // comparison operators; everything else is owned here.
         registerEvaluatorBoundOperators();
+        this.supportedOperators = computeSupportedOperators();
         log.debug("Created CriterionEvaluator with custom registry ({} operators)", operators.size());
     }
 

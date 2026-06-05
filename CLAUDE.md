@@ -163,7 +163,7 @@ Implementation:
 
 ### 3. Operator System
 
-23 query operators supported by `CriterionEvaluator` (via `supportedOperators()`). `OperatorRegistry.withDefaults()` seeds only the 6 overridable comparison operators (`$eq`/`$ne`/`$gt`/`$gte`/`$lt`/`$lte`); `CriterionEvaluator` owns and registers the other 17 — collection, advanced, string, range/date, and the `$not`/`$and`/`$or` logical operators (`$and`/`$or` special-cased in `evaluateOperator`). The evaluator-owned ones live there because they need evaluator internals (regex cache, recursive `matchValue`, rich date parsing) or are jspec extensions. Not all are literally "MongoDB-style" — `$contains`/`$startsWith`/`$endsWith`/`$between`/`$dateBefore`/`$dateAfter` are jspec extensions, and `$and`/`$or`/`$not` are logical operators.
+`CriterionEvaluator` supports 23 query operators; `supportedOperators()` is the canonical list.
 
 **Comparison (6)**: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`
 **Collection (4)**: `$in`, `$nin`, `$all`, `$size`
@@ -172,7 +172,10 @@ Implementation:
 **Date/Range (3)**: `$between`, `$dateBefore`, `$dateAfter`
 **Logical (3)**: `$and`, `$or`, `$not`
 
-Value operators are implemented as lambda-based `OperatorHandler` instances in a map; `$and`/`$or` are evaluated tri-state in `evaluateOperator` rather than via a handler.
+Implementation notes:
+- `OperatorRegistry.withDefaults()` seeds only the 6 comparison operators (the overridable defaults); `CriterionEvaluator` owns and registers the other 17, because they need evaluator internals (regex cache, recursive `matchValue`, rich date parsing) or are jspec extensions.
+- Value operators are lambda-based `OperatorHandler` instances in a map; `$not`/`$and`/`$or` are evaluated tri-state in `evaluateOperator` (not via a handler) so they preserve UNDETERMINED under Kleene logic.
+- Not all are literally "MongoDB-style": `$contains`/`$startsWith`/`$endsWith`/`$between`/`$dateBefore`/`$dateAfter` are jspec extensions; `$and`/`$or`/`$not` are logical operators.
 
 ### 4. Deep Document Navigation
 

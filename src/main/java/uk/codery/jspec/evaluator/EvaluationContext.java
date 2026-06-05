@@ -149,6 +149,10 @@ public class EvaluationContext implements AutoCloseable {
      * the historical cache-only reference behaviour (a reference to a not-yet-evaluated
      * target degrades to UNDETERMINED/missing).
      *
+     * <p>Direct callers running on pooled threads should construct this context in a
+     * try-with-resources block (it is {@link AutoCloseable}) so the per-thread cycle guard
+     * is cleared after use; {@link SpecificationEvaluator} already does this.
+     *
      * @param evaluator the criterion evaluator to use for query evaluation
      * @param contextDoc the context document used for resolving context-path references;
      *                   {@code null} is normalised to an empty map

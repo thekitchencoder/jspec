@@ -133,7 +133,7 @@ import static java.util.function.Predicate.not;
  *
  * <p>This class is thread-safe and immutable:
  * <ul>
- *   <li>Record class with final fields</li>
+ *   <li>Final class with final fields</li>
  *   <li>Specification is immutable and bound at construction</li>
  *   <li>Uses parallel streams (thread-safe operations)</li>
  *   <li>EvaluationContext uses ConcurrentHashMap</li>
@@ -141,8 +141,18 @@ import static java.util.function.Predicate.not;
  *   <li>Safe to share across threads and evaluate multiple documents concurrently</li>
  * </ul>
  *
- * @param specification the specification to evaluate documents against
- * @param criterionEvaluator the criterion evaluator to use for query evaluation
+ * <h2>Equality</h2>
+ *
+ * <p>{@code equals}/{@code hashCode} compare the (normalised) specification <em>and</em> the
+ * bound {@link CriterionEvaluator}. Because {@code CriterionEvaluator} uses identity equality,
+ * two {@code SpecificationEvaluator}s built over the same specification but with separate
+ * evaluator instances are <b>not</b> equal — even if both use the default operators:
+ * <pre>{@code
+ * new SpecificationEvaluator(spec).equals(new SpecificationEvaluator(spec)); // false
+ * }</pre>
+ * Keep this in mind before using {@code SpecificationEvaluator} instances as {@code Set}/
+ * {@code Map} keys; key on the {@link Specification} (or its id) instead.
+ *
  * @see Specification
  * @see CriterionEvaluator
  * @see EvaluationContext
@@ -266,6 +276,13 @@ public final class SpecificationEvaluator {
      * {@link QueryCriterion} and {@link CompositeCriterion} are indexed; references are
      * skipped (their id equals their target id, so indexing them would be meaningless
      * and could shadow the real definition).
+     *
+     * <p>Chains resolve transitively: because composites are indexed and their reference
+     * children resolve on demand, a chain such as {@code ref → composite → ref → query}
+     * follows through at arbitrary depth. A reference must target a {@code QueryCriterion} or
+     * {@code CompositeCriterion}; a reference to an id absent from this index degrades to
+     * UNDETERMINED (there is no distinct "reference to a reference" node, since a reference's
+     * id <em>is</em> its target id).
      *
      * @param criteria the (normalised) top-level criteria
      * @return a fresh map of indexable criteria by id
