@@ -896,8 +896,8 @@ For questions about this codebase:
 
 ---
 
-**Last Updated**: 2026-06-03 (v0.6.0: $contextPath context-document evaluation + Strong Kleene $or/$and)
-**Version**: 0.6.0
+**Last Updated**: 2026-06-05 (v0.7.0: operator-registry unification, reference-to-composite ordering fix, Strong Kleene $not)
+**Version**: 0.7.0
 **Java Version**: 21
 **Total Lines of Code**: ~1500 (main source)
 **Test Files**: 15 test files with comprehensive coverage

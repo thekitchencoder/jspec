@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-05
+
 ### Added
 - **`CriterionEvaluator.supportedOperators()`** — the canonical, programmatic list of all 23
   supported operators (drives the documentation, so counts can't drift).
@@ -34,8 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   by `CriterionEvaluator`; the registry no longer carries shadow/placeholder implementations.
   No behavioural change for evaluator users.
 - **`SpecificationEvaluator` is now a `final class` rather than a `record`** (to cache the
-  criterion index as a field). `equals()`/`hashCode()`/`toString()` are implemented to preserve
-  the previous value semantics over the specification and bound evaluator.
+  criterion index as a field). `equals()`/`hashCode()` key on the (normalised) `Specification`
+  alone — the bound `CriterionEvaluator` (identity equality) is excluded, so two evaluators over
+  the same spec compare equal.
 
 ## [0.6.0] - 2026-06-03
 
