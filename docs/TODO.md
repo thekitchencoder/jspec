@@ -100,7 +100,7 @@
 
 ### User Documentation ✅ **COMPLETED**
 - [x] Create README.md with quick start guide
-- [x] Document all 13 operators with examples
+- [x] Document all 23 operators with examples
 - [x] Add "Building Criteria Programmatically" section (builder API documented)
 - [x] Show Spring integration examples (in CLAUDE.md)
 - [x] Create CHANGELOG.md

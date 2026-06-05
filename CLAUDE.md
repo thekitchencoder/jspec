@@ -28,8 +28,8 @@ jspec/
 │   │   ├── Specification.java                      # Collection of criteria
 │   │   └── Junction.java                           # AND/OR enum
 │   ├── evaluator/                                  # Evaluation engine (what users call)
-│   │   ├── CriterionEvaluator.java                 # [488 lines] Query matching engine
-│   │   └── SpecificationEvaluator.java             # [49 lines] Orchestrates evaluation
+│   │   ├── CriterionEvaluator.java                 # [~1101 lines] Query matching engine
+│   │   └── SpecificationEvaluator.java             # [~343 lines] Orchestrates evaluation
 │   ├── result/                                     # Result types (what users receive)
 │   │   ├── EvaluationState.java                    # MATCHED/NOT_MATCHED/UNDETERMINED
 │   │   ├── EvaluationResult.java                   # Sealed interface for results
@@ -163,13 +163,19 @@ Implementation:
 
 ### 3. Operator System
 
-13 MongoDB-style operators implemented in `CriterionEvaluator`:
+`CriterionEvaluator` supports 23 query operators; `supportedOperators()` is the canonical list.
 
-**Comparison**: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`
-**Collection**: `$in`, `$nin`, `$all`, `$size`
-**Advanced**: `$exists`, `$type`, `$regex`, `$elemMatch`
+**Comparison (6)**: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`
+**Collection (4)**: `$in`, `$nin`, `$all`, `$size`
+**Advanced (4)**: `$exists`, `$type`, `$regex`, `$elemMatch`
+**String (3)**: `$contains`, `$startsWith`, `$endsWith`
+**Date/Range (3)**: `$between`, `$dateBefore`, `$dateAfter`
+**Logical (3)**: `$and`, `$or`, `$not`
 
-Operators are implemented as lambda-based handlers in a map (CriterionEvaluator.java:50-100).
+Implementation notes:
+- `OperatorRegistry.withDefaults()` seeds only the 6 comparison operators (the overridable defaults); `CriterionEvaluator` owns and registers the other 17, because they need evaluator internals (regex cache, recursive `matchValue`, rich date parsing) or are jspec extensions.
+- Value operators are lambda-based `OperatorHandler` instances in a map; `$not`/`$and`/`$or` are evaluated tri-state in `evaluateOperator` (not via a handler) so they preserve UNDETERMINED under Kleene logic.
+- Not all are literally "MongoDB-style": `$contains`/`$startsWith`/`$endsWith`/`$between`/`$dateBefore`/`$dateAfter` are jspec extensions; `$and`/`$or`/`$not` are logical operators.
 
 ### 4. Deep Document Navigation
 
@@ -244,8 +250,8 @@ The project was originally conceived as "JSON Rules" with "rules" terminology th
 #### 1. **Operators** - MongoDB-Style Query Operators
 
 **What they are:**
-- The 13 MongoDB-style query operators used in criterion evaluation
-- Examples: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$all`, `$size`, `$exists`, `$type`, `$regex`, `$elemMatch`
+- The 23 query operators used in criterion evaluation. `OperatorRegistry.withDefaults()` seeds only the 6 overridable comparison operators (`$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`); `CriterionEvaluator` owns and registers the other 17 (collection, advanced, string, range/date, and the `$not`/`$and`/`$or` logical operators). `CriterionEvaluator.supportedOperators()` is the canonical list.
+- Examples: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$all`, `$size`, `$exists`, `$type`, `$regex`, `$elemMatch`, `$contains`, `$startsWith`, `$endsWith`, `$between`, `$dateBefore`, `$dateAfter`, `$not`, `$and`, `$or`
 
 **Where they appear:**
 - `OperatorHandler` interface (CriterionEvaluator.java:30)
@@ -286,8 +292,8 @@ CriteriaGroup group = new CriteriaGroup(
 ❌ **WRONG:** "MongoDB-style query junctions"
 ✅ **CORRECT:** "MongoDB-style query operators"
 
-❌ **WRONG:** "13 junctions in CriterionEvaluator"
-✅ **CORRECT:** "13 operators in CriterionEvaluator"
+❌ **WRONG:** "23 junctions in CriterionEvaluator"
+✅ **CORRECT:** "23 operators in CriterionEvaluator"
 
 ❌ **WRONG:** "JunctionHandler interface for $eq, $ne, etc."
 ✅ **CORRECT:** "OperatorHandler interface for $eq, $ne, etc."
@@ -327,7 +333,7 @@ CriteriaGroup group = new CriteriaGroup(
 ```
 
 **Memory Aid:**
-- **Operator** = What you're checking ($eq, $gt, $in, etc.) - **13 different operators**
+- **Operator** = What you're checking ($eq, $gt, $in, etc.) - **23 different operators**
 - **Junction** = How you're combining (AND, OR) - **2 junctions only**
 
 ### Verification
@@ -338,7 +344,7 @@ For a complete audit of the terminology refactoring, see:
 
 ## Key Files Deep Dive
 
-### CriterionEvaluator.java (488 lines)
+### CriterionEvaluator.java (~1101 lines)
 
 **Purpose**: Core query evaluation engine with performance optimizations
 
@@ -362,7 +368,7 @@ For a complete audit of the terminology refactoring, see:
 - Collection operator optimization: Significant speedup for large arrays
 - Modern type checking with pattern matching: More efficient and readable
 
-### SpecificationEvaluator.java (49 lines)
+### SpecificationEvaluator.java (~343 lines)
 
 **Purpose**: Orchestrates parallel evaluation of specifications
 
@@ -774,7 +780,7 @@ on reference or value equality between the returned spec and the one you passed 
 <dependency>
     <groupId>org.assertj</groupId>
     <artifactId>assertj-core</artifactId>
-    <version>3.24.2</version>
+    <version>3.27.7</version>
     <scope>test</scope>
 </dependency>
 

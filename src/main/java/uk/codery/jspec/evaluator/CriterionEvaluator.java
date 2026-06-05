@@ -22,8 +22,9 @@ import java.util.regex.PatternSyntaxException;
  * Core evaluation engine for individual {@link QueryCriterion} instances using MongoDB-style query operators.
  *
  * <p>The {@code CriterionEvaluator} is responsible for evaluating a single query criterion against
- * a document. It supports 13 built-in MongoDB-style operators and can be extended with custom
- * operators via {@link uk.codery.jspec.operator.OperatorRegistry}.
+ * a document. It supports 23 built-in query operators spanning comparison, collection, advanced,
+ * string, date/range, and logical ({@code $and}/{@code $or}/{@code $not}) categories, and can be
+ * extended with custom operators via {@link uk.codery.jspec.operator.OperatorRegistry}.
  *
  * <h2>Supported Operators</h2>
  *
@@ -175,6 +176,34 @@ import java.util.regex.PatternSyntaxException;
 public class CriterionEvaluator {
     private final Map<String, OperatorHandler> operators = new HashMap<>();
 
+    /** Cached, unmodifiable view of {@link #supportedOperators()} — stable after construction. */
+    private final SortedSet<String> supportedOperators;
+
+    /**
+     * Returns the full set of query operators this evaluator supports. This is the canonical
+     * source of truth for documentation and tooling.
+     *
+     * <p>Most operators are backed by a boolean {@link uk.codery.jspec.operator.OperatorHandler}
+     * in the internal map. The three logical operators {@code $not}, {@code $and} and
+     * {@code $or} are NOT handlers — they are dispatched tri-state in {@code evaluateOperator}
+     * so they can preserve UNDETERMINED under Strong Kleene logic — so they are added to the
+     * returned set explicitly.
+     *
+     * @return an unmodifiable, sorted set of operator names (each beginning with {@code $})
+     * @since 0.7.0
+     */
+    public SortedSet<String> supportedOperators() {
+        return supportedOperators;
+    }
+
+    private SortedSet<String> computeSupportedOperators() {
+        TreeSet<String> all = new TreeSet<>(operators.keySet());
+        all.add("$not");
+        all.add("$and");
+        all.add("$or");
+        return Collections.unmodifiableSortedSet(all);
+    }
+
     /**
      * Thread-safe LRU cache for compiled regex patterns.
      * Caches up to 100 patterns to avoid recompiling frequently used patterns.
@@ -247,14 +276,16 @@ public class CriterionEvaluator {
     /**
      * Creates a CriterionEvaluator with built-in operators.
      *
-     * <p>This constructor initializes the evaluator with the default set of 13
-     * MongoDB-style operators. Use this constructor for standard evaluation needs.
+     * <p>This constructor initializes the evaluator with the default set of 23 query operators:
+     * the 6 comparison operators seeded by {@link uk.codery.jspec.operator.OperatorRegistry#withDefaults()},
+     * the 14 boolean-handler operators registered in {@code registerEvaluatorBoundOperators()},
+     * and the 3 tri-state logical operators ({@code $not}, {@code $and}, {@code $or}). Use this
+     * constructor for standard evaluation needs.
      *
      * <p>For custom operators, use {@link #CriterionEvaluator(OperatorRegistry)} instead.
      */
     public CriterionEvaluator() {
-        registerOperators();
-        log.debug("Created CriterionEvaluator with built-in operators");
+        this(OperatorRegistry.withDefaults());
     }
 
     /**
@@ -284,38 +315,40 @@ public class CriterionEvaluator {
             throw new IllegalArgumentException("OperatorRegistry cannot be null");
         }
         this.operators.putAll(registry.getAll());
-        // Override collection and advanced operators with internal implementations
-        // that have access to internal methods like matchValue()
-        registerInternalOperators();
+        // Register the evaluator-owned operators on top of the registry's defaults (and any
+        // custom operators the registry carries). The registry seeds only the six overridable
+        // comparison operators; everything else is owned here.
+        registerEvaluatorBoundOperators();
+        this.supportedOperators = computeSupportedOperators();
         log.debug("Created CriterionEvaluator with custom registry ({} operators)", operators.size());
     }
 
     /**
-     * Registers all built-in operators.
-     * Called by the no-arg constructor for backward compatibility.
+     * Registers the boolean-handler operators the evaluator owns — everything except the six
+     * comparison operators and the three logical operators. These implementations live here
+     * (not in {@link OperatorRegistry}) because they need evaluator instance state (the regex
+     * cache) or recursion through {@code matchValue()}/{@code evaluateOperatorQuery()}
+     * ({@code $elemMatch}), or are jspec extensions tied to the evaluator's helpers
+     * ({@code $between} and the date operators via {@code compare()}/{@code parseToInstant()}).
+     *
+     * <p>{@code $not}, {@code $and} and {@code $or} are NOT registered here — they are
+     * dispatched tri-state in {@link #evaluateOperator} so they preserve UNDETERMINED under
+     * Strong Kleene logic, which a boolean handler cannot express.
+     *
+     * <p>The plain comparison operators ({@code $eq}, {@code $ne}, {@code $gt}, {@code $gte},
+     * {@code $lt}, {@code $lte}) are intentionally NOT registered here: they are supplied by
+     * {@link OperatorRegistry#withDefaults()} so they remain registry-overridable (see
+     * {@code CriterionEvaluatorCustomOperatorTest}). Their type-mismatch handling follows the
+     * project contract — incomparable operands (e.g. a String value against a numeric operand)
+     * yield NOT_MATCHED (the handler returns {@code false}), not UNDETERMINED.
      */
-    private void registerOperators() {
-        operators.put("$eq", Objects::equals);
-        operators.put("$ne", (val, operand) -> !Objects.equals(val, operand));
-        operators.put("$gt", (val, operand) -> compare(val, operand) > 0);
-        operators.put("$gte", (val, operand) -> compare(val, operand) >= 0);
-        operators.put("$lt", (val, operand) -> compare(val, operand) < 0);
-        operators.put("$lte", (val, operand) -> compare(val, operand) <= 0);
+    private void registerEvaluatorBoundOperators() {
         operators.put("$contains", this::evaluateContainsOperator);
         operators.put("$startsWith", this::evaluateStartsWithOperator);
         operators.put("$endsWith", this::evaluateEndsWithOperator);
         operators.put("$between", this::evaluateBetweenOperator);
         operators.put("$dateBefore", this::evaluateDateBeforeOperator);
         operators.put("$dateAfter", this::evaluateDateAfterOperator);
-        registerInternalOperators();
-    }
-
-    /**
-     * Registers operators that require access to internal methods.
-     * These operators need access to matchValue() and other internal state.
-     * Called by both constructors to ensure proper operator implementations.
-     */
-    private void registerInternalOperators() {
         operators.put("$in", this::evaluateInOperator);
         operators.put("$nin", this::evaluateNotInOperator);
         operators.put("$exists", this::evaluateExistsOperator);
@@ -324,9 +357,9 @@ public class CriterionEvaluator {
         operators.put("$size", this::evaluateSizeOperator);
         operators.put("$elemMatch", this::evaluateElemMatchOperator);
         operators.put("$all", this::evaluateAllOperator);
-        operators.put("$not", this::evaluateNotOperator);
-        // $and / $or are not boolean OperatorHandlers — they are intercepted in
-        // evaluateOperator() and combined tri-state via Strong Kleene logic.
+        // $not, $and and $or are NOT boolean OperatorHandlers — a boolean handler can only
+        // express MATCHED/NOT_MATCHED, but these must preserve UNDETERMINED under Strong
+        // Kleene logic. They are intercepted in evaluateOperator() and evaluated tri-state.
     }
 
     private boolean evaluateInOperator(Object val, Object operand) {
@@ -562,26 +595,28 @@ public class CriterionEvaluator {
         }
     }
 
-    private boolean evaluateNotOperator(Object val, Object operand) {
-        try {
-            if (!(operand instanceof Map)) {
-                log.warn("Operator $not expects Map operand (nested query), got {} - treating as not matched",
-                           operand == null ? "null" : operand.getClass().getSimpleName());
-                return false;
-            }
-            @SuppressWarnings("unchecked")
-            Map<String, Object> nestedQuery = (Map<String, Object>) operand;
-
-            // Evaluate the nested query and invert the result
-            InnerResult result = evaluateOperatorQuery(val, nestedQuery);
-
-            // Invert: MATCHED -> false (NOT_MATCHED), NOT_MATCHED -> true (MATCHED)
-            // UNDETERMINED stays as false (will be treated as NOT_MATCHED)
-            return result.state == EvaluationState.NOT_MATCHED;
-        } catch (Exception e) {
-            log.warn("Error evaluating $not operator: {}", e.getMessage(), e);
-            return false;
+    /**
+     * {@code $not}: Strong Kleene negation of a nested sub-query. Unlike a boolean
+     * {@link OperatorHandler} (which can only yield MATCHED/NOT_MATCHED), this is
+     * dispatched tri-state from {@link #evaluateOperator} so it can preserve UNDETERMINED:
+     * MATCHED becomes NOT_MATCHED, NOT_MATCHED becomes MATCHED, and UNDETERMINED stays
+     * UNDETERMINED (¬unknown = unknown) — carrying its missing paths and reason through.
+     */
+    private InnerResult evaluateNot(Object val, Object operand) {
+        if (!(operand instanceof Map)) {
+            log.warn("Operator $not expects Map operand (nested query), got {} - treating as not matched",
+                       operand == null ? "null" : operand.getClass().getSimpleName());
+            return InnerResult.notMatched();
         }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> nestedQuery = (Map<String, Object>) operand;
+
+        InnerResult inner = evaluateOperatorQuery(val, nestedQuery);
+        return switch (inner.state()) {
+            case MATCHED -> InnerResult.notMatched();
+            case NOT_MATCHED -> InnerResult.matched();
+            case UNDETERMINED -> inner; // ¬UNDETERMINED = UNDETERMINED (preserve paths/reason)
+        };
     }
 
 
@@ -888,6 +923,7 @@ public class CriterionEvaluator {
     private InnerResult evaluateOperator(Object val, String op, Object operand) {
         if (op.equals("$or")) return evaluateOr(val, operand);
         if (op.equals("$and")) return evaluateAnd(val, operand);
+        if (op.equals("$not")) return evaluateNot(val, operand);
 
         List<String> unresolved = collectUnresolved(operand);
         if (!unresolved.isEmpty()) {

@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`CriterionEvaluator.supportedOperators()`** — the canonical, programmatic list of all 23
+  supported operators (drives the documentation, so counts can't drift).
+- **`EvaluationContext` implements `AutoCloseable`** — `close()` clears the per-thread
+  reference-cycle guard, enabling try-with-resources for direct callers.
+
+### Fixed
+- **Operator-set parity across `CriterionEvaluator` constructors.**
+  `new CriterionEvaluator(OperatorRegistry.withDefaults())` previously exposed a different
+  (smaller) operator set than `new CriterionEvaluator()`. Both now expose the same 23 operators.
+- **Reference-to-composite evaluation order.** A `CriterionReference` pointing at a
+  `CompositeCriterion` could non-deterministically resolve to `UNDETERMINED`; references now
+  resolve on demand with cycle detection. Phase-2 evaluation is sequential to avoid a
+  cross-thread `computeIfAbsent` deadlock between mutually-referencing top-level composites.
+- Bumped `assertj-core` 3.24.2 → 3.27.7 (CVE-2026-24400, test scope).
+
+### Changed
+- **⚠ BREAKING — `$not` now follows Strong Kleene logic.** `$not` of a nested `UNDETERMINED`
+  sub-query now yields `UNDETERMINED` (previously `NOT_MATCHED`). Any spec that relied on
+  `$not` of an unknown operator / missing data being falsy will see those results flip from
+  `NOT_MATCHED` to `UNDETERMINED`. `$not` is now evaluated tri-state alongside `$and`/`$or`
+  rather than as a boolean handler.
+- **`OperatorRegistry.withDefaults()` now seeds only the six overridable comparison operators**
+  (`$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`). The other 17 operators are owned and registered
+  by `CriterionEvaluator`; the registry no longer carries shadow/placeholder implementations.
+  No behavioural change for evaluator users.
+- **`SpecificationEvaluator` is now a `final class` rather than a `record`** (to cache the
+  criterion index as a field). `equals()`/`hashCode()`/`toString()` are implemented to preserve
+  the previous value semantics over the specification and bound evaluator.
+
 ## [0.6.0] - 2026-06-03
 
 ### Added

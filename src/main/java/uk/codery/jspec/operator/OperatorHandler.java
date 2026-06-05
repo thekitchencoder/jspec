@@ -8,12 +8,19 @@ package uk.codery.jspec.operator;
  * {@code false} otherwise.
  *
  * <h2>Built-in Operators</h2>
- * The library provides 13 built-in operators out of the box:
+ * A {@link uk.codery.jspec.evaluator.CriterionEvaluator} supports 23 operators in total:
  * <ul>
  *   <li><b>Comparison:</b> {@code $eq}, {@code $ne}, {@code $gt}, {@code $gte}, {@code $lt}, {@code $lte}</li>
  *   <li><b>Collection:</b> {@code $in}, {@code $nin}, {@code $all}, {@code $size}</li>
  *   <li><b>Advanced:</b> {@code $exists}, {@code $type}, {@code $regex}, {@code $elemMatch}</li>
+ *   <li><b>String:</b> {@code $contains}, {@code $startsWith}, {@code $endsWith}</li>
+ *   <li><b>Range/Date:</b> {@code $between}, {@code $dateBefore}, {@code $dateAfter}</li>
+ *   <li><b>Logical:</b> {@code $not}, {@code $and}, {@code $or}</li>
  * </ul>
+ * Of these, {@link uk.codery.jspec.operator.OperatorRegistry#withDefaults()} seeds only the
+ * six comparison operators (the overridable defaults); the {@code CriterionEvaluator} owns and
+ * registers all the rest. {@code $and}/{@code $or} are evaluated tri-state rather than through
+ * this interface.
  *
  * <h2>Custom Operators</h2>
  * You can create custom operators by implementing this interface. Custom operators

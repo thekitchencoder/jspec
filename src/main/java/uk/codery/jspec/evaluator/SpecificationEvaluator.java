@@ -1,6 +1,7 @@
 package uk.codery.jspec.evaluator;
 
 import lombok.extern.slf4j.Slf4j;
+import uk.codery.jspec.model.CompositeCriterion;
 import uk.codery.jspec.model.ContextPathReference;
 import uk.codery.jspec.model.Criterion;
 import uk.codery.jspec.model.QueryCriterion;
@@ -10,8 +11,10 @@ import uk.codery.jspec.result.EvaluationOutcome;
 import uk.codery.jspec.result.EvaluationResult;
 import uk.codery.jspec.result.EvaluationSummary;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static java.util.function.Predicate.not;
 
@@ -25,7 +28,8 @@ import static java.util.function.Predicate.not;
  * <h2>Key Features</h2>
  * <ul>
  *   <li><b>Specification Binding:</b> Each evaluator is bound to a single specification</li>
- *   <li><b>Parallel Evaluation:</b> Criteria are evaluated concurrently using parallel streams</li>
+ *   <li><b>Parallel Query Evaluation:</b> Query criteria are evaluated concurrently using
+ *       parallel streams; composite/reference evaluation runs sequentially for cycle-safety</li>
  *   <li><b>Result Caching:</b> Individual criterion results are cached for efficient reference reuse</li>
  *   <li><b>Graceful Degradation:</b> One failed criterion never stops the overall evaluation</li>
  *   <li><b>Comprehensive Results:</b> Returns detailed outcomes with summary statistics</li>
@@ -129,7 +133,7 @@ import static java.util.function.Predicate.not;
  *
  * <p>This class is thread-safe and immutable:
  * <ul>
- *   <li>Record class with final fields</li>
+ *   <li>Final class with final fields</li>
  *   <li>Specification is immutable and bound at construction</li>
  *   <li>Uses parallel streams (thread-safe operations)</li>
  *   <li>EvaluationContext uses ConcurrentHashMap</li>
@@ -137,8 +141,18 @@ import static java.util.function.Predicate.not;
  *   <li>Safe to share across threads and evaluate multiple documents concurrently</li>
  * </ul>
  *
- * @param specification the specification to evaluate documents against
- * @param criterionEvaluator the criterion evaluator to use for query evaluation
+ * <h2>Equality</h2>
+ *
+ * <p>{@code equals}/{@code hashCode} compare the (normalised) specification <em>and</em> the
+ * bound {@link CriterionEvaluator}. Because {@code CriterionEvaluator} uses identity equality,
+ * two {@code SpecificationEvaluator}s built over the same specification but with separate
+ * evaluator instances are <b>not</b> equal — even if both use the default operators:
+ * <pre>{@code
+ * new SpecificationEvaluator(spec).equals(new SpecificationEvaluator(spec)); // false
+ * }</pre>
+ * Keep this in mind before using {@code SpecificationEvaluator} instances as {@code Set}/
+ * {@code Map} keys; key on the {@link Specification} (or its id) instead.
+ *
  * @see Specification
  * @see CriterionEvaluator
  * @see EvaluationContext
@@ -146,13 +160,20 @@ import static java.util.function.Predicate.not;
  * @since 0.3.0
  */
 @Slf4j
-public record SpecificationEvaluator(Specification specification, CriterionEvaluator criterionEvaluator) {
+public final class SpecificationEvaluator {
+
+    private final Specification specification;
+    private final CriterionEvaluator criterionEvaluator;
+    private final Map<String, Criterion> criterionIndex;
 
     /**
      * Canonical constructor that normalises the bound specification's query
      * criteria, replacing raw {@code { "$contextPath": "..." }} maps with typed
      * {@link uk.codery.jspec.model.ContextPathReference} instances. This shifts
-     * sentinel detection out of the per-evaluation hot path.
+     * sentinel detection out of the per-evaluation hot path. The criterion index
+     * (id → definition, used for on-demand reference resolution) is also built once
+     * here, since the bound specification is immutable and the index never changes
+     * between {@code evaluate} calls.
      *
      * @param specification the specification to bind (normalised before storing)
      * @param criterionEvaluator the criterion evaluator to use for query evaluation
@@ -160,14 +181,15 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
     public SpecificationEvaluator(Specification specification, CriterionEvaluator criterionEvaluator) {
         this.specification = normalise(specification);
         this.criterionEvaluator = criterionEvaluator;
+        this.criterionIndex = buildCriterionIndex(this.specification.criteria());
     }
 
     /**
      * Creates a SpecificationEvaluator with default built-in operators.
      *
      * <p>This is the recommended constructor for most use cases.
-     * It creates an internal {@link CriterionEvaluator} with all 13 built-in
-     * MongoDB-style operators.
+     * It creates an internal {@link CriterionEvaluator} with all 23 built-in
+     * query operators.
      *
      * @param specification the specification to evaluate documents against
      * @see #SpecificationEvaluator(Specification, CriterionEvaluator)
@@ -193,11 +215,42 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      *
      * @return the normalised specification bound to this evaluator
      */
-    @Override
     public Specification specification() {
-        // Override exists only to attach the Javadoc above — the body is identical to
-        // the record's auto-generated accessor; no structural behaviour here.
         return specification;
+    }
+
+    /**
+     * Returns the criterion evaluator bound to this specification evaluator.
+     *
+     * @return the evaluator used for query criterion evaluation
+     */
+    public CriterionEvaluator criterionEvaluator() {
+        return criterionEvaluator;
+    }
+
+    /**
+     * Value equality over the (normalised) specification and the bound criterion evaluator —
+     * preserving the semantics this type had as a {@code record} before the criterion index
+     * was added as a derived field. The index is excluded because it is derived from the
+     * specification. Note {@link CriterionEvaluator} itself uses identity equality.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SpecificationEvaluator that)) return false;
+        return specification.equals(that.specification)
+                && criterionEvaluator.equals(that.criterionEvaluator);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(specification, criterionEvaluator);
+    }
+
+    @Override
+    public String toString() {
+        return "SpecificationEvaluator[specification=" + specification
+                + ", criterionEvaluator=" + criterionEvaluator + "]";
     }
 
     private static Specification normalise(Specification spec) {
@@ -218,12 +271,56 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
     }
 
     /**
+     * Builds an index of criterion id → criterion definition, walking recursively into
+     * {@link CompositeCriterion#criteria()} so nested composites are indexed too. Only
+     * {@link QueryCriterion} and {@link CompositeCriterion} are indexed; references are
+     * skipped (their id equals their target id, so indexing them would be meaningless
+     * and could shadow the real definition).
+     *
+     * <p>Chains resolve transitively: because composites are indexed and their reference
+     * children resolve on demand, a chain such as {@code ref → composite → ref → query}
+     * follows through at arbitrary depth. A reference must target a {@code QueryCriterion} or
+     * {@code CompositeCriterion}; a reference to an id absent from this index degrades to
+     * UNDETERMINED (there is no distinct "reference to a reference" node, since a reference's
+     * id <em>is</em> its target id).
+     *
+     * @param criteria the (normalised) top-level criteria
+     * @return a fresh map of indexable criteria by id
+     */
+    private static Map<String, Criterion> buildCriterionIndex(List<Criterion> criteria) {
+        Map<String, Criterion> index = new HashMap<>();
+        indexCriteria(criteria, index);
+        return index;
+    }
+
+    private static void indexCriteria(List<Criterion> criteria, Map<String, Criterion> index) {
+        for (Criterion c : criteria) {
+            if (c instanceof QueryCriterion) {
+                indexPut(index, c);
+            } else if (c instanceof CompositeCriterion composite) {
+                indexPut(index, composite);
+                indexCriteria(composite.criteria(), index);
+            }
+            // CriterionReference: skip (id equals target id)
+        }
+    }
+
+    private static void indexPut(Map<String, Criterion> index, Criterion c) {
+        if (index.putIfAbsent(c.id(), c) != null) {
+            // Duplicate id is a spec authoring error; keep the first and surface it (the
+            // library degrades gracefully but logs such inconsistencies).
+            log.warn("Duplicate criterion id '{}' in specification; keeping the first definition", c.id());
+        }
+    }
+
+    /**
      * Evaluates the bound specification against a document.
      *
      * <p>This method:
      * <ol>
      *   <li>Creates an {@link EvaluationContext} for result caching</li>
-     *   <li>Evaluates all criteria in parallel (uses cache for references)</li>
+     *   <li>Evaluates query criteria in parallel, then composites/references sequentially
+     *       (uses cache for references)</li>
      *   <li>Collects all results from the cache</li>
      *   <li>Generates summary statistics</li>
      *   <li>Returns comprehensive evaluation outcome</li>
@@ -231,7 +328,8 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
      *
      * <h3>Evaluation Process:</h3>
      * <ul>
-     *   <li><b>Parallel Evaluation:</b> All criteria evaluated concurrently</li>
+     *   <li><b>Parallel Query Evaluation:</b> Query criteria evaluated concurrently;
+     *       composites/references evaluated sequentially for reference-cycle safety</li>
      *   <li><b>Result Caching:</b> Results stored in context by criterion ID</li>
      *   <li><b>Reference Reuse:</b> References use cached results (no re-evaluation)</li>
      *   <li><b>Summary Generation:</b> Statistics computed from all results</li>
@@ -312,24 +410,26 @@ public record SpecificationEvaluator(Specification specification, CriterionEvalu
     public EvaluationOutcome evaluate(Object document, Object contextDoc) {
         log.info("Starting evaluation of specification '{}'", specification.id());
 
-        // Create evaluation context with result cache and context document
-        EvaluationContext context = new EvaluationContext(criterionEvaluator, contextDoc);
+        List<EvaluationResult> results;
+        // try-with-resources clears the context's per-thread cycle guard on close so it does
+        // not linger on pooled threads (only phase 2, on the calling thread, touches it).
+        try (EvaluationContext context =
+                     new EvaluationContext(criterionEvaluator, contextDoc, criterionIndex)) {
+            // Phase 1 (queries) carries the parallel workload — queries never trigger
+            // on-demand reference resolution, so there is no cross-thread cycle hazard here.
+            specification.criteria().parallelStream().filter(QueryCriterion.class::isInstance)
+                    .forEach(criterion -> context.getOrEvaluate(criterion, document));
+            // Phase 2 is intentionally SEQUENTIAL: composite/reference evaluation can trigger
+            // on-demand resolution of referenced criteria, and the reference-cycle guard is
+            // per-thread. Running it in parallel could deadlock two mutually-referencing
+            // top-level composites on ConcurrentHashMap.computeIfAbsent bin locks.
+            specification.criteria().stream().filter(not(QueryCriterion.class::isInstance))
+                    .forEach(criterion -> context.getOrEvaluate(criterion, document));
 
-        // Evaluate all criteria in parallel
-        // The context handles caching and reference resolution
-
-        // Simple QueryCriterion first
-        specification.criteria().parallelStream().filter(QueryCriterion.class::isInstance)
-                .forEach(criterion -> context.getOrEvaluate(criterion, document));
-        // Now composite and reference types
-        specification.criteria().parallelStream().filter(not(QueryCriterion.class::isInstance))
-                .forEach(criterion -> context.getOrEvaluate(criterion, document));
-
-        log.debug("Evaluated {} criteria for specification '{}'",
-                context.cacheSize(), specification.id());
-
-        // Collect all results from cache
-        List<EvaluationResult> results = List.copyOf(context.getAllResults());
+            log.debug("Evaluated {} criteria for specification '{}'",
+                    context.cacheSize(), specification.id());
+            results = List.copyOf(context.getAllResults());
+        }
 
         // Generate summary from results
         EvaluationSummary summary = EvaluationSummary.from(results);

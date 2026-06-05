@@ -12,13 +12,22 @@ import java.util.concurrent.ConcurrentHashMap;
  * providing a centralized mechanism for operator lookup during criterion evaluation.
  * All operations are thread-safe and can be called concurrently from multiple threads.
  *
- * <h2>Built-in Operators</h2>
- * The registry comes pre-configured with 13 MongoDB-style operators:
+ * <h2>Default Operators</h2>
+ * {@link #withDefaults()} seeds only the six <em>overridable</em> comparison/equality
+ * operators:
  * <ul>
- *   <li><b>Comparison:</b> {@code $eq}, {@code $ne}, {@code $gt}, {@code $gte}, {@code $lt}, {@code $lte}</li>
- *   <li><b>Collection:</b> {@code $in}, {@code $nin}, {@code $all}, {@code $size}</li>
- *   <li><b>Advanced:</b> {@code $exists}, {@code $type}, {@code $regex}, {@code $elemMatch}</li>
+ *   <li><b>Comparison (6):</b> {@code $eq}, {@code $ne}, {@code $gt}, {@code $gte}, {@code $lt}, {@code $lte}</li>
  * </ul>
+ *
+ * <p>These are the operators a {@link uk.codery.jspec.evaluator.CriterionEvaluator} does not
+ * replace, so a custom handler registered here for one of them takes effect. The remaining
+ * built-in operators (collection, advanced, string, range/date, and the {@code $and}/{@code $or}/
+ * {@code $not} logical operators) are owned by {@code CriterionEvaluator} and registered there,
+ * not in this registry — they need evaluator internals (recursion, the regex cache, rich date
+ * parsing). The full set of operators supported during evaluation is reported by
+ * {@link uk.codery.jspec.evaluator.CriterionEvaluator#supportedOperators()}. This registry's
+ * job is to (a) seed those overridable comparison defaults and (b) let callers register their
+ * own custom operators.
  *
  * <h2>Thread Safety</h2>
  * All methods in this class are thread-safe:
@@ -83,7 +92,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * // Get all available operator names
  * Set<String> operators = registry.availableOperators();
- * // Returns: [$eq, $ne, $gt, $gte, $lt, $lte, $in, $nin, $all, $size, $exists, $type, $regex, $elemMatch]
+ * // Returns the 6 comparison defaults: [$eq, $ne, $gt, $gte, $lt, $lte]
  *
  * // Check if specific operator exists
  * if (registry.contains("$regex")) {
@@ -147,32 +156,27 @@ public class OperatorRegistry {
     }
 
     /**
-     * Creates an operator registry pre-populated with built-in operators.
+     * Creates an operator registry seeded with the six overridable comparison defaults
+     * ({@code $eq}, {@code $ne}, {@code $gt}, {@code $gte}, {@code $lt}, {@code $lte}).
      *
-     * <p>This factory method returns a new registry containing all 13 built-in
-     * MongoDB-style operators. This is the recommended way to create a registry
-     * for most use cases.
-     *
-     * <h3>Built-in Operators Included:</h3>
-     * <ul>
-     *   <li><b>Comparison:</b> $eq, $ne, $gt, $gte, $lt, $lte</li>
-     *   <li><b>Collection:</b> $in, $nin, $all, $size</li>
-     *   <li><b>Advanced:</b> $exists, $type, $regex, $elemMatch</li>
-     * </ul>
+     * <p>This is the recommended starting point when backing a
+     * {@link uk.codery.jspec.evaluator.CriterionEvaluator}: the evaluator registers all other
+     * built-in operators itself, so the resulting evaluator supports the full operator set
+     * regardless of which constructor is used. The registry deliberately does <em>not</em>
+     * carry the collection/advanced/string/date operators — those are evaluator-owned (see the
+     * class documentation and {@code CriterionEvaluator.supportedOperators()}).
      *
      * <h3>Example:</h3>
      * <pre>{@code
-     * // Create registry with all built-in operators
+     * // Seed the overridable comparison defaults, then add custom operators
      * OperatorRegistry registry = OperatorRegistry.withDefaults();
-     *
-     * // Optionally add custom operators
      * registry.register("$length", lengthHandler);
      *
-     * // Use in evaluator
+     * // The evaluator adds its built-in operators on top of the registry's defaults
      * CriterionEvaluator evaluator = new CriterionEvaluator(registry);
      * }</pre>
      *
-     * @return a new {@code OperatorRegistry} with all built-in operators registered
+     * @return a new {@code OperatorRegistry} seeded with the six comparison defaults
      * @see #OperatorRegistry()
      */
     public static OperatorRegistry withDefaults() {
@@ -328,7 +332,7 @@ public class OperatorRegistry {
      * <pre>{@code
      * OperatorRegistry registry = OperatorRegistry.withDefaults();
      * System.out.println("Total operators: " + registry.size());
-     * // Output: Total operators: 14
+     * // Output: Total operators: 6
      * }</pre>
      *
      * @return the count of registered operators
@@ -367,11 +371,20 @@ public class OperatorRegistry {
     }
 
     /**
-     * Registers all built-in MongoDB-style operators.
+     * Registers the default <em>overridable</em> comparison operators.
      *
      * <p>This method is called automatically by {@link #withDefaults()}.
      *
-     * <p><b>Built-in Operators:</b>
+     * <p>The registry intentionally seeds only the six comparison/equality operators. These
+     * are the operators a {@link uk.codery.jspec.evaluator.CriterionEvaluator} leaves untouched,
+     * so a custom handler registered for one of them via this registry takes effect (see
+     * {@code CriterionEvaluatorCustomOperatorTest}). Every other built-in operator
+     * (collection, advanced, string, range/date, and the logical combinators) is owned and
+     * registered by {@code CriterionEvaluator} itself — those implementations require evaluator
+     * internals (recursion, the regex cache, rich date parsing) or simply live there. The
+     * registry does not carry shadow copies of them.
+     *
+     * <p><b>Default operators (6):</b>
      * <ul>
      *   <li>{@code $eq} - Equality comparison</li>
      *   <li>{@code $ne} - Not equal comparison</li>
@@ -379,18 +392,9 @@ public class OperatorRegistry {
      *   <li>{@code $gte} - Greater than or equal comparison</li>
      *   <li>{@code $lt} - Less than comparison</li>
      *   <li>{@code $lte} - Less than or equal comparison</li>
-     *   <li>{@code $in} - Value in array</li>
-     *   <li>{@code $nin} - Value not in array</li>
-     *   <li>{@code $all} - Array contains all values</li>
-     *   <li>{@code $size} - Array size match</li>
-     *   <li>{@code $exists} - Field existence check</li>
-     *   <li>{@code $type} - Type check</li>
-     *   <li>{@code $regex} - Regular expression match</li>
-     *   <li>{@code $elemMatch} - Array element match</li>
      * </ul>
      */
     private void registerDefaultOperators() {
-        // Comparison operators
         register("$eq", Objects::equals);
         register("$ne", (val, operand) -> !Objects.equals(val, operand));
         register("$gt", this::greaterThan);
@@ -398,21 +402,7 @@ public class OperatorRegistry {
         register("$lt", this::lessThan);
         register("$lte", this::lessThanOrEqual);
 
-        // Collection operators - placeholders (actual implementations in CriterionEvaluator)
-        // These will be overridden by CriterionEvaluator with its internal implementations
-        // that have access to evaluate() and other internal methods
-        register("$in", this::evaluateIn);
-        register("$nin", this::evaluateNotIn);
-        register("$all", this::evaluateAll);
-        register("$size", this::evaluateSize);
-
-        // Advanced operators - placeholders
-        register("$exists", this::evaluateExists);
-        register("$type", this::evaluateType);
-        register("$regex", this::evaluateRegex);
-        register("$elemMatch", this::evaluateElemMatch);
-
-        log.debug("Registered {} default operators", operators.size());
+        log.debug("Registered {} default comparison operators", operators.size());
     }
 
     // Comparison operator implementations
@@ -485,101 +475,4 @@ public class OperatorRegistry {
         return false;
     }
 
-    // Collection operator implementations
-
-    private boolean evaluateIn(Object val, Object operand) {
-        if (!(operand instanceof List<?> list)) {
-            return false;
-        }
-        if (val instanceof List<?> valList) {
-            for (Object item : valList) {
-                if (list.contains(item)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        return list.contains(val);
-    }
-
-    private boolean evaluateNotIn(Object val, Object operand) {
-        if (!(operand instanceof List<?> list)) {
-            return false;
-        }
-        if (val instanceof List<?> valList) {
-            for (Object item : valList) {
-                if (list.contains(item)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return !list.contains(val);
-    }
-
-    private boolean evaluateAll(Object val, Object operand) {
-        if (!(val instanceof List<?> valList)) {
-            return false;
-        }
-        if (!(operand instanceof List<?> queryList)) {
-            return false;
-        }
-        return new HashSet<>(valList).containsAll(queryList);
-    }
-
-    private boolean evaluateSize(Object val, Object operand) {
-        if (!(val instanceof List<?> list)) {
-            return false;
-        }
-        if (!(operand instanceof Number number)) {
-            return false;
-        }
-        return list.size() == number.intValue();
-    }
-
-    // Advanced operator implementations
-
-    private boolean evaluateExists(Object val, Object operand) {
-        if (!(operand instanceof Boolean query)) {
-            return false;
-        }
-        return query == (val != null);
-    }
-
-    private boolean evaluateType(Object val, Object operand) {
-        String type = switch (val) {
-            case null -> "null";
-            case List<?> ignored -> "array";
-            case String ignored -> "string";
-            case Number ignored -> "number";
-            case Boolean ignored -> "boolean";
-            case Map<?,?> ignored -> "object";
-            default -> val.getClass().getSimpleName().toLowerCase();
-        };
-        return type.equals(operand);
-    }
-
-    private boolean evaluateRegex(Object val, Object operand) {
-        if (!(operand instanceof String pattern)) {
-            return false;
-        }
-        try {
-            return java.util.regex.Pattern.compile(pattern).matcher(String.valueOf(val)).find();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private boolean evaluateElemMatch(Object val, Object operand) {
-        // This is a simplified implementation
-        // The actual CriterionEvaluator will override this with its full implementation
-        if (!(val instanceof List<?> list)) {
-            return false;
-        }
-        if (!(operand instanceof Map<?, ?>)) {
-            return false;
-        }
-        // Simplified: just check if list is not empty
-        return !list.isEmpty();
-    }
 }

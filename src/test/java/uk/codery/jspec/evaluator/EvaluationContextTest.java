@@ -37,6 +37,20 @@ class EvaluationContextTest {
         assertThat(context.evaluator()).isSameAs(evaluator);
     }
 
+    @Test
+    void constructor_nullContextDocAndIndex_normaliseToEmpty() {
+        // The three-arg constructor normalises null contextDoc and null index to empty
+        // maps so downstream code never has to null-check.
+        EvaluationContext ctx = new EvaluationContext(evaluator, null, null);
+
+        assertThat(ctx.contextDoc()).isEqualTo(Map.of());
+        // A reference with an empty index falls back to cache-only (missing → UNDETERMINED),
+        // confirming the null index was normalised rather than causing an NPE.
+        EvaluationResult result = ctx.getOrEvaluate(
+                new uk.codery.jspec.model.CriterionReference("absent"), Map.of());
+        assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
+    }
+
     // ==================== getOrEvaluate Tests ====================
 
     @Test

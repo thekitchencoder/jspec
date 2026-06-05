@@ -642,15 +642,16 @@ class StringAndLogicalOperatorsTest {
     }
 
     @Test
-    void not_withNestedUnknownOperator_shouldNotMatch() {
+    void not_withNestedUndetermined_staysUndetermined() {
         Map<String, Object> doc = Map.of("value", 42);
         QueryCriterion criterion = new QueryCriterion("test",
             Map.of("value", Map.of("$not", Map.of("$unknownOp", "test"))));
 
         EvaluationResult result = evaluator.evaluateQuery(doc, criterion);
 
-        // $not inverts UNDETERMINED from unknown operator, which becomes NOT_MATCHED
-        assertThat(result.state()).isEqualTo(EvaluationState.NOT_MATCHED);
+        // Strong Kleene: the nested unknown operator is UNDETERMINED, and ¬UNDETERMINED
+        // is UNDETERMINED — $not does not collapse "couldn't evaluate" into NOT_MATCHED.
+        assertThat(result.state()).isEqualTo(EvaluationState.UNDETERMINED);
     }
 
     @Test

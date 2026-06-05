@@ -1,10 +1,15 @@
 package uk.codery.jspec.evaluator;
 
+import uk.codery.jspec.model.CompositeCriterion;
 import uk.codery.jspec.model.Criterion;
+import uk.codery.jspec.model.CriterionReference;
 import uk.codery.jspec.result.EvaluationResult;
+import uk.codery.jspec.result.ReferenceResult;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -86,11 +91,26 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see EvaluationResult
  * @since 0.2.0
  */
-public class EvaluationContext {
+public class EvaluationContext implements AutoCloseable {
 
     private final CriterionEvaluator evaluator;
     private final Object contextDoc;
     private final Map<String, EvaluationResult> cache = new ConcurrentHashMap<>();
+
+    /**
+     * Index of criterion id → criterion definition, used to resolve references to
+     * targets that have not yet been evaluated (on-demand resolution). Defaults to an
+     * empty map; only {@link uk.codery.jspec.evaluator.SpecificationEvaluator} supplies
+     * a populated index. With an empty index, references fall back to cache-only lookup
+     * (unchanged historical behaviour).
+     */
+    private final Map<String, Criterion> criterionIndex;
+
+    /**
+     * Per-thread guard tracking which reference ids are currently being resolved on the
+     * calling thread, used to break reference cycles before they recurse unboundedly.
+     */
+    private final ThreadLocal<Set<String>> resolving = ThreadLocal.withInitial(HashSet::new);
 
     /**
      * Creates an evaluation context with the given evaluator and an empty context document.
@@ -113,8 +133,37 @@ public class EvaluationContext {
      *                   {@code null} is normalised to an empty map
      */
     public EvaluationContext(CriterionEvaluator evaluator, Object contextDoc) {
+        this(evaluator, contextDoc, Map.of());
+    }
+
+    /**
+     * Creates an evaluation context with the given evaluator, context document, and a
+     * criterion index for on-demand reference resolution.
+     *
+     * <p>The criterion index maps criterion ids to their definitions. When a
+     * {@link CriterionReference} is resolved and its target has not yet been cached, the
+     * target definition is looked up in this index and evaluated on demand. This makes
+     * reference resolution independent of evaluation order — in particular, references
+     * to {@link uk.codery.jspec.model.CompositeCriterion} no longer depend on phase
+     * ordering. A {@code null} index is normalised to {@link Map#of()}, which restores
+     * the historical cache-only reference behaviour (a reference to a not-yet-evaluated
+     * target degrades to UNDETERMINED/missing).
+     *
+     * <p>Direct callers running on pooled threads should construct this context in a
+     * try-with-resources block (it is {@link AutoCloseable}) so the per-thread cycle guard
+     * is cleared after use; {@link SpecificationEvaluator} already does this.
+     *
+     * @param evaluator the criterion evaluator to use for query evaluation
+     * @param contextDoc the context document used for resolving context-path references;
+     *                   {@code null} is normalised to an empty map
+     * @param criterionIndex id → criterion definition index; {@code null} normalised to
+     *                       an empty map
+     * @since 0.7.0
+     */
+    public EvaluationContext(CriterionEvaluator evaluator, Object contextDoc, Map<String, Criterion> criterionIndex) {
         this.evaluator = evaluator;
         this.contextDoc = contextDoc == null ? Map.of() : contextDoc;
+        this.criterionIndex = criterionIndex == null ? Map.of() : criterionIndex;
     }
 
     /**
@@ -166,10 +215,121 @@ public class EvaluationContext {
      * @return the evaluation result (from cache or freshly evaluated)
      */
     public EvaluationResult getOrEvaluate(Criterion criterion, Object document) {
-        return cache.computeIfAbsent(
-                criterion.id(),
-                id -> criterion.evaluate(document, this)
-        );
+        // A reference's id equals its target's id, so it must never be cached under its own
+        // key (that would make computeIfAbsent re-enter the same key — "Recursive update").
+        if (criterion instanceof CriterionReference reference) {
+            return resolveReference(reference, document);
+        }
+        EvaluationResult cached = cache.get(criterion.id());
+        if (cached != null) {
+            return cached;
+        }
+        // Only composites recurse into children, so only they can form a reference cycle and
+        // need cycle-guard tracking. Recording the id before computeIfAbsent lets a self-
+        // referencing composite trip the guard in resolveReference before a same-key re-entry.
+        // Leaf queries skip the guard, keeping it single-threaded (see clearThreadCycleState).
+        if (criterion instanceof CompositeCriterion) {
+            Set<String> inProgress = resolving.get();
+            // added==false when reached via resolveReference (which already added this id and
+            // owns its removal); only the owner removes, so this finally is guarded by added.
+            boolean added = inProgress.add(criterion.id());
+            try {
+                return cache.computeIfAbsent(criterion.id(), id -> criterion.evaluate(document, this));
+            } finally {
+                if (added) {
+                    inProgress.remove(criterion.id());
+                }
+            }
+        }
+        return cache.computeIfAbsent(criterion.id(), id -> criterion.evaluate(document, this));
+    }
+
+    /**
+     * Removes this context's per-thread reference-cycle guard state from the calling thread.
+     *
+     * <p>The cycle guard is a {@link ThreadLocal}; balanced add/remove leaves the set empty
+     * after evaluation, but the empty set object would otherwise linger in the calling
+     * thread's {@code ThreadLocalMap} until this context is garbage-collected. Pooled threads
+     * (a {@code parallelStream} ForkJoinPool worker, an embedded servlet container thread, …)
+     * outlive a single evaluation, so {@link SpecificationEvaluator} calls this once each
+     * evaluation completes. Only the calling thread is affected — composites, the only
+     * criteria that touch the guard, are evaluated sequentially on that thread.
+     *
+     * @since 0.7.0
+     */
+    public void clearThreadCycleState() {
+        resolving.remove();
+    }
+
+    /**
+     * Equivalent to {@link #clearThreadCycleState()}, enabling try-with-resources for callers
+     * that construct an {@code EvaluationContext} directly:
+     * <pre>{@code
+     * try (EvaluationContext ctx = new EvaluationContext(evaluator, contextDoc, index)) {
+     *     ctx.getOrEvaluate(criterion, document);
+     * }
+     * }</pre>
+     * {@link SpecificationEvaluator} already cleans up after every evaluation, so this matters
+     * only for direct, custom orchestration on pooled threads.
+     *
+     * @since 0.7.0
+     */
+    @Override
+    public void close() {
+        clearThreadCycleState();
+    }
+
+    /**
+     * Resolves a {@link CriterionReference} to its target's result.
+     *
+     * <p>Resolution order:
+     * <ol>
+     *   <li><b>Fast path:</b> if the target is already cached, wrap and return it.</li>
+     *   <li><b>On-demand:</b> otherwise look the target definition up in the criterion
+     *       index and evaluate it now. The target is a query or composite (never a
+     *       reference, since references are not indexed), so the subsequent
+     *       {@code getOrEvaluate(def, ...)} performs {@code computeIfAbsent} on the
+     *       target key — a key that is NOT currently being computed — so the
+     *       "Recursive update" trap cannot fire.</li>
+     *   <li><b>Unknown:</b> if no definition is indexed, return {@link ReferenceResult#missing}
+     *       (UNDETERMINED) — unchanged behaviour for an empty index.</li>
+     * </ol>
+     *
+     * <p>A per-thread {@code resolving} set guards against reference cycles: if the same
+     * ref is already being resolved on this thread, the cycle is broken by returning
+     * {@link ReferenceResult#cycle} (UNDETERMINED). This guard trips BEFORE any same-key
+     * {@code computeIfAbsent} re-entry, so cycles never surface as exceptions.
+     *
+     * @param reference the reference to resolve
+     * @param document the document being evaluated
+     * @return the resolved reference result
+     */
+    private EvaluationResult resolveReference(CriterionReference reference, Object document) {
+        String ref = reference.ref();
+
+        // Fast path: target already evaluated.
+        EvaluationResult cached = cache.get(ref);
+        if (cached != null) {
+            return new ReferenceResult(reference, cached);
+        }
+
+        // On-demand: evaluate the target now if we have its definition.
+        Criterion def = criterionIndex.get(ref);
+        if (def == null) {
+            return ReferenceResult.missing(reference);
+        }
+
+        Set<String> inProgress = resolving.get();
+        if (!inProgress.add(ref)) {
+            // Already resolving this ref on this thread → cycle.
+            return ReferenceResult.cycle(reference);
+        }
+        try {
+            EvaluationResult target = getOrEvaluate(def, document);
+            return new ReferenceResult(reference, target);
+        } finally {
+            inProgress.remove(ref);
+        }
     }
 
     /**
