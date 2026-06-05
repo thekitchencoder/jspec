@@ -124,6 +124,8 @@ class OperatorParityTest {
 
     @Test
     void supportedOperatorsIncludesLogicalCombinators() {
-        assertThat(noArg.supportedOperators()).contains("$and", "$or");
+        // $not/$and/$or are tri-state special-cased (not boolean handlers), so they are added
+        // to supportedOperators() explicitly rather than appearing via the handler map.
+        assertThat(noArg.supportedOperators()).contains("$not", "$and", "$or");
     }
 }
