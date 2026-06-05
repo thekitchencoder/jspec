@@ -14,6 +14,7 @@ import uk.codery.jspec.result.EvaluationSummary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static java.util.function.Predicate.not;
 
@@ -217,6 +218,31 @@ public final class SpecificationEvaluator {
         return criterionEvaluator;
     }
 
+    /**
+     * Value equality over the (normalised) specification and the bound criterion evaluator —
+     * preserving the semantics this type had as a {@code record} before the criterion index
+     * was added as a derived field. The index is excluded because it is derived from the
+     * specification. Note {@link CriterionEvaluator} itself uses identity equality.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SpecificationEvaluator that)) return false;
+        return specification.equals(that.specification)
+                && criterionEvaluator.equals(that.criterionEvaluator);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(specification, criterionEvaluator);
+    }
+
+    @Override
+    public String toString() {
+        return "SpecificationEvaluator[specification=" + specification
+                + ", criterionEvaluator=" + criterionEvaluator + "]";
+    }
+
     private static Specification normalise(Specification spec) {
         List<Criterion> criteria = spec.criteria().stream()
                 .map(SpecificationEvaluator::normaliseCriterion)
@@ -253,12 +279,20 @@ public final class SpecificationEvaluator {
     private static void indexCriteria(List<Criterion> criteria, Map<String, Criterion> index) {
         for (Criterion c : criteria) {
             if (c instanceof QueryCriterion) {
-                index.putIfAbsent(c.id(), c);
+                indexPut(index, c);
             } else if (c instanceof CompositeCriterion composite) {
-                index.putIfAbsent(composite.id(), composite);
+                indexPut(index, composite);
                 indexCriteria(composite.criteria(), index);
             }
             // CriterionReference: skip (id equals target id)
+        }
+    }
+
+    private static void indexPut(Map<String, Criterion> index, Criterion c) {
+        if (index.putIfAbsent(c.id(), c) != null) {
+            // Duplicate id is a spec authoring error; keep the first and surface it (the
+            // library degrades gracefully but logs such inconsistencies).
+            log.warn("Duplicate criterion id '{}' in specification; keeping the first definition", c.id());
         }
     }
 
@@ -359,37 +393,25 @@ public final class SpecificationEvaluator {
     public EvaluationOutcome evaluate(Object document, Object contextDoc) {
         log.info("Starting evaluation of specification '{}'", specification.id());
 
-        // Create evaluation context with result cache, context document, and the
-        // pre-computed criterion index (built once at construction).
-        EvaluationContext context = new EvaluationContext(criterionEvaluator, contextDoc, criterionIndex);
-
         List<EvaluationResult> results;
-        try {
-            // The context handles caching and reference resolution.
-
+        // try-with-resources clears the context's per-thread cycle guard on close so it does
+        // not linger on pooled threads (only phase 2, on the calling thread, touches it).
+        try (EvaluationContext context =
+                     new EvaluationContext(criterionEvaluator, contextDoc, criterionIndex)) {
             // Phase 1 (queries) carries the parallel workload — queries never trigger
             // on-demand reference resolution, so there is no cross-thread cycle hazard here.
             specification.criteria().parallelStream().filter(QueryCriterion.class::isInstance)
                     .forEach(criterion -> context.getOrEvaluate(criterion, document));
             // Phase 2 is intentionally SEQUENTIAL: composite/reference evaluation can trigger
             // on-demand resolution of referenced criteria, and the reference-cycle guard is
-            // per-thread. Running this phase in parallel allows two mutually-referencing
-            // top-level composites to deadlock on ConcurrentHashMap.computeIfAbsent bin locks
-            // across threads. Phase 1 (queries) carries the parallel workload; phase 2 is cheap
-            // orchestration over already-cached results.
+            // per-thread. Running it in parallel could deadlock two mutually-referencing
+            // top-level composites on ConcurrentHashMap.computeIfAbsent bin locks.
             specification.criteria().stream().filter(not(QueryCriterion.class::isInstance))
                     .forEach(criterion -> context.getOrEvaluate(criterion, document));
 
             log.debug("Evaluated {} criteria for specification '{}'",
                     context.cacheSize(), specification.id());
-
-            // Collect all results from cache
             results = List.copyOf(context.getAllResults());
-        } finally {
-            // Remove the per-thread cycle-guard state from the calling thread so it does
-            // not linger on pooled threads (phase 2 runs on the calling thread; only it
-            // touches the guard).
-            context.clearThreadCycleState();
         }
 
         // Generate summary from results

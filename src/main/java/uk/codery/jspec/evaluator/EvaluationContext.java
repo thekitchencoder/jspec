@@ -91,7 +91,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see EvaluationResult
  * @since 0.2.0
  */
-public class EvaluationContext {
+public class EvaluationContext implements AutoCloseable {
 
     private final CriterionEvaluator evaluator;
     private final Object contextDoc;
@@ -154,6 +154,7 @@ public class EvaluationContext {
      *                   {@code null} is normalised to an empty map
      * @param criterionIndex id → criterion definition index; {@code null} normalised to
      *                       an empty map
+     * @since 0.7.0
      */
     public EvaluationContext(CriterionEvaluator evaluator, Object contextDoc, Map<String, Criterion> criterionIndex) {
         this.evaluator = evaluator;
@@ -210,50 +211,33 @@ public class EvaluationContext {
      * @return the evaluation result (from cache or freshly evaluated)
      */
     public EvaluationResult getOrEvaluate(Criterion criterion, Object document) {
-        // References are special-cased so the reference wrapper is NEVER cached under its
-        // own id — which equals the target id (CriterionReference.id() returns ref).
-        // Caching the wrapper under that key, then evaluating the target under the same
-        // key, would trip ConcurrentHashMap.computeIfAbsent's "Recursive update" guard.
+        // A reference's id equals its target's id, so it must never be cached under its own
+        // key (that would make computeIfAbsent re-enter the same key — "Recursive update").
         if (criterion instanceof CriterionReference reference) {
             return resolveReference(reference, document);
         }
-        // Already cached? Return it without entering computeIfAbsent. This also serves as
-        // a fast path when a composite is reached on demand via a reference.
-        // NOTE: this is purely an optimization to skip the inProgress bookkeeping churn —
-        // it is NOT a check-then-act bug. The computeIfAbsent below remains the atomic
-        // source of truth, so concurrent callers that race past this read still resolve to
-        // a single cached result.
         EvaluationResult cached = cache.get(criterion.id());
         if (cached != null) {
             return cached;
         }
-        // Only composites can recurse into children that reference back into themselves, so
-        // only they need cycle-guard tracking. Recording the id BEFORE computeIfAbsent lets a
-        // self-referencing composite trip the guard in resolveReference before any same-key
-        // re-entrant computeIfAbsent (which would otherwise throw "Recursive update"). Leaf
-        // queries skip the ThreadLocal entirely, so parallel phase-1 query evaluation never
-        // touches it — which keeps the guard a single-threaded concern (see clearThreadCycleState).
+        // Only composites recurse into children, so only they can form a reference cycle and
+        // need cycle-guard tracking. Recording the id before computeIfAbsent lets a self-
+        // referencing composite trip the guard in resolveReference before a same-key re-entry.
+        // Leaf queries skip the guard, keeping it single-threaded (see clearThreadCycleState).
         if (criterion instanceof CompositeCriterion) {
             Set<String> inProgress = resolving.get();
-            // May already be present if we arrived here via resolveReference (the reference's
-            // ref equals this composite's id); in that case added==false and the owning
-            // resolveReference call removes it — this finally must not.
+            // added==false when reached via resolveReference (which already added this id and
+            // owns its removal); only the owner removes, so this finally is guarded by added.
             boolean added = inProgress.add(criterion.id());
             try {
-                return cache.computeIfAbsent(
-                        criterion.id(),
-                        id -> criterion.evaluate(document, this)
-                );
+                return cache.computeIfAbsent(criterion.id(), id -> criterion.evaluate(document, this));
             } finally {
                 if (added) {
                     inProgress.remove(criterion.id());
                 }
             }
         }
-        return cache.computeIfAbsent(
-                criterion.id(),
-                id -> criterion.evaluate(document, this)
-        );
+        return cache.computeIfAbsent(criterion.id(), id -> criterion.evaluate(document, this));
     }
 
     /**
@@ -266,9 +250,29 @@ public class EvaluationContext {
      * outlive a single evaluation, so {@link SpecificationEvaluator} calls this once each
      * evaluation completes. Only the calling thread is affected — composites, the only
      * criteria that touch the guard, are evaluated sequentially on that thread.
+     *
+     * @since 0.7.0
      */
     public void clearThreadCycleState() {
         resolving.remove();
+    }
+
+    /**
+     * Equivalent to {@link #clearThreadCycleState()}, enabling try-with-resources for callers
+     * that construct an {@code EvaluationContext} directly:
+     * <pre>{@code
+     * try (EvaluationContext ctx = new EvaluationContext(evaluator, contextDoc, index)) {
+     *     ctx.getOrEvaluate(criterion, document);
+     * }
+     * }</pre>
+     * {@link SpecificationEvaluator} already cleans up after every evaluation, so this matters
+     * only for direct, custom orchestration on pooled threads.
+     *
+     * @since 0.7.0
+     */
+    @Override
+    public void close() {
+        clearThreadCycleState();
     }
 
     /**

@@ -46,6 +46,43 @@ class SpecificationEvaluatorTest {
         assertThat(new SpecificationEvaluator(spec).criterionEvaluator()).isNotNull();
     }
 
+    @Test
+    void equalsHashCodeToString_reflectSpecificationAndEvaluator() {
+        Specification spec = new Specification("s", List.of(
+                new QueryCriterion("a", Map.of("x", Map.of("$eq", 1)))));
+        Specification other = new Specification("other", List.of(
+                new QueryCriterion("b", Map.of("y", Map.of("$eq", 2)))));
+        CriterionEvaluator ev = new CriterionEvaluator();
+
+        SpecificationEvaluator e1 = new SpecificationEvaluator(spec, ev);
+        SpecificationEvaluator e2 = new SpecificationEvaluator(spec, ev); // same spec value + same evaluator
+
+        assertThat(e1).isEqualTo(e1);                                  // reflexive
+        assertThat(e1).isEqualTo(e2);                                  // equal spec + same evaluator
+        assertThat(e1).hasSameHashCodeAs(e2);
+        assertThat(e1).isNotEqualTo(null);                             // not an instance
+        assertThat(e1).isNotEqualTo("not an evaluator");               // not an instance
+        assertThat(e1).isNotEqualTo(new SpecificationEvaluator(spec, new CriterionEvaluator())); // different evaluator
+        assertThat(e1).isNotEqualTo(new SpecificationEvaluator(other, ev)); // different specification
+        assertThat(e1.toString())
+                .contains("SpecificationEvaluator[specification=", "criterionEvaluator=");
+    }
+
+    @Test
+    void duplicateCriterionId_keepsFirstDefinition_andEvaluatesGracefully() {
+        // Two top-level criteria share an id (a spec authoring error). The index keeps the
+        // first (logged as a WARN) and evaluation does not throw.
+        Specification spec = new Specification("dup", List.of(
+                new QueryCriterion("c", Map.of("x", Map.of("$eq", 1))),
+                new QueryCriterion("c", Map.of("x", Map.of("$eq", 999)))));
+
+        SpecificationEvaluator evaluator = new SpecificationEvaluator(spec);
+        EvaluationOutcome outcome = evaluator.evaluate(Map.of("x", 1));
+
+        assertThat(outcome).isNotNull();
+        assertThat(outcome.specificationId()).isEqualTo("dup");
+    }
+
     // ========== Basic Specification Evaluation ==========
 
     @Test
